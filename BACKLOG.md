@@ -3,17 +3,18 @@
 ## NEXT SESSION
 
 The original 8-topic deep-dive planning roadmap finished at session 9
-(packaging). Session 10 added one more planning pass beyond that original
-roadmap — custom UI surfaces & interaction hooks (see roadmap item 9 below)
-— prompted by a gap found while reviewing the completed roadmap rather than
-by a pre-planned topic. Per `docs/design/build-pipeline.md`'s framing,
-`packages/core` implementation was waiting on either the roadmap finishing
-or an explicit decision to start earlier — both the original roadmap and
-this follow-on session are now done, so the next `/dev-session` should
-confirm with the user whether to start `packages/core` implementation, do
-another planning pass on one of the deferred items below, or whether
-something else takes priority first. Don't assume implementation starts
-automatically; this is a decision point, not a default.
+(packaging). Sessions 10-12 added three more planning passes beyond that
+original roadmap — custom UI surfaces & interaction hooks, audio, and AI &
+behavior (roadmap items 9-11 below) — prompted by gaps found while
+reviewing the completed roadmap rather than by pre-planned topics. Per
+`docs/design/build-pipeline.md`'s framing, `packages/core` implementation
+was waiting on either the roadmap finishing or an explicit decision to
+start earlier — the original roadmap and all three follow-on sessions are
+now done, so the next `/dev-session` should confirm with the user whether
+to start `packages/core` implementation, do another planning pass on one of
+the deferred items below, or whether something else takes priority first.
+Don't assume implementation starts automatically; this is a decision point,
+not a default.
 
 ## Deferred / future items
 
@@ -39,17 +40,15 @@ automatically; this is a decision point, not a default.
   to turn-based resolution only; a battle system with its own independent
   real-time clock (rather than the engine's time-units scheduler) is a
   genuinely different primitive, not designed there.
-- **Audio design** — named as a `core` responsibility since the original
-  `DESIGN.md` scaffold, but no planning session has ever covered it —
-  no author-facing hook exists for anything audio-related, including the
-  screen-driven sound moments (dice-roll SFX, battle stingers) flagged in
-  `docs/design/custom-ui-and-interactions.md`. Would need its own scoped
-  session.
-- **AI/behavior-tree design** — only shadowcasting/perception is currently
-  shared with rendering; no session has designed enemy decision-making,
-  which a non-trivial custom battle system's internals would need. Flagged
-  in `docs/design/custom-ui-and-interactions.md`, not designed there. Would
-  need its own scoped session.
+- **Sound-asset authoring/import pipeline** — `docs/design/audio.md`
+  decides the hand-off model and backend but doesn't design a content
+  pipeline for authoring/importing audio files; would follow whatever
+  `build-pipeline.md`'s content-import story generalizes to.
+- **Battle-screen-internal AI** — `docs/design/ai-and-behavior.md` covers
+  map-level actor decision-making only; a custom battle screen's own
+  private opponent logic (per `docs/design/custom-ui-and-interactions.md`'s
+  opacity model) remains entirely the screen author's concern, not
+  designed in either doc.
 
 ## Deep-dive planning roadmap
 
@@ -81,6 +80,11 @@ merge as needed if a topic turns out bigger or smaller than expected.
    Added after the original 8-topic roadmap finished, prompted by a gap
    found reviewing it rather than a pre-planned topic — same
    research-and-planning-only treatment as topics 1-8.
+10. ~~**Audio**~~ — done, see [`docs/design/audio.md`](docs/design/audio.md).
+    Flagged as a gap while writing topic 9's doc.
+11. ~~**AI & behavior**~~ — done, see
+    [`docs/design/ai-and-behavior.md`](docs/design/ai-and-behavior.md).
+    Flagged as a gap while writing topic 9's doc.
 
 After each session, check off the completed item here, link its doc, and
 move the NEXT SESSION pointer to the following one.

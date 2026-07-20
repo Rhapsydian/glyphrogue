@@ -203,6 +203,39 @@ turn-based only — real-time-with-pause battle systems are explicitly out of
 scope. Full depth in
 [`docs/design/custom-ui-and-interactions.md`](docs/design/custom-ui-and-interactions.md).
 
+## Audio
+
+Audio is reactive by default, not core-triggered: `registerSound(id, {
+trigger: actionType, source, match? })` maps action types (optionally
+filtered by a component predicate) to sound assets, and an audio subscriber
+watches the same coarse per-action notification stream rendering and DOM UI
+already watch — no new core-state concept, unlike `ShowDialogue`'s
+`PendingDialogue`. A `registerScreen` surface (custom UI doc, above) is the
+one exception, calling playback directly for its own private internal
+moments. No swappable/dependency-injected backend: Web Audio API is
+identical across all four declared build targets (Electron included, since
+it's Chromium), so there's no second platform to abstract for — one
+concrete implementation, unlike the input adapter or `platform` capability.
+Volume/mixing persists as a settings slice outside save data, reusing the
+keybinding-persistence mechanism. Full depth in
+[`docs/design/audio.md`](docs/design/audio.md).
+
+## AI & behavior
+
+No new registration mechanism: a non-player actor's turn dispatches a
+core-shipped `DecideAction` action, and ordinary rules react to it matched
+by component (`Wanders`, `ChasesPlayer`, `Flees`, `Guards`), the same
+component-tag pattern as `ExplodesOnDeath`. Core ships a handful of these as
+first-party default rules — same relationship core has to its four
+built-in map generators, not a closed set. `core` also exposes a shared
+`ctx.findPath(from, to, opts)` pathfinding primitive AI rules call into,
+mirroring `rendering.md`'s shared shadowcasting primitive (which already
+covers AI perception). Scoped to map-level, core-visible actors only — a
+custom battle screen's own private opponent logic (per the custom UI doc's
+opacity model) is the screen author's concern, not this mechanism's. Full
+depth in
+[`docs/design/ai-and-behavior.md`](docs/design/ai-and-behavior.md).
+
 ## Build targets
 
 - **Static HTML / GitHub Pages / itch.io** — same Vite production build;
