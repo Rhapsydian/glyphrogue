@@ -2,10 +2,23 @@
 
 ## NEXT SESSION
 
-Deep-dive planning session 6: **UI/UX & input framework**. Start
+Deep-dive planning session 7: **Build pipeline & dev/prod split**. Start
 `/dev-session` and go straight into this topic — scope is below, output is
-`docs/design/ui-and-input.md`. Don't ask what to work on; this is the next
+`docs/design/build-pipeline.md`. Don't ask what to work on; this is the next
 item in the deep-dive roadmap.
+
+## Deferred / future items
+
+- **Accessible alternative/description layer for the canvas viewport** —
+  the canvas game map has no screen-reader-accessible equivalent; flagged
+  as a real future addon in `docs/design/ui-and-input.md`'s accessibility
+  section, not designed there. Would need its own scoped session.
+- **Shipped default colorblind-safe palette** —
+  `docs/design/ui-and-input.md` decides palettes must be
+  swappable/player-selectable but doesn't ship actual colorblind-safe
+  color values (palettes are game-authored content, same as the base
+  palette). Providing a default one as a convenience is future work, not
+  designed there.
 
 ## Deep-dive planning roadmap
 
@@ -26,13 +39,12 @@ merge as needed if a topic turns out bigger or smaller than expected.
    [`docs/design/scripting-api.md`](docs/design/scripting-api.md).
 5. ~~**Font & glyph/tileset pipeline**~~ — done, see
    [`docs/design/fonts-and-tilesets.md`](docs/design/fonts-and-tilesets.md).
-6. **UI/UX & input framework** — `docs/design/ui-and-input.md` *(NEXT)*. Menus,
-   dialogs, inventory/equipment screens, keybinding & remapping,
-   accessibility/controller support, how DOM UI reads/writes core state.
-7. **Build pipeline & dev/prod split** — `docs/design/build-pipeline.md`.
-   Monorepo tooling specifics, Vite config for the core/editor subpath-export
-   split, asset pipeline (fonts, maps, data files) for dev vs. prod, and how
-   a downstream game project is structured/scaffolded
+6. ~~**UI/UX & input framework**~~ — done, see
+   [`docs/design/ui-and-input.md`](docs/design/ui-and-input.md).
+7. **Build pipeline & dev/prod split** — `docs/design/build-pipeline.md`
+   *(NEXT)*. Monorepo tooling specifics, Vite config for the core/editor
+   subpath-export split, asset pipeline (fonts, maps, data files) for dev
+   vs. prod, and how a downstream game project is structured/scaffolded
    (`create-glyphrogue-game`).
 8. **Packaging & distribution** — `docs/design/packaging.md`. Static
    HTML/GitHub Pages/itch.io build specifics, Electron + `steamworks.js`
