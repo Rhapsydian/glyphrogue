@@ -107,10 +107,26 @@ one `ZoneDTO` format. Full depth in
 
 ## Scripting & modding
 
-Plain TypeScript/JS modules against a defined plugin API (entities,
-components, systems, map generators, item/creature definitions). No
-sandboxing in v1 — mods run with full JS access. Full depth in
-`docs/design/scripting-api.md` (planned).
+A mod (first-party or, later, end-user) is a single default-exported
+descriptor (`id`, `version`, `dependencies`, `register(api)`) — one entry
+point regardless of how the module was loaded. Definitions
+(entities/items/creatures) are inert component data; behavior is a **rule**
+keyed to an action type, run as part of an ordered pipeline per action type
+so mods can layer in reactions without overriding core's own rules.
+Scripted events reuse the same action/rule model, with a step-list format
+as sugar for multi-step sequences only. All `register*` calls share one
+`id`-first, dependency-graph-ordered registration mechanism with explicit,
+self-confirming overrides (`options.override` must restate the id) and hard
+errors on unresolved conflicts. First-party content shares one game-owned
+save slice; end-user mods each get an independently-versioned slice, and a
+save requires its full mod set to load. `core` has two independent version
+numbers (save schema vs. plugin API) that mods declare semver-range
+compatibility against. **v1 ships no sandboxing** for mods of either kind —
+documented as a real, platform-dependent risk (much lower on web than
+Electron) — with authors able to disable modding **structurally**, per
+platform or globally, reusing the existing dev/prod build-split mechanism
+rather than a runtime flag. Full depth in
+[`docs/design/scripting-api.md`](docs/design/scripting-api.md).
 
 ## Fonts & glyphs — Pixelyph tie-in
 

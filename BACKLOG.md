@@ -2,9 +2,9 @@
 
 ## NEXT SESSION
 
-Deep-dive planning session 4: **Scripting & content/plugin API**. Start
+Deep-dive planning session 5: **Font & glyph/tileset pipeline**. Start
 `/dev-session` and go straight into this topic — scope is below, output is
-`docs/design/scripting-api.md`. Don't ask what to work on; this is the
+`docs/design/fonts-and-tilesets.md`. Don't ask what to work on; this is the
 next item in the deep-dive roadmap.
 
 ## Deep-dive planning roadmap
@@ -22,11 +22,9 @@ merge as needed if a topic turns out bigger or smaller than expected.
    [`docs/design/rendering.md`](docs/design/rendering.md).
 3. ~~**Map generation & map editor**~~ — done, see
    [`docs/design/mapgen-and-editor.md`](docs/design/mapgen-and-editor.md).
-4. **Scripting & content/plugin API** — `docs/design/scripting-api.md` *(NEXT)*.
-   TS/JS mod module format, data-driven entity/item/creature definitions,
-   event/hook system, how mods register systems or map generators,
-   versioning/compatibility story for mods.
-5. **Font & glyph/tileset pipeline** — `docs/design/fonts-and-tilesets.md`.
+4. ~~**Scripting & content/plugin API**~~ — done, see
+   [`docs/design/scripting-api.md`](docs/design/scripting-api.md).
+5. **Font & glyph/tileset pipeline** — `docs/design/fonts-and-tilesets.md` *(NEXT)*.
    Monospace/pixel font handling, the Pixelyph glyph-set import path,
    tileset definition format, palette/color-mapping (e.g. material tinting
    of a shared glyph).
