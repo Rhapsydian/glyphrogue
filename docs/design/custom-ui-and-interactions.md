@@ -58,6 +58,28 @@ Nothing here warrants a fourth new mechanism beyond what this doc already
 covers — it's the same pattern as any other custom screen, just with
 comparatively simple internal logic.
 
+## Canvas access and screen nesting
+
+**Can a screen use canvas, or is it DOM-only?** `ui-and-input.md` scoped
+screens/dialogs/menus as DOM overlays on top of the canvas game viewport.
+That's still the default, but nothing prevents a screen from mounting its
+**own** `<canvas>` element inside its own DOM subtree — a battle screen
+wanting a glyph-rendered scene reads the same shared glyph-metrics and
+palette objects `rendering.md`/`fonts-and-tilesets.md` already expose to
+any consumer, canvas or DOM. This is additive, not a new rendering path: a
+screen-owned canvas never touches the game-viewport canvas, and most
+screens (inventory, talent trees, dialogue) stay plain DOM as before.
+
+**Can screens nest** (a battle screen triggering a called-shot skill-check
+sub-screen)? Yes, and it doesn't go through `PendingUI`/core at all — the
+same way `ui-and-input.md` already lets purely-UI-initiated screens (the
+player pressing a key to open inventory) skip the core round-trip entirely.
+A screen's own internal code pushes a sub-screen directly (calling into
+another registered `screenId`'s renderer, or the UI stack's push mechanism
+directly), since screens are opaque to core either way. `PendingUI` is only
+the mechanism for *core-triggered* hand-off; UI-to-UI composition doesn't
+need it.
+
 ## Screen lifecycle: the pause contract
 
 **The question this resolves**: once a screen is open, does the rest of the
@@ -125,12 +147,17 @@ only once confirmed. The screen doesn't need special core support for
 "pause mid-animation for input" beyond what `waitFor` already provides,
 since the screen itself is what's holding `lock()` open regardless.
 
-**This closes the carried-forward "lock/unlock vs. animation-duration"
-open item generally**: there is no core-level animation-pause primitive, by
-design. Purely cosmetic delay is view-layer only and needs nothing from
-core; anything that needs to gate further logic on player input mid-
-animation is an explicit multi-step event using a mechanism that already
-exists.
+**Correction to an earlier draft of this doc**: this resolves the
+lock/unlock-vs-animation question **only for `registerScreen`-triggered
+animation** — a screen's own animation gating its own closing action. It
+does **not** resolve `rendering.md`'s original open item, which is about
+*ordinary* per-actor movement/attack tweening during a normal multi-actor
+turn: whether `lock()` stays held for each animation's full duration
+(serializing turns, risking the "AI turn spam" pacing problem) or overlap
+is allowed (needing an undesigned render-event buffer). That question
+remains fully open — see `ai-and-behavior.md`'s "Open items," since
+`DecideAction`-driven creatures moving/attacking every round is exactly the
+scenario this bears on.
 
 ## Combat/battle-system swappability
 
@@ -162,6 +189,16 @@ clock runs independent of the scheduler's time-units model — is explicitly
 **out of scope** here, the same way local co-op was ruled out of scope in
 `ui-and-input.md`. Flagged as a `BACKLOG.md` future item, not designed in
 this pass.
+
+## Registration conventions inherited from `scripting-api.md`
+
+`registerScreen` is an ordinary `id`-first `api.register*` call, so it
+inherits `scripting-api.md`'s generic mechanisms as-is: hard error on an
+unconfirmed duplicate `id`, the self-confirming `options.override`
+mechanism, dependency-graph load ordering, and the "v1: no sandboxing"
+trust boundary — a registered screen is arbitrary author-supplied
+DOM/canvas code with full access, same trust level as any other
+registration.
 
 ## Scope boundary
 

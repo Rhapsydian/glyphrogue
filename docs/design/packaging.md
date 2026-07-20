@@ -7,7 +7,10 @@ code-signing, and Steam build/page requirements. Produced in the session-9
 planning pass (see `BACKLOG.md` for the roadmap this fits into and
 `docs/design/build-pipeline.md` for the build-artifact boundary this doc
 builds on: a `vite build` output directory with `base: './'` already decided
-for Electron/itch). This is the last item on the deep-dive roadmap —
+for Electron/itch). This was the last item on the **original** 8-topic
+deep-dive roadmap — three further sessions (10–12: custom UI/interaction
+hooks, audio, AI & behavior) were added afterward, prompted by gaps found
+reviewing the completed roadmap; see `BACKLOG.md` for the full list.
 `DESIGN.md` will be trimmed to a short summary linking here, same pattern as
 the eight prior docs.
 

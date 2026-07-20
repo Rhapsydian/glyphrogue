@@ -223,7 +223,7 @@ keybinding-persistence mechanism. Full depth in
 ## AI & behavior
 
 No new registration mechanism: a non-player actor's turn dispatches a
-core-shipped `DecideAction` action, and ordinary rules react to it matched
+core-shipped `TakeTurn` action, and ordinary rules react to it matched
 by component (`Wanders`, `ChasesPlayer`, `Flees`, `Guards`), the same
 component-tag pattern as `ExplodesOnDeath`. Core ships a handful of these as
 first-party default rules — same relationship core has to its four

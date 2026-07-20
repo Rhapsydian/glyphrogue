@@ -67,14 +67,34 @@ as a settings slice outside save data, reusing the exact mechanism
 to a specific save file or character, readable/writable without a save
 loaded. No new persistence concept needed.
 
+## Sound-asset import
+
+**Not actually an open question**: audio files (WAV/OGG/MP3) are a binary
+static asset, the same category `build-pipeline.md` already resolved for
+fonts ("fonts are the one genuine static-asset case... binary/generated
+artifacts, not source a game authors by hand"). The same reasoning applies
+identically here — a game's sound files live under its own `assets/sounds/`
+(or similar) and import via the same `?url` mechanism already decided for
+fonts (`import soundUrl from './assets/sounds/x.ogg?url'`), working
+identically in dev and prod with no audio-specific pipeline to design.
+
+## Registration conventions inherited from `scripting-api.md`
+
+`registerSound` is an ordinary `id`-first `api.register*` call, so it
+inherits `scripting-api.md`'s generic mechanisms as-is, not as a new
+decision: hard error on an unconfirmed duplicate `id`, the self-confirming
+`options.override` mechanism, dependency-graph load ordering, and the "v1:
+no sandboxing" trust boundary (a registered sound's `source` is arbitrary
+author-supplied code/data with the same trust level as any other
+registration).
+
 ## Scope boundary
 
 This doc decides the **hand-off model** (reactive-by-default, screens as
 the one direct-call exception) and the **backend question** (no swappable
-implementation). It does not design specific sound-asset formats, a content
-pipeline for authoring/importing audio files, or music transition/crossfade
-mechanics beyond noting they're a `playMusic` implementation detail —
-consistent with how other docs deferred algorithm/format-level specifics.
+implementation). It does not design music transition/crossfade mechanics
+beyond noting they're a `playMusic` implementation detail, consistent with
+how other docs deferred algorithm/format-level specifics.
 
 ## Open items carried forward
 
@@ -82,6 +102,13 @@ consistent with how other docs deferred algorithm/format-level specifics.
 - Music crossfade/transition mechanics (relevant to `custom-ui-and-
   interactions.md`'s battle-transition-stinger example) — implementation
   time.
-- Sound-asset authoring/import pipeline — not designed here; would follow
-  whatever pattern `build-pipeline.md`'s content-import story generalizes
-  to, not a new concept specific to audio.
+- **Notification granularity for reactive sound triggers** — `registerSound`
+  assumes a per-action-type event, but the coarse notification primitive it
+  reuses from `ui-and-input.md` fires once per fully-resolved top-level
+  action *including its entire follow-on chain* (e.g. `Attack → Damage →
+  Death` collapses to one notification), not once per intermediate action
+  type. Resolving "play a clang for `Damage`, then a death-rattle for
+  `Death`, in order" needs either access to the resolved sub-action
+  sequence within a notification, or a finer subscription mechanism than
+  what DOM binding uses — not resolved in this doc, carried forward as a
+  real open design question rather than assumed to already work.

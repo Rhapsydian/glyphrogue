@@ -40,15 +40,26 @@ not a default.
   to turn-based resolution only; a battle system with its own independent
   real-time clock (rather than the engine's time-units scheduler) is a
   genuinely different primitive, not designed there.
-- **Sound-asset authoring/import pipeline** — `docs/design/audio.md`
-  decides the hand-off model and backend but doesn't design a content
-  pipeline for authoring/importing audio files; would follow whatever
-  `build-pipeline.md`'s content-import story generalizes to.
 - **Battle-screen-internal AI** — `docs/design/ai-and-behavior.md` covers
   map-level actor decision-making only; a custom battle screen's own
   private opponent logic (per `docs/design/custom-ui-and-interactions.md`'s
   opacity model) remains entirely the screen author's concern, not
   designed in either doc.
+- **Zone diff/overlay storage format for mod-defined entity types** —
+  `docs/design/mapgen-and-editor.md` expected this to be finalized
+  alongside `docs/design/scripting-api.md`'s mod-defined save-slice work;
+  checking `scripting-api.md`'s actual save-data section, it never
+  specifically addresses zone diffs/overrides carrying mod-defined entity
+  types. Genuinely still open, surfaced during the session-13 deep review
+  rather than resolved as originally expected.
+- **Dev-time tileset/font-calibration editor** —
+  `docs/design/fonts-and-tilesets.md` expected this to be UI/UX-session (6)
+  territory ("the future tileset editor"); `docs/design/ui-and-input.md`'s
+  actual scope (menus, dialogs, keybinding, accessibility, controller
+  support) never covered it, and no other session has either. A per-font-
+  source calibration override (scale/baseline/centering) currently has no
+  authoring UI designed anywhere. Surfaced during the session-13 deep
+  review.
 
 ## Deep-dive planning roadmap
 
