@@ -2,10 +2,10 @@
 
 ## NEXT SESSION
 
-Deep-dive planning session 1: **Core architecture & game loop**. Start
-`/dev-session` and go straight into this topic — scope is below, output is
-`docs/design/core-architecture.md`. Don't ask what to work on; this is the
-next item in the deep-dive roadmap.
+Deep-dive planning session 2: **Rendering system**. Start `/dev-session`
+and go straight into this topic — scope is below, output is
+`docs/design/rendering.md`. Don't ask what to work on; this is the next
+item in the deep-dive roadmap.
 
 ## Deep-dive planning roadmap
 
@@ -16,11 +16,9 @@ roughly dependency order (foundational pieces before things that build on
 them; packaging last since it depends on everything else) — reorder/split/
 merge as needed if a topic turns out bigger or smaller than expected.
 
-1. **Core architecture & game loop** — `docs/design/core-architecture.md`
-   *(NEXT)*. ECS vs. alternative data model, turn-based tick/scheduling,
-   save/load & serialization strategy, the state boundary between `core`
-   and `editor`.
-2. **Rendering system** — `docs/design/rendering.md`. Hybrid Canvas 2D + DOM
+1. ~~**Core architecture & game loop**~~ — done, see
+   [`docs/design/core-architecture.md`](docs/design/core-architecture.md).
+2. **Rendering system** — `docs/design/rendering.md` *(NEXT)*. Hybrid Canvas 2D + DOM
    glyph rendering in depth: shared glyph-metrics source, camera/viewport
    and scrolling, color/palette system, FOV/lighting visualization,
    animation, performance budget for large maps.

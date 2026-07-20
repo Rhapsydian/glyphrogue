@@ -56,6 +56,20 @@ glyphrogue/
   the editor package only in its dev Vite config — mirroring the
   `build:itch` custom-mode pattern already used in `pixelyph/package.json`.
 
+## Core architecture & game loop
+
+Entities/components (ECS-style data, candidate library `bitECS`) with game
+logic as **actions + rules** rather than per-frame systems, since plain ECS
+systems don't sequence well for turn-based play. Turn order runs on a
+**time-units** scheduler (variable action costs, not fixed ticks), driven
+by an async engine loop (rot.js-style `lock`/`unlock`) so a turn can
+suspend on player input. Saves are DTO-based with independently-versioned
+`coreSchemaVersion`/`gameDataVersion` slices and stepwise migrations.
+`core` exposes one public inspection/mutation API that the game runtime,
+`editor`, first-party content, and (later) end-user mods all consume — no
+backdoor access to internals. Full depth in
+[`docs/design/core-architecture.md`](docs/design/core-architecture.md).
+
 ## Rendering
 
 Hybrid, per explicit design goal: Canvas 2D for the game viewport
