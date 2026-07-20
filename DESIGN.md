@@ -177,6 +177,32 @@ support is a swappable-palette mechanism (no shipped default palette yet),
 and the canvas viewport is an explicit non-goal for screen readers. Full
 depth in [`docs/design/ui-and-input.md`](docs/design/ui-and-input.md).
 
+## Custom UI surfaces & interaction hooks
+
+A game or mod registers a wholly custom interactive screen — a skill-check/
+dice-roll modal, a talent tree, a full turn-based battle system — through
+one generic `registerScreen(id, {...})` call, generalizing `ShowDialogue`'s
+one-off `PendingDialogue` marker into a single `PendingUI({ screenId,
+payload })` component the UI layer always watches for, the same "one
+interface, many implementations" shape as `registerGenerator`. Opening a
+screen holds the current actor's existing `lock()` open for the screen's
+whole lifetime rather than needing a new pause primitive — the engine's
+strictly sequential scheduler already suspends everything else for free.
+The screen itself is opaque to core (private internal logic, no rule fires
+for anything happening inside it) and closes by dispatching exactly one
+ordinary core Action carrying its result, which the normal rule pipeline
+sees like any other action. Purely cosmetic animation delay reuses
+rendering.md's model/view decoupling; anything needing player input
+mid-animation (e.g. spending a resource to reroll) is a short
+`registerScriptedEvent`/`waitFor` sequence — closing the long-carried
+lock/unlock-vs-animation-timing open item. `Attack`/`Damage`/`Death` is
+confirmed a first-party default rule set, not an exclusive core mechanism,
+so a custom battle system can define its own action vocabulary entirely;
+battle screens use the same registerScreen/pause contract as a dice roll,
+turn-based only — real-time-with-pause battle systems are explicitly out of
+scope. Full depth in
+[`docs/design/custom-ui-and-interactions.md`](docs/design/custom-ui-and-interactions.md).
+
 ## Build targets
 
 - **Static HTML / GitHub Pages / itch.io** — same Vite production build;

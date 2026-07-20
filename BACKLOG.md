@@ -2,14 +2,18 @@
 
 ## NEXT SESSION
 
-The deep-dive planning roadmap is now complete (session 9, packaging, is
-done — see below). Per `docs/design/build-pipeline.md`'s framing,
+The original 8-topic deep-dive planning roadmap finished at session 9
+(packaging). Session 10 added one more planning pass beyond that original
+roadmap — custom UI surfaces & interaction hooks (see roadmap item 9 below)
+— prompted by a gap found while reviewing the completed roadmap rather than
+by a pre-planned topic. Per `docs/design/build-pipeline.md`'s framing,
 `packages/core` implementation was waiting on either the roadmap finishing
-or an explicit decision to start earlier — the roadmap has now finished, so
-the next `/dev-session` should confirm with the user whether to start
-`packages/core` implementation, or whether something else takes priority
-first. Don't assume implementation starts automatically; this is a decision
-point, not a default.
+or an explicit decision to start earlier — both the original roadmap and
+this follow-on session are now done, so the next `/dev-session` should
+confirm with the user whether to start `packages/core` implementation, do
+another planning pass on one of the deferred items below, or whether
+something else takes priority first. Don't assume implementation starts
+automatically; this is a decision point, not a default.
 
 ## Deferred / future items
 
@@ -30,6 +34,22 @@ point, not a default.
   need a real build step (splitting one big authoring file into many
   lazy-loadable chunks). Not needed by anything decided through session 8;
   would need its own scoped session if a concrete case demands it.
+- **Real-time-with-pause battle systems** —
+  `docs/design/custom-ui-and-interactions.md` scopes custom battle screens
+  to turn-based resolution only; a battle system with its own independent
+  real-time clock (rather than the engine's time-units scheduler) is a
+  genuinely different primitive, not designed there.
+- **Audio design** — named as a `core` responsibility since the original
+  `DESIGN.md` scaffold, but no planning session has ever covered it —
+  no author-facing hook exists for anything audio-related, including the
+  screen-driven sound moments (dice-roll SFX, battle stingers) flagged in
+  `docs/design/custom-ui-and-interactions.md`. Would need its own scoped
+  session.
+- **AI/behavior-tree design** — only shadowcasting/perception is currently
+  shared with rendering; no session has designed enemy decision-making,
+  which a non-trivial custom battle system's internals would need. Flagged
+  in `docs/design/custom-ui-and-interactions.md`, not designed there. Would
+  need its own scoped session.
 
 ## Deep-dive planning roadmap
 
@@ -56,6 +76,11 @@ merge as needed if a topic turns out bigger or smaller than expected.
    [`docs/design/build-pipeline.md`](docs/design/build-pipeline.md).
 8. ~~**Packaging & distribution**~~ — done, see
    [`docs/design/packaging.md`](docs/design/packaging.md).
+9. ~~**Custom UI surfaces & interaction hooks**~~ — done, see
+   [`docs/design/custom-ui-and-interactions.md`](docs/design/custom-ui-and-interactions.md).
+   Added after the original 8-topic roadmap finished, prompted by a gap
+   found reviewing it rather than a pre-planned topic — same
+   research-and-planning-only treatment as topics 1-8.
 
 After each session, check off the completed item here, link its doc, and
 move the NEXT SESSION pointer to the following one.
