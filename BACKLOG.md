@@ -2,10 +2,10 @@
 
 ## NEXT SESSION
 
-Deep-dive planning session 5: **Font & glyph/tileset pipeline**. Start
+Deep-dive planning session 6: **UI/UX & input framework**. Start
 `/dev-session` and go straight into this topic — scope is below, output is
-`docs/design/fonts-and-tilesets.md`. Don't ask what to work on; this is the
-next item in the deep-dive roadmap.
+`docs/design/ui-and-input.md`. Don't ask what to work on; this is the next
+item in the deep-dive roadmap.
 
 ## Deep-dive planning roadmap
 
@@ -24,11 +24,9 @@ merge as needed if a topic turns out bigger or smaller than expected.
    [`docs/design/mapgen-and-editor.md`](docs/design/mapgen-and-editor.md).
 4. ~~**Scripting & content/plugin API**~~ — done, see
    [`docs/design/scripting-api.md`](docs/design/scripting-api.md).
-5. **Font & glyph/tileset pipeline** — `docs/design/fonts-and-tilesets.md` *(NEXT)*.
-   Monospace/pixel font handling, the Pixelyph glyph-set import path,
-   tileset definition format, palette/color-mapping (e.g. material tinting
-   of a shared glyph).
-6. **UI/UX & input framework** — `docs/design/ui-and-input.md`. Menus,
+5. ~~**Font & glyph/tileset pipeline**~~ — done, see
+   [`docs/design/fonts-and-tilesets.md`](docs/design/fonts-and-tilesets.md).
+6. **UI/UX & input framework** — `docs/design/ui-and-input.md` *(NEXT)*. Menus,
    dialogs, inventory/equipment screens, keybinding & remapping,
    accessibility/controller support, how DOM UI reads/writes core state.
 7. **Build pipeline & dev/prod split** — `docs/design/build-pipeline.md`.

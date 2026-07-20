@@ -128,13 +128,22 @@ platform or globally, reusing the existing dev/prod build-split mechanism
 rather than a runtime flag. Full depth in
 [`docs/design/scripting-api.md`](docs/design/scripting-api.md).
 
-## Fonts & glyphs — Pixelyph tie-in
+## Fonts & glyphs — tileset pipeline
 
-Pixelyph's Glyph mode already exports woff fonts, SVG glyphs, and icon-font
-CSS (`pixelyph/src/export/font/*`). Glyphrogue's font/tileset pipeline should
-treat Pixelyph glyph-set exports as a first-class asset source, so a game's
-custom glyph tileset can be authored directly in Pixelyph and dropped in.
-Full depth in `docs/design/fonts-and-tilesets.md` (planned).
+A tileset maps a game symbol to `{ fontFace, codepoint, paletteToken(s) }`,
+mixing font sources per-symbol (a web-safe monospace base plus imported
+glyphs) rather than requiring one merged font — each registered font source
+carries a stored, override-able calibration record into one shared cell
+grid, generalizing rendering.md's shared-metrics decision. Pixelyph stays an
+asset-only source (Glyphrogue never imports its code): a specified set of
+manifest/export enhancements — a font-level meta block, per-glyph metrics,
+codepoint-keyed stability, manifest generation independent of the icon-font
+CSS export — lets its exports serve as a first-class glyph source without
+that coupling. Material tinting (recoloring a shared glyph per-material)
+resolves as a draw-time fill choice (canvas `fillStyle`/gradient, DOM plain
+CSS falling back to SVG only for gradients) rather than needing a second,
+bitmap-blit rendering backend. Full depth in
+[`docs/design/fonts-and-tilesets.md`](docs/design/fonts-and-tilesets.md).
 
 ## Build targets
 
