@@ -145,6 +145,30 @@ CSS falling back to SVG only for gradients) rather than needing a second,
 bitmap-blit rendering backend. Full depth in
 [`docs/design/fonts-and-tilesets.md`](docs/design/fonts-and-tilesets.md).
 
+## UI/UX & input
+
+An input adapter outside `core` maps physical input (keyboard, gamepad) to
+device-agnostic **input actions**, distinct from core's own rule-pipeline
+Actions. An exclusive capture stack — the topmost active screen/dialog/menu
+claims all input actions, falling through to core's Action dispatcher (and
+`unlock()`) only when nothing captures — resolves how menus suspend
+gameplay. The screen/dialog/menu stack itself is UI-owned; core stays
+unaware of it, exposing core-triggered UI (e.g. a scripted event's
+`ShowDialogue` step) as plain state the UI layer subscribes to rather than
+calling into it directly. DOM UI reads that state via a framework-agnostic,
+coarse-grained subscribe/notify primitive (one signal per resolved core
+Action, not per-frame or per-fine-grained-query) and writes back only
+through the existing inspection/mutation API. Keybindings are
+game-defined, array-per-input-action (supporting multiple bindings at
+once), and persist as a settings slice independent of save data. Gamepad
+input feeds the same input-action pipeline as keyboard, polled and
+edge-detected rather than event-driven, with analog input collapsing to
+discrete directional actions past a deadzone; local co-op is out of scope.
+Accessibility: focus management rides the capture stack, colorblind
+support is a swappable-palette mechanism (no shipped default palette yet),
+and the canvas viewport is an explicit non-goal for screen readers. Full
+depth in [`docs/design/ui-and-input.md`](docs/design/ui-and-input.md).
+
 ## Build targets
 
 - **Static HTML / GitHub Pages / itch.io** — same Vite production build;
