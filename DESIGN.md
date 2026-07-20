@@ -84,6 +84,27 @@ lighting share one shadowcasting primitive in `core`, reused by rendering,
 AI perception, and light propagation alike. Full depth in
 [`docs/design/rendering.md`](docs/design/rendering.md).
 
+## Map generation & map editor
+
+Procedural generation is an optional **two-tier** structure: a coarse
+world/region generator producing per-tile biome/adjacency metadata, with
+each tile lazily generating a detailed local zone on first entry — a game
+can skip the world tier and generate (or hand-author) a single zone
+directly. All algorithms (BSP, cellular automata, wave-function-collapse,
+layered biome generation) sit behind one pluggable generator interface
+(`registerGenerator`) rather than being separately architected, and can
+compose in sequence within a single zone. Determinism is a hard
+requirement, not just tidy: zones save as seed/params plus a player-
+mutation diff rather than a full grid, and players can share seeds to
+reproduce the same generated world. A mandatory connectivity pass
+(graph-based reachability, covering both physical adjacency and logical
+links like teleporters) guarantees stamped content is reachable unless
+explicitly marked otherwise. The dev-time map editor reuses `core`'s
+existing static edit mode and the same generator API for live
+seed/param tuning and previewing — hand-edited and generated zones share
+one `ZoneDTO` format. Full depth in
+[`docs/design/mapgen-and-editor.md`](docs/design/mapgen-and-editor.md).
+
 ## Scripting & modding
 
 Plain TypeScript/JS modules against a defined plugin API (entities,

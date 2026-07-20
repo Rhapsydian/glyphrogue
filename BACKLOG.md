@@ -2,9 +2,9 @@
 
 ## NEXT SESSION
 
-Deep-dive planning session 3: **Map generation & map editor**. Start
+Deep-dive planning session 4: **Scripting & content/plugin API**. Start
 `/dev-session` and go straight into this topic — scope is below, output is
-`docs/design/mapgen-and-editor.md`. Don't ask what to work on; this is the
+`docs/design/scripting-api.md`. Don't ask what to work on; this is the
 next item in the deep-dive roadmap.
 
 ## Deep-dive planning roadmap
@@ -20,14 +20,9 @@ merge as needed if a topic turns out bigger or smaller than expected.
    [`docs/design/core-architecture.md`](docs/design/core-architecture.md).
 2. ~~**Rendering system**~~ — done, see
    [`docs/design/rendering.md`](docs/design/rendering.md).
-3. **Map generation & map editor** — `docs/design/mapgen-and-editor.md` *(NEXT)*.
-   Runtime procedural generation algorithms (e.g. BSP, cellular automata,
-   wave-function-collapse, layered biome generation in the Caves-of-Qud
-   vein), the generation API exposed to scripts/mods, the dev-time map
-   editor (hand-authoring, tuning/previewing generator seeds and params),
-   and how hand-authored content composes with procedural (templates,
-   stamps, overrides).
-4. **Scripting & content/plugin API** — `docs/design/scripting-api.md`.
+3. ~~**Map generation & map editor**~~ — done, see
+   [`docs/design/mapgen-and-editor.md`](docs/design/mapgen-and-editor.md).
+4. **Scripting & content/plugin API** — `docs/design/scripting-api.md` *(NEXT)*.
    TS/JS mod module format, data-driven entity/item/creature definitions,
    event/hook system, how mods register systems or map generators,
    versioning/compatibility story for mods.
