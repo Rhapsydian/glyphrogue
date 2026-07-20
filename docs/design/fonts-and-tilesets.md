@@ -62,51 +62,43 @@ algorithm variant.
 **Decision: asset-only boundary.** Glyphrogue never imports Pixelyph
 source code. It only ever consumes Pixelyph's **exported artifacts** —
 compiled font files (OTF, and WOFF/WOFF2 once `pixelyph/src/export/font/
-woff.js` runs) plus the icon-font CSS and JSON manifest
-(`pixelyph/src/export/font/iconFontCss.js`, built from `compileFont.js`'s
-output). Pixelyph stays a fully independent tool; Glyphrogue's tileset
-pipeline treats its exports the same way it'd treat any other font source's
-files.
+woff.js` runs), the icon-font CSS
+(`pixelyph/src/export/font/iconFontCss.js`), and the JSON manifest
+(`pixelyph/src/export/font/glyphManifest.js`). Pixelyph stays a fully
+independent tool; Glyphrogue's tileset pipeline treats its exports the
+same way it'd treat any other font source's files.
 
-**Today's manifest isn't enough.** `generateIconFontCss` currently emits a
-flat `{slug: hexCodepoint}` map — a CSS-class-naming convenience, not a
-data source a tileset pipeline can calibrate a font source from. Getting
-`pixelsPerEm`/`baselineRow`/`horizontalPadding` (decision above) out of a
-Pixelyph export today would mean either hand-configuring them separately
-from the exported files, or reverse-deriving approximations from the
-compiled OTF's own ascender/descender — which are rounded/derived proxies
-for the authoring-grid values, not the values themselves.
+**Implemented on the Pixelyph side.** The manifest spec below (originally
+points A–D) shipped in Pixelyph's `Expand glyph-set JSON manifest for
+Glyphrogue's font-source import spec` commit, ahead of Glyphrogue
+implementation starting — `generateGlyphManifest()` in `glyphManifest.js`
+now produces exactly the shape this doc called for:
 
-**Specified Pixelyph-side export work** (to be implemented in Pixelyph
-before Glyphrogue implementation starts — this is a definite spec, not a
-someday-note):
+- **A. Font-level `meta` block.** `generateGlyphManifest()` returns
+  `{ meta, glyphs }`, where `meta` is a straight passthrough of
+  `GlyphSet.js`'s in-memory `meta` for `familyName`, `styleName`,
+  `pixelsPerEm`, `unitsPerEm`, `ascender`, `descender`, `baselineRow`, and
+  `horizontalPadding`. Internal-only fields (e.g. `defaultGlyphWidth`)
+  don't leak into it.
+- **B. Per-glyph metrics.** Each `glyphs` entry carries `codepoint` (hex),
+  `name` (raw, pre-slugify), `slug` (kept as glyph-level metadata, per C
+  below), `advanceWidth` and `offsetX` (from the same `glyphMetrics()`
+  computation `compileFont.js` already used internally, in grid units),
+  and raw `width`/`height`.
+- **C. Codepoint as the stable key.** `glyphs` is keyed by lowercase,
+  unpadded hex codepoint (`"e000"`, not the slug), so a Glyphrogue
+  tileset referencing a glyph by codepoint survives a Pixelyph re-export
+  even if names collide and slugs get collision-suffixed
+  (`assignGlyphSlugs`/`glyphSlugs.js`) differently next time.
+- **D. Manifest generation independent of the icon-font CSS export.** The
+  manifest moved out of `iconFontCss.js` entirely into its own
+  `glyphManifest.js`, called from a separate `manifest` checkbox in
+  Pixelyph's `FontExportPanel` (alongside, not gated behind, `css`). A
+  Glyphrogue-bound export can check OTF/WOFF + manifest with CSS left
+  unchecked.
 
-- **A. Font-level `meta` block in the JSON manifest.** Add a `meta` object
-  to the manifest output — a straight passthrough of `GlyphSet.js`'s
-  existing in-memory `meta`, no new computation required: `familyName`,
-  `styleName`, `pixelsPerEm`, `unitsPerEm`, `ascender`, `descender`,
-  `baselineRow`, `horizontalPadding`.
-- **B. Per-glyph metrics, not just a codepoint.** Expand each manifest
-  entry from `slug -> hex` to an object carrying: `codepoint` (hex, as
-  today), `name` (the raw, pre-slugify glyph name — not exported at all
-  currently, only the slugified CSS class is), `advanceWidth` and
-  `offsetX` (the same values `glyphMetrics()` in `GlyphSet.js` already
-  computes internally for `compileFont.js`, in grid units — no new
-  formula, just surfacing an existing computation), and raw `width`/
-  `height`.
-- **C. Codepoint as the stable key.** Slugs are regenerated at export time
-  (`uniqueSlugFactory`) and collision-suffixed (`-2`, `-3`, …) whenever
-  names collide or don't slugify cleanly, so a slug can silently shift
-  across re-exports of an edited glyph set. Key the manifest by codepoint
-  — already the stable value — and keep the slug as glyph-level metadata
-  used only for the CSS class name. A Glyphrogue tileset should reference
-  glyphs by codepoint so it survives a Pixelyph re-export.
-- **D. Manifest generation independent of the icon-font CSS export.**
-  Today the JSON manifest only exists as a side effect of calling
-  `generateIconFontCss`. Ensure the manifest is still produced when a user
-  exports OTF/WOFF without also requesting the icon-font CSS output —
-  Glyphrogue always needs the manifest, regardless of whether the CSS/
-  class-name output is wanted for anything else.
+Test coverage for the shape above lives in
+`pixelyph/test/export/font/glyphManifest.test.js`.
 
 **Non-Pixelyph font sources don't need this spec.** A standard web-safe
 monospace font (or any font a user just provides) already encodes
@@ -196,4 +188,7 @@ solid-color UI text.
   computing a new font source's default scale/baseline-offset/centering
   calibration record (Font sources section, above) is implementation-time
   detail, not decided in this planning pass, same as `rendering.md`'s
-  deferred shadowcasting-variant question.
+  deferred shadowcasting-variant question. The Pixelyph-side inputs this
+  formula would consume for a Pixelyph glyph source are now available
+  (see "Pixelyph glyph-set import path" above) — this item is about the
+  derivation math itself, not about waiting on export data any longer.
