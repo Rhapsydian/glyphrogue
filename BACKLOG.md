@@ -19,6 +19,13 @@ item in the deep-dive roadmap.
   color values (palettes are game-authored content, same as the base
   palette). Providing a default one as a convenience is future work, not
   designed there.
+- **Content-pipeline story for large hand-authored world data** —
+  `docs/design/build-pipeline.md` decided ordinary code-imported/
+  lazy-imported JS/JSON is sufficient for maps/mods/config as designed so
+  far, but a game with a very large hand-authored world may eventually
+  need a real build step (splitting one big authoring file into many
+  lazy-loadable chunks). Not needed by anything decided through session 8;
+  would need its own scoped session if a concrete case demands it.
 
 ## Deep-dive planning roadmap
 
