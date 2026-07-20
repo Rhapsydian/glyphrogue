@@ -2,10 +2,14 @@
 
 ## NEXT SESSION
 
-Deep-dive planning session 9: **Packaging & distribution**. Start
-`/dev-session` and go straight into this topic — scope is below, output is
-`docs/design/packaging.md`. Don't ask what to work on; this is the next
-item in the deep-dive roadmap.
+The deep-dive planning roadmap is now complete (session 9, packaging, is
+done — see below). Per `docs/design/build-pipeline.md`'s framing,
+`packages/core` implementation was waiting on either the roadmap finishing
+or an explicit decision to start earlier — the roadmap has now finished, so
+the next `/dev-session` should confirm with the user whether to start
+`packages/core` implementation, or whether something else takes priority
+first. Don't assume implementation starts automatically; this is a decision
+point, not a default.
 
 ## Deferred / future items
 
@@ -50,10 +54,8 @@ merge as needed if a topic turns out bigger or smaller than expected.
    [`docs/design/ui-and-input.md`](docs/design/ui-and-input.md).
 7. ~~**Build pipeline & dev/prod split**~~ — done, see
    [`docs/design/build-pipeline.md`](docs/design/build-pipeline.md).
-8. **Packaging & distribution** — `docs/design/packaging.md`
-   *(NEXT)*. Static HTML/GitHub Pages/itch.io build specifics, Electron +
-   `steamworks.js` integration (achievements, cloud saves),
-   update/code-signing strategy, Steam build/page requirements.
+8. ~~**Packaging & distribution**~~ — done, see
+   [`docs/design/packaging.md`](docs/design/packaging.md).
 
 After each session, check off the completed item here, link its doc, and
 move the NEXT SESSION pointer to the following one.

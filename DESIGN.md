@@ -181,9 +181,20 @@ depth in [`docs/design/ui-and-input.md`](docs/design/ui-and-input.md).
 
 - **Static HTML / GitHub Pages / itch.io** — same Vite production build;
   reuse the custom-mode pattern (`build:itch`) already proven in `pixelyph`.
+  A scaffolded game gets an automated GitHub Pages deploy workflow; itch.io
+  deploy (`butler push`) stays a documented manual step, since it needs a
+  per-project API key/channel a template can't fill in.
 - **Electron desktop / Steam** — `electron-vite` + `electron-builder`, same
-  toolchain as `pixelyph`, plus `steamworks.js` for achievements/cloud
-  saves when targeting Steam specifically.
+  toolchain as `pixelyph`. `core` exposes a thin, no-op-by-default
+  `platform` capability (dependency-injected, same shape as its rendering/
+  input adapters) that a game's own rules call to unlock achievements;
+  the Electron scaffold wires it to `steamworks.js` through a small
+  main/preload IPC bridge. Cloud saves use Steam's automatic folder-based
+  Cloud against the existing filesystem save backend — no API calls needed.
+  Ships signing-ready (env-var-driven `electron-builder` config) but
+  unsigned by default, since certificates are inherently per-author;
+  no `electron-updater` in v1 (Steam and the itch app both self-update
+  already; direct-download is a documented gap).
 
 **Why Electron over Tauri**: `steamworks.js` and the other common Steamworks
 wrapper libraries only officially support Electron/NW.js; Tauri devs report
@@ -193,7 +204,8 @@ Tauri). Tauri wins on bundle size/memory, but that's not the deciding factor
 here — and it matches tooling already working in `pixelyph`.
 Sources: [Publishing Web Games on Steam with Electron (Phaser)](https://phaser.io/news/2025/03/publishing-web-games-on-steam-with-electron), [steamworks.js](https://github.com/ceifa/steamworks.js/), [HN: Tauri Steam Linux friction](https://news.ycombinator.com/item?id=46087456)
 
-Full depth in `docs/design/packaging.md` (planned).
+Full depth in
+[`docs/design/packaging.md`](docs/design/packaging.md).
 
 ## Dev/prod code splitting
 
