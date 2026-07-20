@@ -21,9 +21,13 @@ themed alternatives (Glyphterm, Glyphshell, Glyphansi, Glyphcursor).
 
 ## Repo structure
 
-An npm-workspaces monorepo, following the pattern already validated in
-`pixelloom` → `pixelyph` (a small, dependency-light core library wrapped by a
-larger app with UI/tooling):
+An npm-workspaces monorepo. `pixelloom` → `pixelyph` validates the
+*architectural* split this follows (a small, dependency-light core library
+wrapped by a larger app with UI/tooling) — not the workspaces mechanism
+itself, since that pair is actually two separately-published repos with an
+ordinary npm dependency between them, no `workspaces` field involved. Real
+workspaces are a Glyphrogue-specific choice, for lockstep pre-1.0
+development across `core`/`editor`/`cli`:
 
 ```
 glyphrogue/
@@ -37,24 +41,28 @@ glyphrogue/
   BACKLOG.md
 ```
 
-- **`packages/core`** — rendering, ECS/game loop, input, audio, save/load,
-  **procedural map generation** (runs at runtime — ships in every game, not
-  a dev-only tool), and the scripting/plugin API surface. Modeled on
-  `pixelloom`'s discipline: `sideEffects: false`, minimal dependencies,
-  published via subpath exports (`glyphrogue/runtime`, or similar) so a
-  game's production build only ever pulls this in.
-- **`packages/editor`** — the dev-time **map editor** (hand-author maps,
-  tune/preview procedural-generator parameters and seeds, stamp/override
-  generated content), plus tileset editor, scripting console, and config UI,
-  with a hot-reload dev harness. Depends on `core` for live preview — the
-  editor is a design-time surface over the same procgen API a shipped game
-  calls at runtime, not a separate map format. Structurally excluded from
-  production builds by never being imported from the game's build entry
-  point — not just tree-shaken out.
-- A **game project** (separate repo, same relationship pixelyph has to
-  pixelloom) depends on `glyphrogue` core for its production entry and on
-  the editor package only in its dev Vite config — mirroring the
+- **`packages/core`** (`@glyphrogue/core`) — rendering, ECS/game loop,
+  input, audio, save/load, **procedural map generation** (runs at
+  runtime — ships in every game, not a dev-only tool), and the
+  scripting/plugin API surface. Modeled on `pixelloom`'s discipline:
+  `sideEffects: false`, minimal dependencies, raw ESM `src/` with no build
+  step of its own — same as `pixelloom` ships itself.
+- **`packages/editor`** (`@glyphrogue/editor`) — the dev-time **map
+  editor** (hand-author maps, tune/preview procedural-generator parameters
+  and seeds, stamp/override generated content), plus tileset editor,
+  scripting console, and config UI, with a hot-reload dev harness. Depends
+  on `core` for live preview — the editor is a design-time surface over the
+  same procgen API a shipped game calls at runtime, not a separate map
+  format. Structurally excluded from production builds by being a
+  **separate package** a game's production entry point never imports — not
+  a subpath of `core`, and not just tree-shaken out.
+- A **game project** (separate repo, same relationship `pixelyph` has to
+  `pixelloom`) depends on the published `@glyphrogue/core` for its
+  production entry and adds `@glyphrogue/editor` as a dev dependency,
+  imported only from a separate dev-only HTML entry point — mirroring the
   `build:itch` custom-mode pattern already used in `pixelyph/package.json`.
+  Full depth in
+  [`docs/design/build-pipeline.md`](docs/design/build-pipeline.md).
 
 ## Core architecture & game loop
 
@@ -191,10 +199,13 @@ Full depth in `docs/design/packaging.md` (planned).
 
 Tree-shaking alone is unreliable for stripping dev-only tooling that has
 side effects (registering debug menus, etc.). The robust pattern is
-**structural separation via package subpath exports** (e.g.
-`glyphrogue/runtime` vs `glyphrogue/editor`) so production game code never
-even imports the editor package, rather than relying on a bundler to notice
-it's unused. Full depth in `docs/design/build-pipeline.md` (planned).
+**structural separation via two separate packages** (`@glyphrogue/core` vs.
+`@glyphrogue/editor`, not one package's subpath exports) reached through
+**separate build entry points** — a game's `index.html` (prod) never
+imports `@glyphrogue/editor`; only a separate `dev.html` does — so
+production game code has no reachable path to the editor package at all,
+rather than relying on a bundler to notice it's unused. Full depth in
+[`docs/design/build-pipeline.md`](docs/design/build-pipeline.md).
 
 ## Testing
 
