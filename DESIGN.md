@@ -74,9 +74,15 @@ backdoor access to internals. Full depth in
 
 Hybrid, per explicit design goal: Canvas 2D for the game viewport
 (map/entity glyph grid — same approach as [rot.js](https://ondras.github.io/rot.js/)),
-DOM/CSS grid for menus, HUD, dialogs, inventory. Both paths must share one
-glyph-metrics source so canvas glyphs and DOM text line up visually. Full
-depth in `docs/design/rendering.md` (planned).
+DOM/CSS grid for menus, HUD, dialogs, inventory. Canvas draws glyphs via
+`ctx.fillText` against the same webfont DOM UI uses (Pixelyph's exported
+font), so both paths share one glyph-metrics source by construction. A
+layered-canvas redraw strategy (static terrain vs. animated entities/
+effects) keeps this viable at scale. Camera uses deadzone+snap scrolling;
+color is a curated token palette with a raw-color escape hatch; FOV and
+lighting share one shadowcasting primitive in `core`, reused by rendering,
+AI perception, and light propagation alike. Full depth in
+[`docs/design/rendering.md`](docs/design/rendering.md).
 
 ## Scripting & modding
 

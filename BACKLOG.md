@@ -2,10 +2,10 @@
 
 ## NEXT SESSION
 
-Deep-dive planning session 2: **Rendering system**. Start `/dev-session`
-and go straight into this topic — scope is below, output is
-`docs/design/rendering.md`. Don't ask what to work on; this is the next
-item in the deep-dive roadmap.
+Deep-dive planning session 3: **Map generation & map editor**. Start
+`/dev-session` and go straight into this topic — scope is below, output is
+`docs/design/mapgen-and-editor.md`. Don't ask what to work on; this is the
+next item in the deep-dive roadmap.
 
 ## Deep-dive planning roadmap
 
@@ -18,11 +18,9 @@ merge as needed if a topic turns out bigger or smaller than expected.
 
 1. ~~**Core architecture & game loop**~~ — done, see
    [`docs/design/core-architecture.md`](docs/design/core-architecture.md).
-2. **Rendering system** — `docs/design/rendering.md` *(NEXT)*. Hybrid Canvas 2D + DOM
-   glyph rendering in depth: shared glyph-metrics source, camera/viewport
-   and scrolling, color/palette system, FOV/lighting visualization,
-   animation, performance budget for large maps.
-3. **Map generation & map editor** — `docs/design/mapgen-and-editor.md`.
+2. ~~**Rendering system**~~ — done, see
+   [`docs/design/rendering.md`](docs/design/rendering.md).
+3. **Map generation & map editor** — `docs/design/mapgen-and-editor.md` *(NEXT)*.
    Runtime procedural generation algorithms (e.g. BSP, cellular automata,
    wave-function-collapse, layered biome generation in the Caves-of-Qud
    vein), the generation API exposed to scripts/mods, the dev-time map
