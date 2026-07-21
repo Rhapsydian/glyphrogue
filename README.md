@@ -41,10 +41,37 @@ Also shipped the four first-party `TakeTurn` behaviors (`wandersRule`,
 `chasesPlayerRule`, `fleesRule`, `guardsRule`) with default priorities
 (`Flees` > `Guards` > `ChasesPlayer` > `Wanders`), and `Position {x, y}` is
 now a real (no longer illustrative-only) core convention.
-156 `node --test` cases passing. See:
+Session 21 added the rendering foundation: `glyphMetrics.js` (the shared
+glyph-metrics contract - `pixelsPerEm`/`unitsPerEm`/`baselineRow`/
+`horizontalPadding`/per-glyph `advanceWidth`-`offsetX` - one shared source
+for both a canvas and future DOM path to derive cell size from) and
+`glyphRenderer.js` (the only module touching `ctx.font`/`ctx.fillStyle`/
+`ctx.fillText`); `camera.js` (deadzone+snap scrolling, the world-grid ->
+screen-cell -> canvas-pixel coordinate pipeline, map-bounds clamping) -
+camera state lives in the rendering layer, not core save/simulation state;
+`renderEvents.js` (the render-event buffer: a single sequential FIFO with a
+delay/duration-driven sequencer, wired into `actions.js`/`engine.js`/
+`api.js` via `ctx.enqueueRenderEvent` so both player actions and AI
+`TakeTurn` follow-ons reach it - "confirmed necessary" per the deep review,
+since the model can race arbitrarily far ahead of the view); `visibility.js`
+(pure FOV/lighting visualization - visible/remembered/unknown
+classification plus light blending over session 20's `computeFov`) and
+`memory.js` (an optional, swappable first-party `Memory` ECS component
+convenience-wiring the pure functions for exploration-memory persistence,
+same "first-party but not mandatory" precedent as `behaviors.js`); and
+`animation.js` (advance-by-dt tween/transient-effect bookkeeping, pure
+functions of an explicit `now` - the actual `requestAnimationFrame` driver
+isn't built yet, no browser runtime package exists in this monorepo) plus
+`renderLayers.js` (layered redraw: a caller-supplied version-token dirty
+check keeps the terrain layer's redraw cost near-zero on quiet frames, the
+entity/effects layer resolves tweened positions and drops off-viewport
+entities). Canvas-touching code is tested against a fake recording `ctx`
+object (asserting the exact ordered draw-call sequence) rather than a real
+canvas/DOM dependency.
+210 `node --test` cases passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 21)
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 22)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -56,7 +83,9 @@ packages/
   core/     the runtime engine — implementation started (session 14): world.js, registry.js,
             actions.js, scheduler.js, engine.js, api.js, save.js, storage.js, rng.js,
             mapgen.js, zoneComposition.js, zoneDiff.js, bsp.js, cellularAutomataGenerator.js,
-            waveFunctionCollapse.js, layeredBiome.js, fov.js, pathfinding.js, behaviors.js
+            waveFunctionCollapse.js, layeredBiome.js, fov.js, pathfinding.js, behaviors.js,
+            glyphMetrics.js, glyphRenderer.js, camera.js, renderEvents.js, visibility.js,
+            memory.js, animation.js, renderLayers.js
             under src/, tests under test/
   editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
