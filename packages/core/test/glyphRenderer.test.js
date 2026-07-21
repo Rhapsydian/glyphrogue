@@ -62,6 +62,18 @@ test('two calls with different colors each get their own fillStyle set, in order
   assert.equal(ctx.calls[2].args[0], 'gold');
 });
 
+test('an explicit offsetX/baselineOffsetPx override bypasses the shared-metrics computation', () => {
+  const ctx = createFakeCtx();
+  const metrics = createGlyphMetrics({ pixelsPerEm: 16, baselineRow: 0.8, horizontalPadding: 0 });
+
+  drawGlyphCell(ctx, metrics, { width: 16, height: 16 }, {
+    col: 1, row: 0, text: 'e000', color: 'gold', offsetX: 3.2, baselineOffsetPx: 14.4,
+  });
+
+  // px = col*width + horizontalPadding + offsetXOverride = 16 + 0 + 3.2 = 19.2; py = 0 + 14.4
+  assert.deepEqual(ctx.calls[1].args.slice(1), [19.2, 14.4]);
+});
+
 test('pixel position accounts for a per-glyph offsetX', () => {
   const ctx = createFakeCtx();
   const metrics = createGlyphMetrics({

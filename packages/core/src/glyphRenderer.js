@@ -9,13 +9,18 @@ export function setLayerFont(ctx, metrics, fontFamily) {
   ctx.font = `${fontSizePx(metrics)}px ${fontFamily}`;
 }
 
-export function drawGlyphCell(ctx, metrics, cellSize, { col, row, text, color }) {
-  const { offsetX } = glyphAdvance(metrics, text);
+// offsetX/baselineOffsetPx: optional pre-computed overrides (from
+// fontSources.js's calibratedGlyphAdvance/calibratedBaselineOffset) for a
+// glyph drawn from a non-base font source in a multi-source tileset -
+// omitted, this behaves exactly as before (shared-metrics-only, single
+// font source).
+export function drawGlyphCell(ctx, metrics, cellSize, { col, row, text, color, offsetX: offsetXOverride, baselineOffsetPx }) {
+  const offsetX = offsetXOverride !== undefined ? offsetXOverride : glyphAdvance(metrics, text).offsetX;
   const px = col * cellSize.width + metrics.horizontalPadding + offsetX;
-  const py = row * cellSize.height + baselineOffset(metrics);
+  const py = row * cellSize.height + (baselineOffsetPx !== undefined ? baselineOffsetPx : baselineOffset(metrics));
 
   // color is an opaque value/token passed straight through - resolving
-  // palette tokens to an actual CSS color is session 22's job.
+  // palette tokens to an actual CSS color is checkpoint 4's job.
   ctx.fillStyle = color;
   ctx.fillText(text, px, py);
 }

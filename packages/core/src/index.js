@@ -90,6 +90,15 @@ export { setLayerFont, drawGlyphCell } from './glyphRenderer.js';
 export { createPalette, resolveColor } from './palette.js';
 
 export {
+  createFontSourceRegistry,
+  registerFontSource,
+  getFontSource,
+  deriveCalibration,
+  calibratedGlyphAdvance,
+  calibratedBaselineOffset,
+} from './fontSources.js';
+
+export {
   createLayerState,
   terrainLayerDirty,
   markTerrainClean,
