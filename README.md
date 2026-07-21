@@ -12,6 +12,7 @@ code exists yet. See:
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
 - [`BACKLOG.md`](./BACKLOG.md) — the planning roadmap and what's next
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic, produced as planning sessions complete
+- [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes (components, actions, save DTOs, asset formats); starts as a skeleton of illustrative examples, kept current alongside implementation rather than written speculatively ahead of it
 
 ## Layout (planned)
 
