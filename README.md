@@ -31,10 +31,20 @@ whole-zone generator wrapper on top, so an author can compose more than one
 algorithm into a single zone. `ensureTraversable` is a new shared
 composition primitive (prune or connect disconnected walkable regions the
 mandatory connectivity pass doesn't cover) used by three of the four.
-125 `node --test` cases passing. See:
+Session 20 added AI & behavior: a shared shadowcasting/FOV primitive
+(`computeFov`) and a shared pathfinding primitive (`findPath`), both taking
+a caller-injected walkability/opacity query (core still owns no grid/zone
+storage) that's wired in once via `createApi({ isWalkable, isOpaque })` —
+the same dependency-injection shape as `platform`/`storage`/`rng` — so any
+`TakeTurn` rule gets working `ctx.findPath`/`ctx.computeFov` for free.
+Also shipped the four first-party `TakeTurn` behaviors (`wandersRule`,
+`chasesPlayerRule`, `fleesRule`, `guardsRule`) with default priorities
+(`Flees` > `Guards` > `ChasesPlayer` > `Wanders`), and `Position {x, y}` is
+now a real (no longer illustrative-only) core convention.
+156 `node --test` cases passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 20)
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 21)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -46,7 +56,8 @@ packages/
   core/     the runtime engine — implementation started (session 14): world.js, registry.js,
             actions.js, scheduler.js, engine.js, api.js, save.js, storage.js, rng.js,
             mapgen.js, zoneComposition.js, zoneDiff.js, bsp.js, cellularAutomataGenerator.js,
-            waveFunctionCollapse.js, layeredBiome.js under src/, tests under test/
+            waveFunctionCollapse.js, layeredBiome.js, fov.js, pathfinding.js, behaviors.js
+            under src/, tests under test/
   editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/  in-depth design docs, one per deep-dive planning session
