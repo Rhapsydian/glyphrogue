@@ -100,6 +100,8 @@ export {
 
 export { createTileset, registerSymbol, resolveSymbol } from './tileset.js';
 
+export { glyphManifestToFontSource } from './pixelyphImport.js';
+
 export {
   createLayerState,
   terrainLayerDirty,
