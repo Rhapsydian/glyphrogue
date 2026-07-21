@@ -6,22 +6,29 @@ toolchain (map editor, tileset tools, scripting console) that stays out of
 production builds, and support for static HTML, GitHub Pages, itch.io, and a
 Steam-compatible Electron desktop build.
 
-The **research & planning phase is complete** — no engine code exists yet,
-but every topic in the design roadmap (including three added after a
-coherence-review pass) is decided, and a 12-session `packages/core`
-implementation roadmap is scoped and ready to start. See:
+The research & planning phase is complete, and **`packages/core`
+implementation is underway**: sessions 14-16 of the 12-session roadmap are
+done — npm-workspaces scaffolding, a purpose-built ECS (entity/component)
+layer, the generic registration mechanism, the action/rule dispatch
+pipeline (additive and priority-based exclusive resolution), the
+time-units scheduler, and the engine loop (`lock`/`unlock`/`act`/`run`)
+with `TakeTurn` dispatch for non-player actors. 35 `node --test` cases
+passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the planning roadmap and what's next
-- [`docs/design/`](./docs/design/) — in-depth design docs, one per topic, produced as planning sessions complete
-- [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes (components, actions, save DTOs, asset formats); starts as a skeleton of illustrative examples, kept current alongside implementation rather than written speculatively ahead of it
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 17)
+- [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
+- [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
+- [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
 
-## Layout (planned)
+## Layout
 
 ```
 packages/
-  core/     the runtime engine — ships in every production game
-  editor/   dev-time tools (map editor, tileset editor, scripting console) — never ships in production
-  cli/      create-glyphrogue-game scaffolding tool
+  core/     the runtime engine — implementation started (session 14): world.js, registry.js,
+            actions.js, scheduler.js, engine.js under src/, tests under test/
+  editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
+  cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/  in-depth design docs, one per deep-dive planning session
+docs/session-logs/  one log per session
 ```

@@ -12,10 +12,13 @@ reviewing the completed roadmap rather than by pre-planned topics. Session
 corrections and resolutions folded directly into `rendering.md`,
 `audio.md`, `ai-and-behavior.md`, `custom-ui-and-interactions.md`,
 `packaging.md`), and added `docs/data-model.md` as a living data-shape
-reference. All planning work is now done — the next `/dev-session` starts
-**session 14, the first `packages/core` implementation session**, per the
-"packages/core implementation roadmap" below. This was an explicit user
-decision, not an automatic default.
+reference. All planning work is now done, and `packages/core`
+implementation is underway per the "packages/core implementation
+roadmap" below: sessions 14 (monorepo scaffolding + ECS foundation), 15
+(action/rule pipeline), and 16 (turn scheduler + engine loop) are done,
+each in its own `docs/session-logs/session-1{4,5,6}-2026-07-21.md` entry.
+The next `/dev-session` starts **session 17, public API surface +
+save/load**.
 
 ## Deferred / future items
 
@@ -114,25 +117,33 @@ roadmap gave individual sessions' content. Order/grouping may reorder,
 split, or merge once a session's own planning step scopes it against real
 code, same caveat the deep-dive roadmap carried.
 
-14. **Monorepo scaffolding + ECS foundation.** Root `package.json`
-    (`workspaces: ["packages/*"]`), `packages/core`'s own `package.json`
-    (raw ESM `src/`, `sideEffects: false`, `exports` pointing at source, no
-    build step — `build-pipeline.md`), `node --test` harness. ECS library
-    bake-off (`bitECS` vs. alternatives, `core-architecture.md`), basic
-    entity/component create/query/destroy. Nothing else can start until
-    this exists.
-15. **Action/rule pipeline.** Action dispatch, `registerRule`, ordered
-    per-action-type pipeline evaluation, follow-on chaining, veto
-    semantics (`core-architecture.md`). The conflict/override mechanism
-    shared by every later `register*` call (hard error on unconfirmed
-    duplicate `id`, self-confirming `options.override`, dependency-graph
-    load ordering — `scripting-api.md`) gets built generically here.
-16. **Turn scheduler + engine loop.** Time-units `Scheduler`/`Engine`
-    (rot.js-style), `lock()`/`unlock()`, `act()` contract. `TakeTurn`
-    dispatch for non-player actors, with the constant-or-function
-    `priority` conflict resolution the deep review settled
-    (`ai-and-behavior.md`). Confirms `lock()` only ever gates real async
-    suspension, never animation pacing.
+14. ~~**Monorepo scaffolding + ECS foundation.**~~ — done, see
+    `packages/core/src/world.js`. Root `package.json` workspaces plus
+    `packages/core`'s own `package.json` (raw ESM `src/`,
+    `sideEffects: false`, exports-to-source, no build step). The ECS
+    bake-off resolved against a library (`bitECS`/miniplex) in favor of a
+    ~100-line purpose-built entity/component layer — turn-based scale
+    doesn't need a library's real-time-oriented performance headroom, and
+    it keeps the save/serialization story exactly matching core's own DTO
+    design with no adapter layer. See
+    `docs/session-logs/session-14-2026-07-21.md`.
+15. ~~**Action/rule pipeline.**~~ — done, see
+    `packages/core/src/registry.js` (the generic id/override/
+    dependency-ordered registration mechanism every later `register*`
+    call reuses) and `packages/core/src/actions.js` (`dispatch`,
+    `registerRule`). Dependency validation is deferred to
+    `getOrderedIds()` rather than each `register()` call, so registration
+    order doesn't have to match dependency order. See
+    `docs/session-logs/session-15-2026-07-21.md`.
+16. ~~**Turn scheduler + engine loop.**~~ — done, see
+    `packages/core/src/scheduler.js` (fixed-per-round energy budget) and
+    `packages/core/src/engine.js` (`act`/`lock`/`unlock`/`run`,
+    `resolvePlayerAction`). `TakeTurn` conflict resolution added as a
+    second, priority-based dispatch mode (`dispatchExclusive` in
+    `actions.js`) rather than a `TakeTurn`-specific special case. Real
+    `Wanders`/`ChasesPlayer`/`Flees`/`Guards` behavior content is still
+    session 20's job (needs `findPath`/FOV first). See
+    `docs/session-logs/session-16-2026-07-21.md`.
 17. **Public API surface + save/load.** The one public inspection/
     mutation API every consumer goes through, formalized from what
     sessions 14-16 built ad hoc. Save DTOs (`coreSchemaVersion`/`core`,
@@ -140,6 +151,14 @@ code, same caveat the deep-dive roadmap carried.
     storage backend abstraction (localStorage + Electron-filesystem with
     atomic writes). The thin `platform` capability (no-op-by-default
     achievement hook) fits here too — same injection shape as storage.
+    Must also explicitly cover headless/deterministic testability
+    (seeded RNG, no reliance on real wall-clock/animation timing, a way
+    to fast-forward the turn scheduler without a UI) — game authors are
+    expected to write their own `node --test` files directly against this
+    same public API rather than getting a bespoke test system, and that
+    only works if the API supports it first-class. Raised while discussing
+    whether authors need their own test system (they don't need a separate
+    one, but this API does need to support it); not designed anywhere yet.
 18. **Map generation: interface & primitives.** `GenerationContext`,
     `registerGenerator`, composition primitives (stamp template, carve CA,
     connect corridor, connectivity pass with physical + logical-link
