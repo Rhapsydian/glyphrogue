@@ -86,7 +86,12 @@ DOM/CSS grid for menus, HUD, dialogs, inventory. Canvas draws glyphs via
 `ctx.fillText` against the same webfont DOM UI uses (Pixelyph's exported
 font), so both paths share one glyph-metrics source by construction. A
 layered-canvas redraw strategy (static terrain vs. animated entities/
-effects) keeps this viable at scale. Camera uses deadzone+snap scrolling;
+effects) keeps this viable at scale. `lock`/`unlock` gates only real async
+suspension (player input, an open custom screen) and never animation
+pacing, confirming a shared, ordered render-event buffer as a requirement
+(not an optional design) for sequencing visual effects across a busy
+multi-actor round — the same buffer `audio.md` reuses for sound
+sequencing. Camera uses deadzone+snap scrolling;
 color is a curated token palette with a raw-color escape hatch; FOV and
 lighting share one shadowcasting primitive in `core`, reused by rendering,
 AI perception, and light propagation alike. Full depth in
@@ -194,8 +199,14 @@ ordinary core Action carrying its result, which the normal rule pipeline
 sees like any other action. Purely cosmetic animation delay reuses
 rendering.md's model/view decoupling; anything needing player input
 mid-animation (e.g. spending a resource to reroll) is a short
-`registerScriptedEvent`/`waitFor` sequence — closing the long-carried
-lock/unlock-vs-animation-timing open item. `Attack`/`Damage`/`Death` is
+`registerScriptedEvent`/`waitFor` sequence — this closes the lock/unlock-
+vs-animation question only for screen-triggered animation, not the
+separate question (now resolved in `rendering.md`) of ordinary per-actor
+movement/attack tweening during an ordinary turn. A `registerScreen` surface
+holding `lock()` open also settles what happens if a save (specifically
+autosave) fires while it's open: the marker reopens the screen fresh from
+its original payload on load, an accepted v1 gap rather than a designed
+mid-screen serialization protocol. `Attack`/`Damage`/`Death` is
 confirmed a first-party default rule set, not an exclusive core mechanism,
 so a custom battle system can define its own action vocabulary entirely;
 battle screens use the same registerScreen/pause contract as a dice roll,
@@ -207,10 +218,14 @@ scope. Full depth in
 
 Audio is reactive by default, not core-triggered: `registerSound(id, {
 trigger: actionType, source, match? })` maps action types (optionally
-filtered by a component predicate) to sound assets, and an audio subscriber
-watches the same coarse per-action notification stream rendering and DOM UI
-already watch — no new core-state concept, unlike `ShowDialogue`'s
-`PendingDialogue`. A `registerScreen` surface (custom UI doc, above) is the
+filtered by a component predicate) to sound assets. An audio subscriber
+reads off the same shared, ordered render-event buffer rendering uses to
+sequence visual effects (not the coarser per-top-level-action notification
+DOM UI uses, which batches an entire follow-on chain into one event) — one
+entry per resolved action, in order, so multi-step chains like `Attack →
+Damage → Death` sequence correctly. No new core-state concept, unlike
+`ShowDialogue`'s `PendingDialogue`. A `registerScreen` surface (custom UI
+doc, above) is the
 one exception, calling playback directly for its own private internal
 moments. No swappable/dependency-injected backend: Web Audio API is
 identical across all four declared build targets (Electron included, since
@@ -227,7 +242,12 @@ core-shipped `TakeTurn` action, and ordinary rules react to it matched
 by component (`Wanders`, `ChasesPlayer`, `Flees`, `Guards`), the same
 component-tag pattern as `ExplodesOnDeath`. Core ships a handful of these as
 first-party default rules — same relationship core has to its four
-built-in map generators, not a closed set. `core` also exposes a shared
+built-in map generators, not a closed set. Since these can conflict
+(an actor can't both `Flee` and `Guard` the same turn), each rule declares
+an `options.priority` (constant or computed fresh from current state) and
+the highest resolved value wins — a deliberate divergence from the rule
+pipeline's usual additive layering, not an application of it. `core` also
+exposes a shared
 `ctx.findPath(from, to, opts)` pathfinding primitive AI rules call into,
 mirroring `rendering.md`'s shared shadowcasting primitive (which already
 covers AI perception). Scoped to map-level, core-visible actors only — a

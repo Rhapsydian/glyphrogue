@@ -200,29 +200,32 @@ categories of animated content:
   content that never touches model state at all; purely a rendering-layer
   construct with its own lifetime.
 
-**Left fully open, explicitly carried forward** (discussed directly
-rather than decided speculatively): what `lock()` does during animation
-playback.
+**Resolved in the session-13 deep review** (originally left fully open
+here): what `lock()` does during animation playback.
 
-- **Lock held for the animation's duration** — serializes turns so the
-  player always sees one action's animation finish before the next
-  starts. Simple, avoids visual overlap/confusion about what happened
-  when. Known risk: the "AI turn spam" pacing problem in turn-based games
-  with animation — a turn with many acting monsters means watching many
-  sequential animations before regaining control (the reason games like
-  XCOM ship an alien-turn skip/speed-up option).
-- **Allow overlap** — animations play concurrently without blocking the
-  engine. Feels faster on busy multi-actor turns, but requires rendering
-  to read from a queue of pending visual events rather than just "current
-  model state" (since the model can already be several actions ahead of
-  what's visually settled) — a real architectural piece, a render-event
-  buffer, not a flag flip. Risks visual confusion when multiple animations
-  land near each other simultaneously.
+`lock()`/`unlock()` (`core-architecture.md`) exists specifically for
+**async player input** — a non-player actor's turn never needs to suspend
+on anything external, since a `TakeTurn` rule (`ai-and-behavior.md`)
+resolves synchronously. `lock()` only ever matters for the player's own
+turn and, per `custom-ui-and-interactions.md`, a `registerScreen` surface
+holding it open — never for animation pacing on any other actor's turn.
 
-No directional lean is recorded here — this composes with the `act()`
-contract question already left open in `core-architecture.md`, and a
-render-event-buffer design (if overlap is chosen) needs its own dedicated
-research pass rather than being decided as a side effect of this session.
+This means the model can (and, on a busy multi-actor round, will) race
+arbitrarily far ahead of the view. **The render-event buffer is therefore
+confirmed necessary, not an optional design gated on an "allow overlap"
+choice** — rendering consumes a queue of pending visual events at its own
+pace, decoupled from how fast the model advances, since the model was
+never going to wait for it regardless of which option got picked. The "AI
+turn spam" pacing problem (watching many animations play out sequentially)
+becomes a pure rendering/UX speed-control question from here — capping
+playback rate, batch-skipping when the queue backs up, or a player-facing
+speed-up control (the XCOM precedent) — independent of how fast the model
+computes. That pacing policy is still an open implementation detail, but
+it's no longer an open architectural fork.
+
+`audio.md` reads off this same render-event buffer for sound sequencing —
+one shared ordered-event mechanism serving both consumers, not two
+separate ones.
 
 ## Performance budget for large maps
 
@@ -263,13 +266,17 @@ drawn in full — only ever the viewport window into it.
 - Tileset/bitmap blit rendering mode (vs. font-based) — revisit at
   implementation time or the fonts-and-tilesets session (5) if material
   tinting needs it.
-- Smooth pixel-lerp camera scrolling — later option, gated on the
-  animation `lock`/`unlock` question below being resolved first.
-- `lock`/`unlock` interaction with animation playback duration — left
-  fully open, no directional lean recorded; needs dedicated research,
-  same as `core-architecture.md`'s `act()` contract question.
+- **Smooth pixel-lerp camera scrolling** — previously gated on the
+  animation `lock`/`unlock` question; that question is now resolved (see
+  "Animation" above — `lock`/`unlock` never gated animation pacing to
+  begin with), so this is unblocked as a future decision, not decided in
+  this pass.
 - Exact FOV/shadowcasting algorithm variant — implementation time, not
   this planning pass.
 - Raw-color escape-hatch usage guidelines (when appropriate vs.
   overused) — likely revisited once real content/modding exists
   (scripting-api session, topic 4).
+- Render-event buffer's exact queue/consumption mechanics (now confirmed
+  necessary, not optional) — implementation time.
+- Animation-pacing speed control for busy multi-actor rounds (playback
+  rate cap, batch-skip, player-facing speed-up) — implementation time.

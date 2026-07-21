@@ -121,6 +121,33 @@ screen pops off the stack, `unlock()` fires, and the suspended actor's turn
 resumes or completes — no different in kind from the engine picking back up
 after any other locked turn.
 
+## Save/reload while a screen is open
+
+**Player-triggered saves are already excluded, for free.** `ui-and-
+input.md`'s capture stack is deliberately "the topmost surface claims
+everything while active, not a declared subset," so a save-game input
+action is swallowed the same as any other input unless the screen itself
+explicitly forwards it — no new mechanism needed, this falls out of a
+decision already made.
+
+**Autosave is the real case**, since it isn't gated by input capture.
+`PendingUI({ screenId, payload })` is ordinary core state, so an autosave
+firing mid-screen captures it correctly in the DTO — but the screen's own
+internal progress since it opened (moves made mid-battle, health lost) was
+never core-visible, so it isn't captured either.
+
+**Decision, accepted as a v1 gap**: on load, a `PendingUI` marker simply
+reopens that screen fresh with its original payload, exactly as if the
+player had just triggered it — any internal progress made since the screen
+first opened is lost. Same "accepted gap, explicitly documented" treatment
+`packaging.md` gives comparable v1 limitations (no `electron-updater`, no
+mod sandboxing) rather than over-engineering a mid-screen serialization
+protocol nobody's demonstrated a need for yet. An author who wants a long
+encounter (a full battle) to survive a save can have their screen
+periodically emit its own lightweight core-visible checkpoint mutation
+between rounds — opt-in on the author's side, not a general mechanism core
+provides.
+
 ## Cosmetic animation vs. interactive mid-resolution
 
 Two distinct cases were previously conflated as one open "animation timing"
@@ -233,3 +260,6 @@ mechanism this doc defines doesn't depend on it.
   item.
 - Exact closing-action naming conventions (`ResolveBattle` etc.) are
   author's choice, not core-mandated — nothing further to decide here.
+- Screen checkpointing for long encounters surviving a save — opt-in,
+  author-side, not designed as a core mechanism (see "Save/reload while a
+  screen is open," above).

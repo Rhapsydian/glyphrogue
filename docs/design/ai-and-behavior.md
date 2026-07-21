@@ -39,16 +39,34 @@ extend, or override them like any other rule; there is no separate "AI
 system" boundary to maintain alongside the rule pipeline that already
 exists.
 
-**Correction to an earlier draft of this doc**: multiple `TakeTurn` rules
-matching the same actor is *not* actually "the same conflict shape any
-other multi-rule action type already has," on reflection. The existing
+**Correction to an earlier draft of this doc, now resolved**: multiple
+`TakeTurn` rules matching the same actor is *not* actually "the same
+conflict shape any other multi-rule action type already has." The existing
 pipeline model (`scripting-api.md`) is built for **additive** reactions —
 `explode-on-death` and `poison-on-hit` can both fire on the same `Death`
 with no conflict. `TakeTurn` needs **mutually exclusive** choices instead —
-an actor can't both `Flee` and `Guard` the same turn. Sequential
-pipeline-ordering doesn't resolve "pick exactly one" the way it resolves
-"let everything applicable fire." Left as a genuinely open question below
-rather than asserted as already solved.
+an actor can't both `Flee` and `Guard` the same turn.
+
+**Decision: explicit priority selects a single winner.** Every matching
+rule's handler still evaluates the same way the pipeline already evaluates
+any other action type's matching rules — the only change is the
+*selection* step. Each rule declares `options.priority`, either a constant
+or a `(action, ctx) => number` function resolved fresh at decision time
+using the same `ctx` every rule already receives. The highest resolved
+priority wins; that rule's follow-on is applied, the rest are discarded —
+no partial application, consistent with this project's general bias toward
+explicit, predictable resolution over implicit best-effort guessing. A
+simple rule returns a constant and behaves like plain static priority; a
+sophisticated one computes something context-sensitive (e.g. "my urgency
+to flee scales with how low my health is right now") without needing a
+separate utility-AI subsystem — the same "escape hatch, not the default
+path" shape as the palette system's raw-color escape hatch.
+
+The four first-party behaviors get fixed default priorities — `Flees` >
+`Guards` > `ChasesPlayer` > `Wanders` (self-preservation beats duty beats
+aggression beats idling). Ties (equal resolved priority, static or
+dynamic) fall back to `scripting-api.md`'s existing dependency-graph load
+order — already deterministic, no new tie-break mechanism needed.
 
 ## Shared pathfinding primitive
 
@@ -99,13 +117,6 @@ ordering, and the "v1: no sandboxing" trust boundary.
 
 ## Open items carried forward
 
-- **Multi-rule conflict resolution for mutually-exclusive `TakeTurn`
-  decisions** — see the correction above; the existing additive pipeline
-  model doesn't naturally pick a winner among conflicting behaviors
-  (`Flees` vs. `Guards` on the same low-health actor). Likely needs an
-  explicit priority/utility-score return value, a real divergence from the
-  existing rule-pipeline conflict model, not an application of it — not
-  resolved in this doc.
 - Exact first-party behavior rule set beyond the four named here (`Wanders`,
   `ChasesPlayer`, `Flees`, `Guards`) — implementation time, same deferral
   pattern as other docs' "exact algorithm" open items.

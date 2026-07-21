@@ -15,10 +15,8 @@ way a scripted event commands dialogue (`ui-and-input.md`'s
 **Decision: reactive by default.** Audio sits much closer to `rendering.md`
 than to dialogue — "play a clang on `Attack` connecting" or "play a
 footstep on `Move`" is fully derivable from *which action just resolved*,
-nothing needs to command it. Audio reuses the exact same coarse
-subscribe/notify primitive `ui-and-input.md` built for DOM state binding
-(notified once per fully-resolved action, re-read whatever's relevant) —
-no new core-state concept, no `PendingSound` marker:
+nothing needs to command it. No new core-state concept, no `PendingSound`
+marker:
 
 ```js
 api.registerSound(id, { trigger: actionType, source, match?: (action, ctx) => boolean })
@@ -26,10 +24,25 @@ api.registerSound(id, { trigger: actionType, source, match?: (action, ctx) => bo
 
 `trigger` is an action type; the optional `match` predicate narrows further
 by component (e.g. "only if the entity has `Undead`"), the same
-component-query shape `registerRule` already uses. An audio subscriber
-watches the same per-action notification stream `rendering.md`'s renderer
-and `ui-and-input.md`'s DOM layer already watch, and plays whichever
-registered sound(s) matched.
+component-query shape `registerRule` already uses.
+
+**Resolved in the session-13 deep review**: an earlier draft had audio
+subscribe to `ui-and-input.md`'s coarse per-top-level-action notification
+(fired once per fully-resolved action, including its *entire* follow-on
+chain) — too coarse to know which individual action types fired within a
+chain, in what order, which is exactly what sequencing "a clang for
+`Damage`, then a death-rattle for `Death`" needs. Audio instead reads off
+the same **shared ordered render-event buffer** `rendering.md` confirmed
+necessary for sequencing visual effects during a busy multi-actor round —
+one entry per resolved action, in resolution order. Core's rule-resolution
+machinery pushes entries onto this buffer regardless of consumer;
+rendering drains entries relevant to visual effects, audio drains entries
+matching a registered `trigger`/`match` and enqueues playback in order. One
+shared mechanism, not a separate audio-specific notification path — the
+same "one primitive, many consumers" pattern as shared shadowcasting and
+shared pathfinding. The coarse per-top-level-action notification stays
+exactly as `ui-and-input.md` decided, untouched, serving DOM state binding
+alone.
 
 **Exception: `registerScreen` surfaces call playback directly.**
 `custom-ui-and-interactions.md` already established that a custom screen is
@@ -102,13 +115,3 @@ how other docs deferred algorithm/format-level specifics.
 - Music crossfade/transition mechanics (relevant to `custom-ui-and-
   interactions.md`'s battle-transition-stinger example) — implementation
   time.
-- **Notification granularity for reactive sound triggers** — `registerSound`
-  assumes a per-action-type event, but the coarse notification primitive it
-  reuses from `ui-and-input.md` fires once per fully-resolved top-level
-  action *including its entire follow-on chain* (e.g. `Attack → Damage →
-  Death` collapses to one notification), not once per intermediate action
-  type. Resolving "play a clang for `Damage`, then a death-rattle for
-  `Death`, in order" needs either access to the resolved sub-action
-  sequence within a notification, or a finer subscription mechanism than
-  what DOM binding uses — not resolved in this doc, carried forward as a
-  real open design question rather than assumed to already work.
