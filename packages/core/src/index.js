@@ -84,3 +84,14 @@ export {
   addTransientEffect,
   activeEffects,
 } from './animation.js';
+
+export { setLayerFont, drawGlyphCell } from './glyphRenderer.js';
+
+export {
+  createLayerState,
+  terrainLayerDirty,
+  markTerrainClean,
+  terrainDrawCommands,
+  entityDrawCommands,
+  paintLayer,
+} from './renderLayers.js';
