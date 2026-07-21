@@ -28,8 +28,12 @@ region tier was deliberately not scoped into session 19. Session 20 (AI &
 behavior: shared FOV and `findPath` primitives, first-party `Wanders`/
 `ChasesPlayer`/`Flees`/`Guards` `TakeTurn` rules, `isWalkable`/`isOpaque`
 injected at `createApi()`) is also done, see
-`docs/session-logs/session-20-2026-07-21.md`. The next `/dev-session`
-starts **session 21, Rendering foundation**.
+`docs/session-logs/session-20-2026-07-21.md`. Session 21 (Rendering
+foundation: shared glyph-metrics contract, camera deadzone+snap
+scrolling/coordinate pipeline, the render-event buffer, FOV/lighting
+visualization, layered canvas redraw) is also done, see
+`docs/session-logs/session-21-2026-07-21.md`. The next `/dev-session`
+starts **session 22, Palette + fonts/tileset pipeline**.
 
 ## Deferred / future items
 
@@ -225,12 +229,24 @@ code, same caveat the deep-dive roadmap carried.
     `Position {x, y}` is now a real (no longer illustrative-only) core
     convention, first needed by this session. See
     `docs/session-logs/session-20-2026-07-21.md`.
-21. **Rendering foundation.** Shared glyph-metrics contract, canvas
-    `fillText` viewport, camera (deadzone+snap scrolling, coordinate
-    pipeline, map-bounds clamping), layered canvas redraw (static terrain
-    vs. entity/effects), the render-event buffer confirmed necessary by
-    the deep review, FOV/lighting visualization using session 20's
-    primitive (`rendering.md`).
+21. ~~**Rendering foundation.**~~ — done, see `packages/core/src/
+    glyphMetrics.js`/`glyphRenderer.js` (shared glyph-metrics contract,
+    canvas `fillText` viewport - `color` an opaque token, resolved by
+    session 22), `camera.js` (deadzone+snap scrolling, coordinate pipeline,
+    map-bounds clamping - camera state lives in the rendering layer, not
+    core save state), `renderEvents.js` (a single sequential FIFO with a
+    delay/duration-driven sequencer - confirmed necessary by the deep
+    review, one shared ordered-event mechanism for both rendering and
+    later audio rather than independent per-consumer cursors), `visibility.js`
+    (pure FOV/lighting visualization over session 20's `computeFov`) plus
+    `memory.js` (optional first-party `Memory` component convenience
+    wiring, swappable/ignorable per the user's explicit ask), `animation.js`
+    (advance-by-dt tween/effect bookkeeping, pure over an explicit `now`),
+    and `renderLayers.js` (layered redraw - a caller-supplied
+    `{originX,originY,mapVersion}` version token keeps the terrain layer's
+    dirty check near-zero cost). Canvas-touching code tested against a fake
+    recording `ctx`, not `node-canvas`/jsdom. See
+    `docs/session-logs/session-21-2026-07-21.md`.
 22. **Palette + fonts/tileset pipeline.** Palette/theme object (token
     vocabulary + raw-color escape hatch), font-source registration +
     calibration records, the tileset definition format
