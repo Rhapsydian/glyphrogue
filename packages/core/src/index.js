@@ -85,7 +85,7 @@ export {
   activeEffects,
 } from './animation.js';
 
-export { setLayerFont, drawGlyphCell } from './glyphRenderer.js';
+export { setLayerFont, drawGlyphCell, drawCellBackground, drawTileCell } from './glyphRenderer.js';
 
 export { createPalette, resolveColor } from './palette.js';
 

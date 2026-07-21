@@ -5,7 +5,7 @@
 // animation frame but only for the small set of cells actually animating.
 import { worldToScreen, isInViewport } from './camera.js';
 import { tweenedPosition } from './animation.js';
-import { setLayerFont, drawGlyphCell } from './glyphRenderer.js';
+import { setLayerFont, drawTileCell } from './glyphRenderer.js';
 
 export function createLayerState() {
   return { terrainDirtyKey: null };
@@ -27,34 +27,34 @@ export function markTerrainClean(state, key) {
   state.terrainDirtyKey = key;
 }
 
-// cellQuery(worldX, worldY) -> { text, color } | null
+// cellQuery(worldX, worldY) -> { text, color, background? } | null
 export function terrainDrawCommands(camera, cellQuery) {
   const commands = [];
   for (let row = 0; row < camera.viewportHeight; row++) {
     for (let col = 0; col < camera.viewportWidth; col++) {
       const { x, y } = { x: camera.x + col, y: camera.y + row };
       const cell = cellQuery(x, y);
-      if (cell) commands.push({ col, row, text: cell.text, color: cell.color });
+      if (cell) commands.push({ col, row, text: cell.text, color: cell.color, ...(cell.background !== undefined && { background: cell.background }) });
     }
   }
   return commands;
 }
 
-// entities: [{ entity, position, text, color }]
+// entities: [{ entity, position, text, color, background? }]
 export function entityDrawCommands(camera, entities, animationState, now) {
   const commands = [];
-  for (const { entity, position, text, color } of entities) {
+  for (const { entity, position, text, color, background } of entities) {
     const drawnPosition = tweenedPosition(animationState, entity, position, now);
     const { col, row } = worldToScreen(camera, drawnPosition.x, drawnPosition.y);
-    if (isInViewport(camera, col, row)) commands.push({ col, row, text, color });
+    if (isInViewport(camera, col, row)) commands.push({ col, row, text, color, ...(background !== undefined && { background }) });
   }
   return commands;
 }
 
-export function paintLayer(ctx, metrics, cellSize, fontFamily, commands, { clear = true, viewportPixelWidth, viewportPixelHeight } = {}) {
+export function paintLayer(ctx, metrics, cellSize, fontFamily, commands, { clear = true, viewportPixelWidth, viewportPixelHeight, palette } = {}) {
   setLayerFont(ctx, metrics, fontFamily);
   if (clear) ctx.clearRect(0, 0, viewportPixelWidth, viewportPixelHeight);
   for (const command of commands) {
-    drawGlyphCell(ctx, metrics, cellSize, command);
+    drawTileCell(ctx, metrics, cellSize, palette, command);
   }
 }
