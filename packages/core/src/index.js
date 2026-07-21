@@ -87,6 +87,8 @@ export {
 
 export { setLayerFont, drawGlyphCell } from './glyphRenderer.js';
 
+export { createPalette, resolveColor } from './palette.js';
+
 export {
   createLayerState,
   terrainLayerDirty,
