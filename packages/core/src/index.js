@@ -35,3 +35,5 @@ export { createRng } from './rng.js';
 
 // The public API surface every consumer should prefer - see api.js.
 export { createApi } from './api.js';
+
+export { serialize, deserialize, runMigrations, CORE_SCHEMA_VERSION } from './save.js';
