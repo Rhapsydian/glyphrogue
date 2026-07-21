@@ -5,6 +5,7 @@ import { createScheduler, addActor, removeActor } from './scheduler.js';
 import { createEngine, lock, unlock, isLocked, act, resolvePlayerAction, run } from './engine.js';
 import { createRng } from './rng.js';
 import { registerGenerator, generateZone } from './mapgen.js';
+import { loadZone } from './zoneDiff.js';
 
 const noopPlatform = { unlockAchievement() {} };
 
@@ -41,6 +42,7 @@ export function createApi({ roundBudget = 100, seed = 1, platform = noopPlatform
 
     registerGenerator: (id, generatorFn, options) => registerGenerator(registry, id, generatorFn, options),
     generateZone: (args) => generateZone(registry, { worldSeed: seed, ...args }),
+    loadZone: (args) => loadZone(registry, { worldSeed: seed, ...args }),
 
     addActor: (entity, initialBudget) => addActor(scheduler, entity, initialBudget),
     removeActor: (entity) => removeActor(scheduler, entity),

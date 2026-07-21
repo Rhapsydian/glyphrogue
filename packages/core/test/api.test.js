@@ -80,3 +80,16 @@ test('generateZone accepts an explicit worldSeed override', () => {
 
   assert.notEqual(withDefault.rngSample, withOverride.rngSample);
 });
+
+test('loadZone defaults worldSeed to the api-level seed and reapplies the diff', () => {
+  const api = createApi({ seed: 7 });
+  api.registerGenerator('flat', () => ({ width: 1, height: 1, cells: ['wall'], entities: [], anchors: [], logicalLinks: [] }));
+
+  const zone = api.loadZone({
+    generatorId: 'flat',
+    zoneId: 'z1',
+    diff: { cellOverrides: [{ x: 0, y: 0, cell: 'floor' }] },
+  });
+
+  assert.deepEqual(zone.cells, ['floor']);
+});
