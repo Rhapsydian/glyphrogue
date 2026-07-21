@@ -75,3 +75,12 @@ export {
 } from './visibility.js';
 
 export { MEMORY_COMPONENT, ensureMemory, updateEntityMemory } from './memory.js';
+
+export {
+  createAnimationState,
+  startTween,
+  advanceAnimation,
+  tweenedPosition,
+  addTransientEffect,
+  activeEffects,
+} from './animation.js';
