@@ -24,8 +24,12 @@ built-in algorithms — BSP, cellular automata, minimal WFC, layered biome,
 each a region-scoped composable primitive plus a thin whole-zone generator
 wrapper, and a new shared `ensureTraversable` prune/connect primitive) is
 also done, see `docs/session-logs/session-19-2026-07-21.md`. The world/
-region tier was deliberately not scoped into session 19. The next
-`/dev-session` starts **session 20, AI & behavior**.
+region tier was deliberately not scoped into session 19. Session 20 (AI &
+behavior: shared FOV and `findPath` primitives, first-party `Wanders`/
+`ChasesPlayer`/`Flees`/`Guards` `TakeTurn` rules, `isWalkable`/`isOpaque`
+injected at `createApi()`) is also done, see
+`docs/session-logs/session-20-2026-07-21.md`. The next `/dev-session`
+starts **session 21, Rendering foundation**.
 
 ## Deferred / future items
 
@@ -208,11 +212,19 @@ code, same caveat the deep-dive roadmap carried.
     cover), another live plan revision from the user, used by three of the
     four generators. The optional world/region tier was deliberately not
     scoped in. See `docs/session-logs/session-19-2026-07-21.md`.
-20. **AI & behavior.** Shared shadowcasting/visibility primitive (FOV —
-    also feeds rendering next session and light propagation), shared
-    `findPath` primitive, first-party `TakeTurn` rules (`Wanders`,
-    `ChasesPlayer`, `Flees`, `Guards`) with default priorities
-    (`ai-and-behavior.md`, `rendering.md`).
+20. ~~**AI & behavior.**~~ — done, see `packages/core/src/fov.js`
+    (`computeFov`/`fovContains`, recursive shadowcasting), `packages/core/
+    src/pathfinding.js` (`findPath`, A* over 4-directional adjacency), and
+    `packages/core/src/behaviors.js` (`wandersRule`, `chasesPlayerRule`,
+    `fleesRule`, `guardsRule` plus their default-priority constants).
+    `isWalkable`/`isOpaque` are injected once at `createApi()`, the same
+    DI shape as `platform`/`storage`/`rng` — resolved live with the user
+    as this session's one real architectural fork, since core still owns
+    no grid/zone storage (session 18) but a first-party `TakeTurn` rule
+    needs to reach the game's map query without being rewritten per game.
+    `Position {x, y}` is now a real (no longer illustrative-only) core
+    convention, first needed by this session. See
+    `docs/session-logs/session-20-2026-07-21.md`.
 21. **Rendering foundation.** Shared glyph-metrics contract, canvas
     `fillText` viewport, camera (deadzone+snap scrolling, coordinate
     pipeline, map-bounds clamping), layered canvas redraw (static terrain

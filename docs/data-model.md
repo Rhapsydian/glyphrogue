@@ -19,11 +19,11 @@ in the PR, not a documentation backlog item.
 
 | Name | Description | Source | Status |
 |---|---|---|---|
-| `Position` | `{x, y}` | `core-architecture.md` | illustrative |
+| `Position` | `{x, y}` — first real (non-illustrative) use is session 20's `findPath`/`computeFov`/first-party `TakeTurn` behaviors, which all key off it | `packages/core/src/behaviors.js` | implemented |
 | `Health` | `{current, max}` | `core-architecture.md` | illustrative |
 | `Inventory` | `{items}` | `core-architecture.md` | illustrative |
 | `ExplodesOnDeath` | marker (no data) | `scripting-api.md` | illustrative |
-| `Wanders` / `ChasesPlayer` / `Flees` / `Guards` | markers, first-party `TakeTurn` behaviors | `ai-and-behavior.md` | illustrative |
+| `Wanders` / `ChasesPlayer` / `Flees` / `Guards` | markers, first-party `TakeTurn` behaviors — `Wanders` optionally carries `{ lastDirection }` (cycling state), `ChasesPlayer`/`Flees` optionally carry `{ radius }` (FOV range, defaults to 8), `Guards` carries `{ post: {x,y} }` | `packages/core/src/behaviors.js` | implemented |
 | `EventState` | `{ step }` — multi-step scripted-event progress | `scripting-api.md` | illustrative |
 | `PendingUI` | `{ screenId, payload }` — generic core→UI hand-off marker; supersedes the earlier `PendingDialogue`-only concept (`ui-and-input.md`'s `ShowDialogue` is now `PendingUI`'s first built-in consumer) | `custom-ui-and-interactions.md` | illustrative |
 | `PlayerControlled` | marker (no data) — distinguishes the player-controlled actor so `engine.js`'s `act()` locks and waits for external input instead of auto-dispatching `TakeTurn` | `packages/core/src/engine.js` | implemented |
@@ -32,9 +32,9 @@ in the PR, not a documentation backlog item.
 
 | Type | Notes | Source | Status |
 |---|---|---|---|
-| `Move`, `Attack`, `Damage`, `Death` | core's first-party default combat/movement vocabulary — swappable per-encounter, not exclusive (`custom-ui-and-interactions.md`) | `core-architecture.md` | illustrative |
+| `Move`, `Attack`, `Damage`, `Death` | core's first-party default combat/movement vocabulary — swappable per-encounter, not exclusive (`custom-ui-and-interactions.md`); the four first-party `TakeTurn` behaviors emit `{ type: 'Move', entity, to: {x,y}, cost }` follow-ons, but applying a `Move` (mutating `Position`) is still game content - no session has shipped a `Move`-applying rule | `core-architecture.md` | illustrative |
 | `OpenDoor` | example non-combat action | `core-architecture.md` | illustrative |
-| `TakeTurn` | core-shipped, dispatched per non-player actor's turn; zero time-units cost itself | `ai-and-behavior.md` | illustrative |
+| `TakeTurn` | core-shipped, dispatched per non-player actor's turn via `dispatchExclusive` (mutually-exclusive winner-take-all resolution, not the additive pipeline other action types use); zero time-units cost itself | `packages/core/src/engine.js`, `packages/core/src/behaviors.js` | implemented |
 | `EnterRegion` | scripted-event trigger example (map-region entry) | `scripting-api.md` | illustrative |
 | `EventTimerElapsed` | synthetic action emitted by a scheduled timer entity for `waitFor: { timeUnits }` | `scripting-api.md` | illustrative |
 | Author-defined closing actions (`ResolveSkillCheck`, `ResolveBattle`, ...) | naming is author's choice, not core-mandated | `custom-ui-and-interactions.md` | illustrative |
@@ -69,10 +69,12 @@ world/scheduler/rng *state* is persisted.
 
 | Call/shape | Notes | Source | Status |
 |---|---|---|---|
-| `createApi({ roundBudget, seed, platform })` | the one public inspection/mutation surface every consumer goes through — bound methods over one internal world+registry+scheduler+engine instance, no manual world/registry threading | `packages/core/src/api.js` | implemented |
+| `createApi({ roundBudget, seed, platform, isWalkable?, isOpaque? })` | the one public inspection/mutation surface every consumer goes through — bound methods over one internal world+registry+scheduler+engine instance, no manual world/registry threading. `isWalkable`/`isOpaque` are the caller-injected map query `findPath`/`computeFov` need (core still owns no grid/zone storage); same DI shape as `platform`/`storage`/`rng`, both optional | `packages/core/src/api.js` | implemented |
 | `api.register*(id, def, options?)` | `registerRule`/`registerGenerator` are implemented via `createApi`; `registerEntity`, `registerEntityType`, `registerScriptedEvent`, `registerScreen`, `registerSound` don't exist yet — later sessions | `scripting-api.md` and each feature doc | partially implemented |
-| Entity/component methods | `createEntity`, `destroyEntity`, `addComponent`, `removeComponent`, `getComponent`, `hasComponent`, `query`, `dispatch` — bound on `createApi()`, same shape `ctx` uses inside rules | `packages/core/src/api.js` | implemented |
-| `ctx` query/mutation methods | `hasComponent`, `getComponent`, `findPath`, etc. — `findPath` still illustrative, needs session 20 | `core-architecture.md`, `ai-and-behavior.md` | partially implemented |
+| Entity/component methods | `createEntity`, `destroyEntity`, `addComponent`, `removeComponent`, `getComponent`, `hasComponent`, `query`, `dispatch`, `findPath`, `computeFov` — bound on `createApi()`, same shape `ctx` uses inside rules | `packages/core/src/api.js` | implemented |
+| `ctx` query/mutation methods | `hasComponent`, `getComponent`, `addComponent`, `removeComponent`, `createEntity`, `destroyEntity`, `query`, `findPath`, `computeFov` — the last two close over the `isWalkable`/`isOpaque` injected at `createApi()` | `packages/core/src/actions.js` | implemented |
+| `findPath(from, to, { isWalkable, maxNodes? })` | A* over 4-directional adjacency, Manhattan heuristic; returns ordered steps from `from` to `to` (exclusive of `from`), `[]` if already there, `null` if unreachable. `isWalkable` must reject out-of-bounds cells or an unreachable goal becomes an unbounded search | `packages/core/src/pathfinding.js` | implemented |
+| `computeFov(origin, radius, { isOpaque })` / `fovContains(fov, x, y)` | recursive shadowcasting (8-octant); returns the `Set` of `"x,y"`-keyed visible cells (origin always included, an opaque cell is itself visible but blocks what's behind it). Shared by player FOV (`rendering.md`, session 21), per-monster perception (`behaviors.js`), and light propagation (`rendering.md`, session 21) | `packages/core/src/fov.js` | implemented |
 | `platform` | `{ unlockAchievement(id) }`, no-op default, injectable at `createApi()` creation — same dependency-injection shape as `storage` | `packaging.md`, `packages/core/src/api.js` | implemented |
 | `rng` | seeded PRNG (mulberry32), `rng.state` a plain number so save/load can snapshot/restore it directly | `packages/core/src/rng.js` | implemented |
 | `GenerationContext` | `{ rng, params, getNeighborZone }` — `rng` is seeded deterministically from `(worldSeed, zoneId)` (FNV-1a hash into `rng.js`'s `createRng`); `getNeighborZone` is a caller-injected lookup (not core-owned zone storage — zone id stays an opaque caller-defined key, no grid/coordinate system built in `core`) | `packages/core/src/mapgen.js` | implemented |
