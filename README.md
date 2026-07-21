@@ -68,10 +68,30 @@ entity/effects layer resolves tweened positions and drops off-viewport
 entities). Canvas-touching code is tested against a fake recording `ctx`
 object (asserting the exact ordered draw-call sequence) rather than a real
 canvas/DOM dependency.
-210 `node --test` cases passing. See:
+Session 22 added the palette + fonts/tileset pipeline: `palette.js`
+(`createPalette`/`resolveColor` — a curated token vocabulary with a
+raw-color escape hatch, plus a gradient descriptor whose own stops may
+nest a `{ token }` reference each); `fontSources.js`
+(`createFontSourceRegistry`/`registerFontSource` — multi-font-source
+calibration, defaults derived from metrics (`unitsPerEm`/`ascender`/
+`descender`), not raster measurement, so it stays as unit-testable as
+every other `core` module; the calibration reference is pinnable at
+registry-creation time via `{ reference }`, independent of registration
+order, so e.g. a Pixelyph icon font can be the intended visual standard
+regardless of when a monospace fallback gets registered); `tileset.js`
+(`registerSymbol`/`resolveSymbol` — the `symbol -> {fontFace, codepoint,
+foreground, background}` format, `codepoint` a uniform lowercase hex
+string across every font source); `glyphRenderer.js`'s material tinting
+(`drawCellBackground`, `drawTileCell` — kept as separate primitives from
+`drawGlyphCell` on purpose, leaving room for a future background/glyph
+redraw-cadence decoupling; a resolved gradient becomes a real
+`ctx.createLinearGradient`); and `pixelyphImport.js`
+(`glyphManifestToFontSource`, a pure transform consuming Pixelyph's
+already-shipped glyph-manifest export, no file I/O).
+237 `node --test` cases passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 22)
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 23)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -85,7 +105,8 @@ packages/
             mapgen.js, zoneComposition.js, zoneDiff.js, bsp.js, cellularAutomataGenerator.js,
             waveFunctionCollapse.js, layeredBiome.js, fov.js, pathfinding.js, behaviors.js,
             glyphMetrics.js, glyphRenderer.js, camera.js, renderEvents.js, visibility.js,
-            memory.js, animation.js, renderLayers.js
+            memory.js, animation.js, renderLayers.js, palette.js, fontSources.js, tileset.js,
+            pixelyphImport.js
             under src/, tests under test/
   editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
