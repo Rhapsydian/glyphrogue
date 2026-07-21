@@ -109,3 +109,151 @@ export function carveCellularAutomata(zone, rng, options = {}) {
     }
   }
 }
+
+// Carves an L-shaped floor path between two points (horizontal then
+// vertical), only ever turning wall cells to floor - a door/anchor cell at
+// either endpoint is left as whatever it already was.
+export function connectCorridor(zone, from, to) {
+  const carve = (x, y) => {
+    if (x < 0 || x >= zone.width || y < 0 || y >= zone.height) return;
+    const index = y * zone.width + x;
+    if (zone.cells[index] === 'wall') zone.cells[index] = 'floor';
+  };
+
+  let { x, y } = from;
+  carve(x, y);
+  while (x !== to.x) {
+    x += x < to.x ? 1 : -1;
+    carve(x, y);
+  }
+  while (y !== to.y) {
+    y += y < to.y ? 1 : -1;
+    carve(x, y);
+  }
+}
+
+const cellKey = (x, y) => `${x},${y}`;
+
+function isWalkableCell(zone, x, y) {
+  if (x < 0 || x >= zone.width || y < 0 || y >= zone.height) return false;
+  return zone.cells[y * zone.width + x] !== 'wall';
+}
+
+// BFS reachability over physical adjacency (4-directional, non-wall cells)
+// plus zone.logicalLinks edges (teleporters/portals/gated doors) - a link
+// is a valid path even when its endpoints aren't physically adjacent.
+// Same-zone link targets feed back into the flood fill; cross-zone targets
+// (`to.zoneId` set) have no local cell to add, so they're leaf edges.
+function floodFillReachable(zone, startPoints) {
+  const linksByCell = new Map();
+  for (const link of zone.logicalLinks ?? []) {
+    const addEdge = (from, to) => {
+      const k = cellKey(from.x, from.y);
+      if (!linksByCell.has(k)) linksByCell.set(k, []);
+      linksByCell.get(k).push(to);
+    };
+    if (!link.to.zoneId) addEdge(link.from, link.to);
+    if (link.bidirectional && !link.to.zoneId) addEdge(link.to, link.from);
+  }
+
+  const reached = new Set();
+  const queue = [];
+
+  for (const point of startPoints) {
+    const k = cellKey(point.x, point.y);
+    if (!reached.has(k)) {
+      reached.add(k);
+      queue.push(point);
+    }
+  }
+
+  while (queue.length > 0) {
+    const { x, y } = queue.shift();
+    const neighbors = [
+      { x: x + 1, y },
+      { x: x - 1, y },
+      { x, y: y + 1 },
+      { x, y: y - 1 },
+    ];
+
+    for (const n of neighbors) {
+      const k = cellKey(n.x, n.y);
+      if (reached.has(k) || !isWalkableCell(zone, n.x, n.y)) continue;
+      reached.add(k);
+      queue.push(n);
+    }
+
+    for (const n of linksByCell.get(cellKey(x, y)) ?? []) {
+      const k = cellKey(n.x, n.y);
+      if (reached.has(k)) continue;
+      reached.add(k);
+      queue.push(n);
+    }
+  }
+
+  return reached;
+}
+
+function pointsInBounds(bounds) {
+  const points = [];
+  for (let y = bounds.y; y < bounds.y + bounds.height; y++) {
+    for (let x = bounds.x; x < bounds.x + bounds.width; x++) {
+      points.push({ x, y });
+    }
+  }
+  return points;
+}
+
+function nearestOpenCell(zone, bounds) {
+  const open = pointsInBounds(bounds).find(({ x, y }) => isWalkableCell(zone, x, y));
+  return open ?? { x: bounds.x, y: bounds.y };
+}
+
+function nearestReachedPoint(reached, target) {
+  let best;
+  let bestDist = Infinity;
+  for (const k of reached) {
+    const [x, y] = k.split(',').map(Number);
+    const dist = Math.abs(x - target.x) + Math.abs(y - target.y);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = { x, y };
+    }
+  }
+  return best;
+}
+
+// Mandatory post-generation pass (mapgen-and-editor.md's "Connectivity
+// pass"): floods reachability from `entryPoints`, then for each stamp not
+// already reached, auto-connects it via connectCorridor - preferring a
+// declared anchor over guessing the nearest open cell. `mayBeIsolated`
+// stamps are left alone; a `reachableVia` stamp is trusted as reachable
+// through its declared logical link and skips auto-connect entirely (the
+// link's existence is validated, but its live on/off state is a runtime
+// gameplay concern, not this pass's).
+export function runConnectivityPass(zone, { entryPoints, stamps = [] } = {}) {
+  let reached = floodFillReachable(zone, entryPoints);
+  const linksById = new Map((zone.logicalLinks ?? []).map((link) => [link.id, link]));
+
+  for (const stamp of stamps) {
+    if (stamp.mayBeIsolated) continue;
+
+    if (stamp.reachableVia !== undefined) {
+      if (!linksById.has(stamp.reachableVia)) {
+        throw new Error(`stamp reachableVia "${stamp.reachableVia}" does not match any logicalLinks id`);
+      }
+      continue;
+    }
+
+    const alreadyReached = pointsInBounds(stamp.bounds).some(({ x, y }) => reached.has(cellKey(x, y)));
+    if (alreadyReached) continue;
+
+    const target = stamp.anchors[0] ?? nearestOpenCell(zone, stamp.bounds);
+    const source = nearestReachedPoint(reached, target);
+    connectCorridor(zone, source, target);
+
+    reached = floodFillReachable(zone, entryPoints);
+  }
+
+  return reached;
+}
