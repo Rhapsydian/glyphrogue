@@ -39,3 +39,21 @@ export { createApi } from './api.js';
 export { serialize, deserialize, runMigrations, CORE_SCHEMA_VERSION } from './save.js';
 
 export { createMemoryStorage, createLocalStorageBackend, createFsStorage } from './storage.js';
+
+export {
+  createGlyphMetrics,
+  cellSize,
+  glyphAdvance,
+  baselineOffset,
+  fontSizePx,
+} from './glyphMetrics.js';
+
+export {
+  createCamera,
+  updateCamera,
+  worldToScreen,
+  screenToWorld,
+  screenToCanvasPixel,
+  worldToCanvasPixel,
+  isInViewport,
+} from './camera.js';
