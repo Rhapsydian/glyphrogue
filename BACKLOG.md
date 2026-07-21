@@ -19,8 +19,13 @@ roadmap" below: sessions 14 (monorepo scaffolding + ECS foundation), 15
 API surface + save/load) are done, each in its own
 `docs/session-logs/session-1{4,5,6,7}-2026-07-21.md` entry. Session 18
 (map generation: interface & primitives) is also done, see
-`docs/session-logs/session-18-2026-07-21.md`. The next `/dev-session`
-starts **session 19, map generation: built-in algorithms**.
+`docs/session-logs/session-18-2026-07-21.md`. Session 19 (map generation:
+built-in algorithms — BSP, cellular automata, minimal WFC, layered biome,
+each a region-scoped composable primitive plus a thin whole-zone generator
+wrapper, and a new shared `ensureTraversable` prune/connect primitive) is
+also done, see `docs/session-logs/session-19-2026-07-21.md`. The world/
+region tier was deliberately not scoped into session 19. The next
+`/dev-session` starts **session 20, AI & behavior**.
 
 ## Deferred / future items
 
@@ -66,6 +71,14 @@ starts **session 19, map generation: built-in algorithms**.
   source calibration override (scale/baseline/centering) currently has no
   authoring UI designed anywhere. Surfaced during the session-13 deep
   review.
+- **Fuller sample-based WFC** — session 19 built a *minimal* WFC generator
+  (`packages/core/src/waveFunctionCollapse.js`): author-declared tiles +
+  directed per-direction adjacency rules, no pattern learning. A fuller WFC
+  (overlapping NxN pattern extraction from an author-supplied sample grid,
+  frequency-weighted collapse, real backtracking search) is closer to
+  "classic" WFC and was explicitly scoped out as a live decision that
+  session — would need its own scoped pass if a concrete game wants
+  sample-driven tile content instead of hand-declared adjacency rules.
 
 ## Deep-dive planning roadmap
 
@@ -177,10 +190,24 @@ code, same caveat the deep-dive roadmap carried.
     `id`, since the connectivity pass is a one-time topological check, not
     a live switch-state simulation. See
     `docs/session-logs/session-18-2026-07-21.md`.
-19. **Map generation: built-in algorithms.** BSP, cellular automata, WFC,
-    and layered biome generation registered through session 18's
-    interface, plus the optional world/region tier if scoped in. Split
-    from session 18 since four real algorithms is enough on its own.
+19. ~~**Map generation: built-in algorithms.**~~ — done, see
+    `packages/core/src/bsp.js` (`carveBsp`/`bspGenerator`),
+    `packages/core/src/cellularAutomataGenerator.js`,
+    `packages/core/src/waveFunctionCollapse.js`
+    (`collapseWfc`/`wfcGenerator`, minimal single-cell tiles + directed
+    adjacency rules — a fuller sample-based WFC is a new `BACKLOG.md`
+    deferred item), and `packages/core/src/layeredBiome.js`
+    (`partitionBiomes`/`layeredBiomeGenerator`, nearest-seed-point
+    partition). Each algorithm is a region-scoped composable primitive with
+    a thin whole-zone generator wrapper, so an author can compose more than
+    one algorithm into a single zone (e.g. BSP rooms opening into a CA
+    cave) — raised by the user reviewing the session's plan, which
+    reshaped BSP/WFC/layered-biome from monolithic whole-zone generators
+    into that split. Also added `ensureTraversable` (prune or connect
+    disconnected walkable regions the mandatory connectivity pass doesn't
+    cover), another live plan revision from the user, used by three of the
+    four generators. The optional world/region tier was deliberately not
+    scoped in. See `docs/session-logs/session-19-2026-07-21.md`.
 20. **AI & behavior.** Shared shadowcasting/visibility primitive (FOV —
     also feeds rendering next session and light propagation), shared
     `findPath` primitive, first-party `TakeTurn` rules (`Wanders`,

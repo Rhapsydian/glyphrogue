@@ -23,10 +23,18 @@ with per-zone deterministic seeding, the `GenerationContext` (caller-
 injected neighbor-zone lookup, no core-owned zone storage), the composition
 primitives (`stampTemplate`, `carveCellularAutomata`, `connectCorridor`,
 the mandatory `runConnectivityPass`), and the seed+diff zone save strategy
-(`applyDiff`/`loadZone`). 91 `node --test` cases passing. See:
+(`applyDiff`/`loadZone`). Session 19 added the four built-in map generation
+algorithms — BSP, cellular automata, minimal WFC, and layered biome — each
+exposed as a region-scoped composable primitive (`carveBsp`,
+`carveCellularAutomata`, `collapseWfc`, `partitionBiomes`) with a thin
+whole-zone generator wrapper on top, so an author can compose more than one
+algorithm into a single zone. `ensureTraversable` is a new shared
+composition primitive (prune or connect disconnected walkable regions the
+mandatory connectivity pass doesn't cover) used by three of the four.
+125 `node --test` cases passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 19)
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 20)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -37,7 +45,8 @@ the mandatory `runConnectivityPass`), and the seed+diff zone save strategy
 packages/
   core/     the runtime engine — implementation started (session 14): world.js, registry.js,
             actions.js, scheduler.js, engine.js, api.js, save.js, storage.js, rng.js,
-            mapgen.js, zoneComposition.js, zoneDiff.js under src/, tests under test/
+            mapgen.js, zoneComposition.js, zoneDiff.js, bsp.js, cellularAutomataGenerator.js,
+            waveFunctionCollapse.js, layeredBiome.js under src/, tests under test/
   editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/  in-depth design docs, one per deep-dive planning session
