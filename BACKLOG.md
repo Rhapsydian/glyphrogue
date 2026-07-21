@@ -32,8 +32,15 @@ injected at `createApi()`) is also done, see
 foundation: shared glyph-metrics contract, camera deadzone+snap
 scrolling/coordinate pipeline, the render-event buffer, FOV/lighting
 visualization, layered canvas redraw) is also done, see
-`docs/session-logs/session-21-2026-07-21.md`. The next `/dev-session`
-starts **session 22, Palette + fonts/tileset pipeline**.
+`docs/session-logs/session-21-2026-07-21.md`. Session 22 (Palette +
+fonts/tileset pipeline: `packages/core/src/palette.js` token/gradient
+resolution, `packages/core/src/fontSources.js` multi-font-source
+calibration with a pinnable reference, `packages/core/src/tileset.js`'s
+symbol definition format, `packages/core/src/glyphRenderer.js`'s material-
+tinting draw-time fill resolution, and `packages/core/src/
+pixelyphImport.js`'s manifest-to-font-source transform) is also done, see
+`docs/session-logs/session-22-2026-07-21.md`. The next `/dev-session`
+starts **session 23, Input adapter + capture stack**.
 
 ## Deferred / future items
 
@@ -79,6 +86,15 @@ starts **session 22, Palette + fonts/tileset pipeline**.
   source calibration override (scale/baseline/centering) currently has no
   authoring UI designed anywhere. Surfaced during the session-13 deep
   review.
+- **Background/glyph redraw-cadence decoupling** —
+  `packages/core/src/glyphRenderer.js`'s `drawCellBackground`/
+  `drawGlyphCell` are kept as separate primitives specifically so a future
+  session could redraw cell backgrounds at the terrain layer's
+  (infrequent) dirty-check cadence while the entity layer keeps redrawing
+  glyphs every animation frame, since backgrounds change far less often
+  than the glyph drawn over them. Not built in session 22 —
+  `drawTileCell`'s convenience wrapper draws both together every time for
+  now; nothing yet exploits the split at the call-site level.
 - **Fuller sample-based WFC** — session 19 built a *minimal* WFC generator
   (`packages/core/src/waveFunctionCollapse.js`): author-declared tiles +
   directed per-direction adjacency rules, no pattern learning. A fuller WFC
@@ -247,12 +263,30 @@ code, same caveat the deep-dive roadmap carried.
     dirty check near-zero cost). Canvas-touching code tested against a fake
     recording `ctx`, not `node-canvas`/jsdom. See
     `docs/session-logs/session-21-2026-07-21.md`.
-22. **Palette + fonts/tileset pipeline.** Palette/theme object (token
-    vocabulary + raw-color escape hatch), font-source registration +
-    calibration records, the tileset definition format
-    (`symbol -> {fontFace, codepoint, paletteToken(s)}`), material tinting
-    (draw-time fill, SVG fallback for DOM gradients), Pixelyph
-    glyph-manifest import path (`fonts-and-tilesets.md`).
+22. ~~**Palette + fonts/tileset pipeline.**~~ — done, see
+    `packages/core/src/palette.js` (`createPalette`/`resolveColor`, a
+    `{ token }` wrapper resolving one level against a palette's token map,
+    a gradient descriptor's own stops nesting one `{ token }` each),
+    `packages/core/src/fontSources.js` (`createFontSourceRegistry`/
+    `registerFontSource`/`deriveCalibration` — default calibration is
+    metrics-based (`unitsPerEm`/`ascender`/`descender`), not
+    raster-measurement-based, since the latter would need a live
+    font/ctx and break the "pure, unit-testable" discipline every other
+    `core` module holds; the calibration reference is pinnable at
+    registry-creation time via `{ reference }`, independent of
+    registration order — resolved live with the user as this session's
+    one real architectural fork, prompted by wanting a Pixelyph icon font
+    to be the effective standard regardless of when a monospace fallback
+    gets registered), `packages/core/src/tileset.js` (`registerSymbol`/
+    `resolveSymbol`, `codepoint` standardized as a uniform lowercase hex
+    string across every font source), `packages/core/src/glyphRenderer.js`
+    (material tinting: `drawCellBackground`/`drawTileCell`, a resolved
+    gradient becoming a real `ctx.createLinearGradient`), and
+    `packages/core/src/pixelyphImport.js` (`glyphManifestToFontSource`,
+    a pure transform, no file I/O). DOM/SVG gradient fallback stays
+    deferred alongside every other DOM-path item this rendering arc has
+    deferred — no DOM rendering path exists in this monorepo yet. See
+    `docs/session-logs/session-22-2026-07-21.md`.
 23. **Input adapter + capture stack.** Physical input → input-action
     mapping (keyboard event-driven, gamepad poll+edge-detect), the
     exclusive capture stack, DOM state binding (coarse subscribe/notify),
