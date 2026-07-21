@@ -58,3 +58,25 @@ test('different seeds produce different rng sequences', () => {
 
   assert.notEqual(a.rng.next(), b.rng.next());
 });
+
+test('generateZone defaults worldSeed to the api-level seed', () => {
+  const a = createApi({ seed: 7 });
+  a.registerGenerator('flat', (ctx) => ({ rngSample: ctx.rng.next() }));
+  const b = createApi({ seed: 7 });
+  b.registerGenerator('flat', (ctx) => ({ rngSample: ctx.rng.next() }));
+
+  const zoneA = a.generateZone({ generatorId: 'flat', zoneId: 'z1' });
+  const zoneB = b.generateZone({ generatorId: 'flat', zoneId: 'z1' });
+
+  assert.equal(zoneA.rngSample, zoneB.rngSample);
+});
+
+test('generateZone accepts an explicit worldSeed override', () => {
+  const api = createApi({ seed: 7 });
+  api.registerGenerator('flat', (ctx) => ({ rngSample: ctx.rng.next() }));
+
+  const withDefault = api.generateZone({ generatorId: 'flat', zoneId: 'z1' });
+  const withOverride = api.generateZone({ generatorId: 'flat', zoneId: 'z1', worldSeed: 999 });
+
+  assert.notEqual(withDefault.rngSample, withOverride.rngSample);
+});
