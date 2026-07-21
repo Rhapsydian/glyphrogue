@@ -98,6 +98,8 @@ export {
   calibratedBaselineOffset,
 } from './fontSources.js';
 
+export { createTileset, registerSymbol, resolveSymbol } from './tileset.js';
+
 export {
   createLayerState,
   terrainLayerDirty,
