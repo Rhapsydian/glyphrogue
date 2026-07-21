@@ -2,8 +2,8 @@ import { hasComponent } from './world.js';
 import { dispatch, dispatchExclusive } from './actions.js';
 import { next, spend } from './scheduler.js';
 
-export function createEngine(world, registry, scheduler) {
-  return { world, registry, scheduler, locked: false };
+export function createEngine(world, registry, scheduler, mapQuery) {
+  return { world, registry, scheduler, mapQuery, locked: false };
 }
 
 export function lock(engine) {
@@ -30,13 +30,13 @@ export function act(engine) {
     return { entity, waiting: true };
   }
 
-  const result = dispatchExclusive(engine.world, engine.registry, { type: 'TakeTurn', entity });
+  const result = dispatchExclusive(engine.world, engine.registry, { type: 'TakeTurn', entity }, engine.mapQuery);
   spend(engine.scheduler, entity, sumCost(result.resolved));
   return { entity, waiting: false, result };
 }
 
 export function resolvePlayerAction(engine, entity, action) {
-  const result = dispatch(engine.world, engine.registry, action);
+  const result = dispatch(engine.world, engine.registry, action, engine.mapQuery);
   spend(engine.scheduler, entity, sumCost(result.resolved));
   unlock(engine);
   return result;

@@ -6,6 +6,8 @@ import { createEngine, lock, unlock, isLocked, act, resolvePlayerAction, run } f
 import { createRng } from './rng.js';
 import { registerGenerator, generateZone } from './mapgen.js';
 import { loadZone } from './zoneDiff.js';
+import { findPath } from './pathfinding.js';
+import { computeFov } from './fov.js';
 
 const noopPlatform = { unlockAchievement() {} };
 
@@ -14,11 +16,24 @@ const noopPlatform = { unlockAchievement() {} };
 // Closes over one world+registry+scheduler+engine instance the same way
 // actions.js's internal createContext(world) already does for rules - just
 // promoted to the public, documented surface.
-export function createApi({ roundBudget = 100, seed = 1, platform = noopPlatform } = {}) {
+//
+// `isWalkable`/`isOpaque` are the same caller-injected map query every
+// TakeTurn rule's ctx.findPath/ctx.computeFov close over (actions.js) -
+// exposed here too so non-rule consumers (rendering's player FOV, light
+// propagation) can call the same shared primitives directly, per
+// rendering.md's "one shared primitive, three consumers" decision.
+export function createApi({
+  roundBudget = 100,
+  seed = 1,
+  platform = noopPlatform,
+  isWalkable,
+  isOpaque,
+} = {}) {
   const world = createWorld();
   const registry = createRegistry();
   const scheduler = createScheduler(roundBudget);
-  const engine = createEngine(world, registry, scheduler);
+  const mapQuery = { isWalkable, isOpaque };
+  const engine = createEngine(world, registry, scheduler, mapQuery);
   const rng = createRng(seed);
 
   return {
@@ -38,7 +53,10 @@ export function createApi({ roundBudget = 100, seed = 1, platform = noopPlatform
     query: (types) => query(world, types),
 
     registerRule: (id, actionType, ruleFn, options) => registerRule(registry, id, actionType, ruleFn, options),
-    dispatch: (action) => dispatch(world, registry, action),
+    dispatch: (action) => dispatch(world, registry, action, mapQuery),
+
+    findPath: (from, to, opts) => findPath(from, to, { ...opts, isWalkable: mapQuery.isWalkable }),
+    computeFov: (origin, radius, opts) => computeFov(origin, radius, { ...opts, isOpaque: mapQuery.isOpaque }),
 
     registerGenerator: (id, generatorFn, options) => registerGenerator(registry, id, generatorFn, options),
     generateZone: (args) => generateZone(registry, { worldSeed: seed, ...args }),

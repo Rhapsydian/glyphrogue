@@ -8,6 +8,8 @@ import {
   destroyEntity,
   query,
 } from './world.js';
+import { findPath } from './pathfinding.js';
+import { computeFov } from './fov.js';
 
 export function registerRule(registry, id, actionType, ruleFn, options = {}) {
   const { priority = 0, ...registryOptions } = options;
@@ -24,7 +26,12 @@ function resolvePriority(entry, action, ctx) {
   return typeof entry.priority === 'function' ? entry.priority(action, ctx) : entry.priority;
 }
 
-function createContext(world) {
+// `mapQuery` (`{ isWalkable, isOpaque }`) is caller-injected at
+// createApi() time, same DI shape as `platform`/`storage`/`rng` - core
+// still owns no grid/zone storage (mapgen-and-editor.md), so ctx.findPath/
+// ctx.computeFov just close over whatever query the game supplied. Either
+// callback may be omitted if a rule pipeline never needs it.
+function createContext(world, mapQuery = {}) {
   return {
     hasComponent: (entity, type) => hasComponent(world, entity, type),
     getComponent: (entity, type) => getComponent(world, entity, type),
@@ -33,14 +40,16 @@ function createContext(world) {
     createEntity: () => createEntity(world),
     destroyEntity: (entity) => destroyEntity(world, entity),
     query: (types) => query(world, types),
+    findPath: (from, to, opts) => findPath(from, to, { ...opts, isWalkable: mapQuery.isWalkable }),
+    computeFov: (origin, radius, opts) => computeFov(origin, radius, { ...opts, isOpaque: mapQuery.isOpaque }),
   };
 }
 
-export function dispatch(world, registry, action) {
+export function dispatch(world, registry, action, mapQuery) {
   const resolved = [];
   const vetoed = [];
   const queue = [action];
-  const ctx = createContext(world);
+  const ctx = createContext(world, mapQuery);
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -80,8 +89,8 @@ export function dispatch(world, registry, action) {
 // types representing a mutually-exclusive choice (TakeTurn: an actor
 // can't both Flee and Guard the same turn), not the additive-reaction
 // shape most action types use.
-export function dispatchExclusive(world, registry, action) {
-  const ctx = createContext(world);
+export function dispatchExclusive(world, registry, action, mapQuery) {
+  const ctx = createContext(world, mapQuery);
   const pipeline = pipelineFor(registry, action.type);
 
   let winnerResult;
@@ -102,7 +111,7 @@ export function dispatchExclusive(world, registry, action) {
   const vetoed = [];
 
   for (const followOnAction of winnerResult?.followOn ?? []) {
-    const sub = dispatch(world, registry, followOnAction);
+    const sub = dispatch(world, registry, followOnAction, mapQuery);
     resolved.push(...sub.resolved);
     vetoed.push(...sub.vetoed);
   }

@@ -81,6 +81,64 @@ test('generateZone accepts an explicit worldSeed override', () => {
   assert.notEqual(withDefault.rngSample, withOverride.rngSample);
 });
 
+test('a registered TakeTurn rule can call ctx.findPath end-to-end via api.act()', () => {
+  const isWalkable = (x, y) => x >= 0 && x < 5 && y >= 0 && y < 5;
+  const api = createApi({ isWalkable });
+
+  const goblin = api.createEntity();
+  api.addComponent(goblin, 'Position', { x: 0, y: 0 });
+  api.addActor(goblin, 100);
+
+  const player = api.createEntity();
+  api.addComponent(player, 'Position', { x: 2, y: 0 });
+  api.addComponent(player, 'PlayerControlled', {});
+  api.addActor(player, 10);
+
+  let followOn;
+  api.registerRule('chase', 'TakeTurn', (action, ctx) => {
+    const from = ctx.getComponent(action.entity, 'Position');
+    const path = ctx.findPath(from, { x: 2, y: 0 });
+    followOn = { type: 'Move', entity: action.entity, to: path[0], cost: 100 };
+    return { followOn: [followOn] };
+  });
+
+  api.run();
+
+  assert.deepEqual(followOn.to, { x: 1, y: 0 });
+});
+
+test('a registered TakeTurn rule can call ctx.computeFov end-to-end via api.act()', () => {
+  const api = createApi({ isOpaque: () => false });
+
+  const goblin = api.createEntity();
+  api.addComponent(goblin, 'Position', { x: 0, y: 0 });
+  api.addActor(goblin, 100);
+
+  let sawOrigin;
+  api.registerRule('perceive', 'TakeTurn', (action, ctx) => {
+    const from = ctx.getComponent(action.entity, 'Position');
+    const fov = ctx.computeFov(from, 3);
+    sawOrigin = fov.has('0,0');
+  });
+
+  api.act();
+
+  assert.equal(sawOrigin, true);
+});
+
+test('api.findPath and api.computeFov use the same injected map query outside any rule', () => {
+  const api = createApi({
+    isWalkable: (x, y) => x >= 0 && x < 5,
+    isOpaque: () => false,
+  });
+
+  const path = api.findPath({ x: 0, y: 0 }, { x: 2, y: 0 });
+  assert.deepEqual(path, [{ x: 1, y: 0 }, { x: 2, y: 0 }]);
+
+  const fov = api.computeFov({ x: 0, y: 0 }, 2);
+  assert.ok(fov.has('0,0'));
+});
+
 test('loadZone defaults worldSeed to the api-level seed and reapplies the diff', () => {
   const api = createApi({ seed: 7 });
   api.registerGenerator('flat', () => ({ width: 1, height: 1, cells: ['wall'], entities: [], anchors: [], logicalLinks: [] }));

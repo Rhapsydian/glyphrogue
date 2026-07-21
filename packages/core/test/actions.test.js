@@ -224,3 +224,49 @@ test('dispatchExclusive: a non-matching rule is never a candidate regardless of 
     ['TakeTurn', 'Wander'],
   );
 });
+
+test('ctx.findPath uses the mapQuery injected into dispatch()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  let foundPath;
+
+  registerRule(registry, 'pathing-rule', 'TakeTurn', (action, ctx) => {
+    foundPath = ctx.findPath({ x: 0, y: 0 }, { x: 2, y: 0 });
+  });
+
+  dispatch(world, registry, { type: 'TakeTurn' }, { isWalkable: () => true });
+
+  assert.deepEqual(foundPath, [{ x: 1, y: 0 }, { x: 2, y: 0 }]);
+});
+
+test('ctx.computeFov uses the mapQuery injected into dispatchExclusive()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  let fov;
+
+  registerRule(registry, 'seeing-rule', 'TakeTurn', (action, ctx) => {
+    fov = ctx.computeFov({ x: 0, y: 0 }, 2);
+  });
+
+  dispatchExclusive(world, registry, { type: 'TakeTurn' }, { isOpaque: () => false });
+
+  assert.ok(fov.has('0,0'));
+  assert.ok(fov.has('2,0'));
+});
+
+test('mapQuery threads through dispatchExclusive follow-ons into their own dispatch()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  let foundPath;
+
+  registerRule(registry, 'decide', 'TakeTurn', () => ({
+    followOn: [{ type: 'Check' }],
+  }));
+  registerRule(registry, 'check-path', 'Check', (action, ctx) => {
+    foundPath = ctx.findPath({ x: 0, y: 0 }, { x: 1, y: 0 });
+  });
+
+  dispatchExclusive(world, registry, { type: 'TakeTurn' }, { isWalkable: () => true });
+
+  assert.deepEqual(foundPath, [{ x: 1, y: 0 }]);
+});
