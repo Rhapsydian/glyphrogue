@@ -26,6 +26,7 @@ in the PR, not a documentation backlog item.
 | `Wanders` / `ChasesPlayer` / `Flees` / `Guards` | markers, first-party `TakeTurn` behaviors | `ai-and-behavior.md` | illustrative |
 | `EventState` | `{ step }` — multi-step scripted-event progress | `scripting-api.md` | illustrative |
 | `PendingUI` | `{ screenId, payload }` — generic core→UI hand-off marker; supersedes the earlier `PendingDialogue`-only concept (`ui-and-input.md`'s `ShowDialogue` is now `PendingUI`'s first built-in consumer) | `custom-ui-and-interactions.md` | illustrative |
+| `PlayerControlled` | marker (no data) — distinguishes the player-controlled actor so `engine.js`'s `act()` locks and waits for external input instead of auto-dispatching `TakeTurn` | `packages/core/src/engine.js` | implemented |
 
 ## Action types
 
@@ -37,6 +38,7 @@ in the PR, not a documentation backlog item.
 | `EnterRegion` | scripted-event trigger example (map-region entry) | `scripting-api.md` | illustrative |
 | `EventTimerElapsed` | synthetic action emitted by a scheduled timer entity for `waitFor: { timeUnits }` | `scripting-api.md` | illustrative |
 | Author-defined closing actions (`ResolveSkillCheck`, `ResolveBattle`, ...) | naming is author's choice, not core-mandated | `custom-ui-and-interactions.md` | illustrative |
+| `cost` field (optional, on any action) | variable per-instance time-units cost (`{ type: 'Move', entity, cost: 100 }`) — `engine.js`'s `act()`/`resolvePlayerAction()` sum `cost` across every action a turn resolves to and spend the total from the scheduler | `packages/core/src/engine.js` | implemented |
 
 ## Save DTO shapes
 

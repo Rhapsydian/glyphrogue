@@ -20,3 +20,13 @@ export {
 export { registerRule, dispatch, dispatchExclusive } from './actions.js';
 
 export { createScheduler, addActor, removeActor, next, spend } from './scheduler.js';
+
+export {
+  createEngine,
+  lock,
+  unlock,
+  isLocked,
+  act,
+  resolvePlayerAction,
+  run,
+} from './engine.js';
