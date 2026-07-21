@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createWorld, createEntity, addComponent } from '../src/world.js';
 import { createRegistry, register } from '../src/registry.js';
-import { registerRule, dispatch } from '../src/actions.js';
+import { registerRule, dispatch, dispatchExclusive } from '../src/actions.js';
 
 test('a rule only fires for its declared action type', () => {
   const world = createWorld();
@@ -142,4 +142,85 @@ test('dependsOn controls pipeline evaluation order for the same action type', ()
   dispatch(world, registry, { type: 'Move' });
 
   assert.deepEqual(order, ['first-rule', 'second-rule']);
+});
+
+test('dispatchExclusive: highest-priority matching rule wins, others never apply', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+
+  registerRule(registry, 'wanders', 'TakeTurn', () => ({
+    followOn: [{ type: 'Wander' }],
+  }), { priority: 1 });
+  registerRule(registry, 'flees', 'TakeTurn', () => ({
+    followOn: [{ type: 'Flee' }],
+  }), { priority: 10 });
+  registerRule(registry, 'guards', 'TakeTurn', () => ({
+    followOn: [{ type: 'Guard' }],
+  }), { priority: 5 });
+
+  const result = dispatchExclusive(world, registry, { type: 'TakeTurn' });
+
+  assert.deepEqual(
+    result.resolved.map((a) => a.type),
+    ['TakeTurn', 'Flee'],
+  );
+});
+
+test('dispatchExclusive: constant and function priorities both resolve', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const entity = createEntity(world);
+  addComponent(world, entity, 'Health', { current: 2, max: 10 });
+
+  registerRule(registry, 'guards', 'TakeTurn', () => ({
+    followOn: [{ type: 'Guard' }],
+  }), { priority: 5 });
+  registerRule(registry, 'flees-when-hurt', 'TakeTurn', () => ({
+    followOn: [{ type: 'Flee' }],
+  }), {
+    priority: (action, ctx) => (10 - ctx.getComponent(action.entity, 'Health').current),
+  });
+
+  const result = dispatchExclusive(world, registry, { type: 'TakeTurn', entity });
+
+  assert.deepEqual(
+    result.resolved.map((a) => a.type),
+    ['TakeTurn', 'Flee'],
+  );
+});
+
+test('dispatchExclusive: equal priority resolves to the earlier-registered rule', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+
+  registerRule(registry, 'first', 'TakeTurn', () => ({
+    followOn: [{ type: 'First' }],
+  }), { priority: 5 });
+  registerRule(registry, 'second', 'TakeTurn', () => ({
+    followOn: [{ type: 'Second' }],
+  }), { priority: 5 });
+
+  const result = dispatchExclusive(world, registry, { type: 'TakeTurn' });
+
+  assert.deepEqual(
+    result.resolved.map((a) => a.type),
+    ['TakeTurn', 'First'],
+  );
+});
+
+test('dispatchExclusive: a non-matching rule is never a candidate regardless of priority', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+
+  registerRule(registry, 'never-applies', 'TakeTurn', () => undefined, { priority: 1000 });
+  registerRule(registry, 'wanders', 'TakeTurn', () => ({
+    followOn: [{ type: 'Wander' }],
+  }), { priority: 1 });
+
+  const result = dispatchExclusive(world, registry, { type: 'TakeTurn' });
+
+  assert.deepEqual(
+    result.resolved.map((a) => a.type),
+    ['TakeTurn', 'Wander'],
+  );
 });

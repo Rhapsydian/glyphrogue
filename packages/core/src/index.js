@@ -17,4 +17,6 @@ export {
   getOrderedIds,
 } from './registry.js';
 
-export { registerRule, dispatch } from './actions.js';
+export { registerRule, dispatch, dispatchExclusive } from './actions.js';
+
+export { createScheduler, addActor, removeActor, next, spend } from './scheduler.js';
