@@ -6,8 +6,10 @@ toolchain (map editor, tileset tools, scripting console) that stays out of
 production builds, and support for static HTML, GitHub Pages, itch.io, and a
 Steam-compatible Electron desktop build.
 
-This project is currently in the **research & planning phase** — no engine
-code exists yet. See:
+The **research & planning phase is complete** — no engine code exists yet,
+but every topic in the design roadmap (including three added after a
+coherence-review pass) is decided, and a 12-session `packages/core`
+implementation roadmap is scoped and ready to start. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
 - [`BACKLOG.md`](./BACKLOG.md) — the planning roadmap and what's next
