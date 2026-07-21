@@ -37,3 +37,5 @@ export { createRng } from './rng.js';
 export { createApi } from './api.js';
 
 export { serialize, deserialize, runMigrations, CORE_SCHEMA_VERSION } from './save.js';
+
+export { createMemoryStorage, createLocalStorageBackend, createFsStorage } from './storage.js';
