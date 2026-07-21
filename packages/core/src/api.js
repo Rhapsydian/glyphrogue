@@ -8,6 +8,7 @@ import { registerGenerator, generateZone } from './mapgen.js';
 import { loadZone } from './zoneDiff.js';
 import { findPath } from './pathfinding.js';
 import { computeFov } from './fov.js';
+import { createRenderEventQueue, enqueueRenderEvent, createSequencerState, advanceSequencer } from './renderEvents.js';
 
 const noopPlatform = { unlockAchievement() {} };
 
@@ -33,7 +34,8 @@ export function createApi({
   const registry = createRegistry();
   const scheduler = createScheduler(roundBudget);
   const mapQuery = { isWalkable, isOpaque };
-  const engine = createEngine(world, registry, scheduler, mapQuery);
+  const renderEvents = createRenderEventQueue();
+  const engine = createEngine(world, registry, scheduler, mapQuery, renderEvents);
   const rng = createRng(seed);
 
   return {
@@ -43,6 +45,11 @@ export function createApi({
     engine,
     platform,
     rng,
+    renderEvents,
+
+    enqueueRenderEvent: (event) => enqueueRenderEvent(renderEvents, event),
+    createSequencerState,
+    advanceSequencer: (state, now, onTrigger) => advanceSequencer(renderEvents, state, now, onTrigger),
 
     createEntity: () => createEntity(world),
     destroyEntity: (entity) => destroyEntity(world, entity),

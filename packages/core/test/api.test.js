@@ -151,3 +151,29 @@ test('loadZone defaults worldSeed to the api-level seed and reapplies the diff',
 
   assert.deepEqual(zone.cells, ['floor']);
 });
+
+test('a rule\'s ctx.enqueueRenderEvent reaches api.renderEvents via api.act()', () => {
+  const api = createApi({ roundBudget: 100 });
+  const goblin = api.createEntity();
+  api.addActor(goblin, 100);
+
+  api.registerRule('animates', 'TakeTurn', (action, ctx) => {
+    ctx.enqueueRenderEvent({ kind: 'animation', entity: action.entity });
+  });
+
+  api.act();
+
+  assert.equal(api.renderEvents.events.length, 1);
+  assert.deepEqual(api.renderEvents.events[0], { kind: 'animation', entity: goblin });
+});
+
+test('api.enqueueRenderEvent and api.advanceSequencer drive the same queue end-to-end', () => {
+  const api = createApi();
+  api.enqueueRenderEvent({ kind: 'sound', id: 'ding' });
+
+  const state = api.createSequencerState();
+  const triggered = [];
+  api.advanceSequencer(state, 1000, (event) => triggered.push(event.id));
+
+  assert.deepEqual(triggered, ['ding']);
+});

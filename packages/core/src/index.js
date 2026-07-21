@@ -57,3 +57,10 @@ export {
   worldToCanvasPixel,
   isInViewport,
 } from './camera.js';
+
+export {
+  createRenderEventQueue,
+  enqueueRenderEvent,
+  createSequencerState,
+  advanceSequencer,
+} from './renderEvents.js';

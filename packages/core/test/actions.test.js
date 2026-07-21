@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createWorld, createEntity, addComponent } from '../src/world.js';
 import { createRegistry, register } from '../src/registry.js';
 import { registerRule, dispatch, dispatchExclusive } from '../src/actions.js';
+import { createRenderEventQueue } from '../src/renderEvents.js';
 
 test('a rule only fires for its declared action type', () => {
   const world = createWorld();
@@ -269,4 +270,47 @@ test('mapQuery threads through dispatchExclusive follow-ons into their own dispa
   dispatchExclusive(world, registry, { type: 'TakeTurn' }, { isWalkable: () => true });
 
   assert.deepEqual(foundPath, [{ x: 1, y: 0 }]);
+});
+
+test('ctx.enqueueRenderEvent pushes onto the renderEvents queue passed into dispatch()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const renderEvents = createRenderEventQueue();
+
+  registerRule(registry, 'emits-render-event', 'Move', (action, ctx) => {
+    ctx.enqueueRenderEvent({ kind: 'animation', entity: action.entity });
+  });
+
+  dispatch(world, registry, { type: 'Move', entity: 1 }, undefined, renderEvents);
+
+  assert.equal(renderEvents.events.length, 1);
+  assert.deepEqual(renderEvents.events[0], { kind: 'animation', entity: 1 });
+});
+
+test('ctx.enqueueRenderEvent is a no-op when no renderEvents queue is supplied', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+
+  registerRule(registry, 'emits-render-event', 'Move', (action, ctx) => {
+    ctx.enqueueRenderEvent({ kind: 'animation' });
+  });
+
+  assert.doesNotThrow(() => dispatch(world, registry, { type: 'Move' }));
+});
+
+test('renderEvents threads through dispatchExclusive follow-ons into their own dispatch()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const renderEvents = createRenderEventQueue();
+
+  registerRule(registry, 'decide', 'TakeTurn', () => ({
+    followOn: [{ type: 'Check' }],
+  }));
+  registerRule(registry, 'check-emits', 'Check', (action, ctx) => {
+    ctx.enqueueRenderEvent({ kind: 'sound' });
+  });
+
+  dispatchExclusive(world, registry, { type: 'TakeTurn' }, undefined, renderEvents);
+
+  assert.equal(renderEvents.events.length, 1);
 });

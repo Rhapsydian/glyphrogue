@@ -11,6 +11,7 @@ import {
   resolvePlayerAction,
   run,
 } from '../src/engine.js';
+import { createRenderEventQueue } from '../src/renderEvents.js';
 
 function setupWander(registry) {
   registerRule(registry, 'wanders', 'TakeTurn', (action) => ({
@@ -115,4 +116,45 @@ test('two turns from the same high-budget actor happen before a lower-budget act
 
   const third = act(engine);
   assert.equal(third.entity, slow);
+});
+
+test('act() threads renderEvents through to a TakeTurn rule', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+  const goblin = createEntity(world);
+  addActor(scheduler, goblin, 50);
+  const renderEvents = createRenderEventQueue();
+
+  registerRule(registry, 'wanders-and-animates', 'TakeTurn', (action, ctx) => {
+    ctx.enqueueRenderEvent({ kind: 'animation', entity: action.entity });
+    return { followOn: [{ type: 'Move', entity: action.entity, cost: 100 }] };
+  });
+
+  const engine = createEngine(world, registry, scheduler, undefined, renderEvents);
+  act(engine);
+
+  assert.equal(renderEvents.events.length, 1);
+  assert.deepEqual(renderEvents.events[0], { kind: 'animation', entity: goblin });
+});
+
+test('resolvePlayerAction threads renderEvents through to the dispatched action', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+  const player = createEntity(world);
+  addComponent(world, player, 'PlayerControlled', {});
+  addActor(scheduler, player, 50);
+  const renderEvents = createRenderEventQueue();
+
+  registerRule(registry, 'move-animates', 'Move', (action, ctx) => {
+    ctx.enqueueRenderEvent({ kind: 'animation', entity: action.entity });
+  });
+
+  const engine = createEngine(world, registry, scheduler, undefined, renderEvents);
+  act(engine); // locks, waiting on the player
+
+  resolvePlayerAction(engine, player, { type: 'Move', entity: player, cost: 40 });
+
+  assert.equal(renderEvents.events.length, 1);
 });
