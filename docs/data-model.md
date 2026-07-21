@@ -42,9 +42,16 @@ in the PR, not a documentation backlog item.
 
 ## Save DTO shapes
 
+Registry state (registered rules/generators/etc.) is deliberately **not**
+part of the save DTO below — it's code, reconstructed by re-running a
+game's own `register*` calls at boot, same as any other content. Only
+world/scheduler/rng *state* is persisted.
+
 | Shape | Notes | Source | Status |
 |---|---|---|---|
-| Top-level save | `{ coreSchemaVersion, core, gameDataVersion, game, mods: { [modId]: { modDataVersion, payload } } }` | `core-architecture.md`, `scripting-api.md` | illustrative |
+| Top-level save | `{ coreSchemaVersion, core, gameDataVersion, game, mods: { [modId]: { modDataVersion, payload } } }` — `core` is `{ nextId, entities, components, scheduler: { roundBudget, actors }, rng: { state } }`; `game`/`mods` are opaque payloads produced by an injected `serializeGame` hook / passed through as-is (nothing produces real mod slices yet — no mod-loading system exists) | `packages/core/src/save.js` | implemented |
+| Migration mechanism | `runMigrations(payload, fromVersion, toVersion, migrations)` — sparse stepwise chain keyed by target version, reused by the core slice now and available for game/mod slices once those exist | `packages/core/src/save.js` | implemented |
+| Storage backend | `{ save(key, data): Promise<void>, load(key): Promise<data\|undefined> }` — `createMemoryStorage`/`createLocalStorageBackend`/`createFsStorage` (atomic temp-file-then-rename), selected per build target | `packages/core/src/storage.js` | implemented |
 | `ZoneDTO` | shared shape for generated, hand-authored, and loaded-from-diff zones | `mapgen-and-editor.md` | illustrative — diff/overlay format for mod-defined entity types still open, see `BACKLOG.md` |
 | Settings slice | keybindings, volume/mixing — persists outside save data, own storage key | `ui-and-input.md`, `audio.md` | illustrative |
 
@@ -61,6 +68,10 @@ in the PR, not a documentation backlog item.
 
 | Call/shape | Notes | Source | Status |
 |---|---|---|---|
-| `api.register*(id, def, options?)` | `registerEntity`, `registerEntityType`, `registerRule`, `registerGenerator`, `registerScriptedEvent`, `registerScreen`, `registerSound` — one shared shape, one conflict/override mechanism | `scripting-api.md` and each feature doc | illustrative |
-| `ctx` query/mutation methods | `hasComponent`, `getComponent`, `findPath`, etc. | `core-architecture.md`, `ai-and-behavior.md` | illustrative |
+| `createApi({ roundBudget, seed, platform })` | the one public inspection/mutation surface every consumer goes through — bound methods over one internal world+registry+scheduler+engine instance, no manual world/registry threading | `packages/core/src/api.js` | implemented |
+| `api.register*(id, def, options?)` | `registerRule` is implemented via `createApi`; `registerEntity`, `registerEntityType`, `registerGenerator`, `registerScriptedEvent`, `registerScreen`, `registerSound` don't exist yet — later sessions (18+) | `scripting-api.md` and each feature doc | partially implemented |
+| Entity/component methods | `createEntity`, `destroyEntity`, `addComponent`, `removeComponent`, `getComponent`, `hasComponent`, `query`, `dispatch` — bound on `createApi()`, same shape `ctx` uses inside rules | `packages/core/src/api.js` | implemented |
+| `ctx` query/mutation methods | `hasComponent`, `getComponent`, `findPath`, etc. — `findPath` still illustrative, needs session 20 | `core-architecture.md`, `ai-and-behavior.md` | partially implemented |
+| `platform` | `{ unlockAchievement(id) }`, no-op default, injectable at `createApi()` creation — same dependency-injection shape as `storage` | `packaging.md`, `packages/core/src/api.js` | implemented |
+| `rng` | seeded PRNG (mulberry32), `rng.state` a plain number so save/load can snapshot/restore it directly | `packages/core/src/rng.js` | implemented |
 | `GenerationContext` | seeded RNG, `params`, neighboring-zone read access | `mapgen-and-editor.md` | illustrative |
