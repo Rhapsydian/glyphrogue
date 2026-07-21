@@ -15,10 +15,11 @@ corrections and resolutions folded directly into `rendering.md`,
 reference. All planning work is now done, and `packages/core`
 implementation is underway per the "packages/core implementation
 roadmap" below: sessions 14 (monorepo scaffolding + ECS foundation), 15
-(action/rule pipeline), and 16 (turn scheduler + engine loop) are done,
-each in its own `docs/session-logs/session-1{4,5,6}-2026-07-21.md` entry.
-The next `/dev-session` starts **session 17, public API surface +
-save/load**.
+(action/rule pipeline), 16 (turn scheduler + engine loop), and 17 (public
+API surface + save/load) are done, each in its own
+`docs/session-logs/session-1{4,5,6,7}-2026-07-21.md` entry. The next
+`/dev-session` starts **session 18, map generation: interface &
+primitives**.
 
 ## Deferred / future items
 
@@ -73,6 +74,7 @@ research-and-planning only, producing one doc under `docs/design/`. Order is
 roughly dependency order (foundational pieces before things that build on
 them; packaging last since it depends on everything else) — reorder/split/
 merge as needed if a topic turns out bigger or smaller than expected.
+
 
 1. ~~**Core architecture & game loop**~~ — done, see
    [`docs/design/core-architecture.md`](docs/design/core-architecture.md).
@@ -144,21 +146,22 @@ code, same caveat the deep-dive roadmap carried.
     `Wanders`/`ChasesPlayer`/`Flees`/`Guards` behavior content is still
     session 20's job (needs `findPath`/FOV first). See
     `docs/session-logs/session-16-2026-07-21.md`.
-17. **Public API surface + save/load.** The one public inspection/
-    mutation API every consumer goes through, formalized from what
-    sessions 14-16 built ad hoc. Save DTOs (`coreSchemaVersion`/`core`,
-    `gameDataVersion`/`game`, per-mod slices), stepwise migrations,
-    storage backend abstraction (localStorage + Electron-filesystem with
-    atomic writes). The thin `platform` capability (no-op-by-default
-    achievement hook) fits here too — same injection shape as storage.
-    Must also explicitly cover headless/deterministic testability
-    (seeded RNG, no reliance on real wall-clock/animation timing, a way
-    to fast-forward the turn scheduler without a UI) — game authors are
-    expected to write their own `node --test` files directly against this
-    same public API rather than getting a bespoke test system, and that
-    only works if the API supports it first-class. Raised while discussing
-    whether authors need their own test system (they don't need a separate
-    one, but this API does need to support it); not designed anywhere yet.
+17. ~~**Public API surface + save/load.**~~ — done, see
+    `packages/core/src/api.js` (`createApi()`, the bound public
+    inspection/mutation surface every consumer goes through — sessions
+    14-16 were free functions taking `world`/`registry`/`scheduler`
+    explicitly; this matches `scripting-api.md`'s actual call shape
+    instead), `packages/core/src/save.js` (`serialize`/`deserialize`,
+    `coreSchemaVersion`/`core` + `gameDataVersion`/`game` + `mods` DTO
+    split, sparse stepwise `runMigrations`), `packages/core/src/storage.js`
+    (memory/localStorage/atomic-fs backends), and `packages/core/src/
+    rng.js` (seeded mulberry32, its `state` serialized alongside world/
+    scheduler). `platform`'s no-op-default achievement hook is an injection
+    point on `createApi()`, same shape as storage. Headless/deterministic
+    testability (seeded RNG, a timer-free `run()` loop, full save/load/
+    continue) is proven out end-to-end by `packages/core/test/
+    headless.test.js`. See
+    `docs/session-logs/session-17-2026-07-21.md`.
 18. **Map generation: interface & primitives.** `GenerationContext`,
     `registerGenerator`, composition primitives (stamp template, carve CA,
     connect corridor, connectivity pass with physical + logical-link
