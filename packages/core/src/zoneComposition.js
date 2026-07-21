@@ -134,7 +134,7 @@ export function connectCorridor(zone, from, to) {
 
 const cellKey = (x, y) => `${x},${y}`;
 
-function isWalkableCell(zone, x, y) {
+export function isWalkableCell(zone, x, y) {
   if (x < 0 || x >= zone.width || y < 0 || y >= zone.height) return false;
   return zone.cells[y * zone.width + x] !== 'wall';
 }
@@ -204,7 +204,7 @@ function pointsInBounds(bounds) {
   return points;
 }
 
-function nearestOpenCell(zone, bounds) {
+export function nearestOpenCell(zone, bounds) {
   const open = pointsInBounds(bounds).find(({ x, y }) => isWalkableCell(zone, x, y));
   return open ?? { x: bounds.x, y: bounds.y };
 }
@@ -256,4 +256,62 @@ export function runConnectivityPass(zone, { entryPoints, stamps = [] } = {}) {
   }
 
   return reached;
+}
+
+function stampCellKeys(stamps) {
+  const keys = new Set();
+  for (const stamp of stamps) {
+    for (const { x, y } of pointsInBounds(stamp.bounds)) {
+      keys.add(cellKey(x, y));
+    }
+  }
+  return keys;
+}
+
+function findUnreachedWalkableCell(zone, reached, excluded) {
+  for (let y = 0; y < zone.height; y++) {
+    for (let x = 0; x < zone.width; x++) {
+      const k = cellKey(x, y);
+      if (reached.has(k) || excluded.has(k)) continue;
+      if (isWalkableCell(zone, x, y)) return { x, y };
+    }
+  }
+  return null;
+}
+
+// Composable follow-up to runConnectivityPass for algorithms (CA, WFC,
+// layered biome) whose base carve can leave walkable cells disconnected
+// from anything runConnectivityPass's stamp-only auto-connect covers.
+// Stamp bounds are always excluded from prune/connect handling, whether or
+// not a given stamp ended up reached - that's what preserves a
+// `mayBeIsolated` stamp's interior when the rest of the zone gets pruned.
+export function ensureTraversable(zone, { entryPoints, stamps = [], mode = 'prune' } = {}) {
+  const reached = runConnectivityPass(zone, { entryPoints, stamps });
+  const excluded = stampCellKeys(stamps);
+
+  if (mode === 'prune') {
+    for (let y = 0; y < zone.height; y++) {
+      for (let x = 0; x < zone.width; x++) {
+        const k = cellKey(x, y);
+        if (reached.has(k) || excluded.has(k)) continue;
+        if (isWalkableCell(zone, x, y)) zone.cells[y * zone.width + x] = 'wall';
+      }
+    }
+    return reached;
+  }
+
+  if (mode === 'connect') {
+    let current = reached;
+    const maxIterations = zone.width * zone.height;
+    for (let i = 0; i < maxIterations; i++) {
+      const unreached = findUnreachedWalkableCell(zone, current, excluded);
+      if (!unreached) break;
+      const source = nearestReachedPoint(current, unreached);
+      connectCorridor(zone, source, unreached);
+      current = floodFillReachable(zone, entryPoints);
+    }
+    return current;
+  }
+
+  throw new Error(`unsupported ensureTraversable mode: "${mode}"`);
 }

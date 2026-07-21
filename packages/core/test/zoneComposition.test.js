@@ -7,6 +7,7 @@ import {
   carveCellularAutomata,
   connectCorridor,
   runConnectivityPass,
+  ensureTraversable,
 } from '../src/zoneComposition.js';
 
 function makeTemplate() {
@@ -189,4 +190,65 @@ test('runConnectivityPass prefers a declared anchor over the nearest open cell',
   // anchor were declared)
   assert.equal(zone.cells[3 * 6 + 5], 'floor');
   assert.equal(zone.cells[1 * 6 + 2], 'wall');
+});
+
+test('ensureTraversable prune mode removes an isolated floor pocket with no stamp', () => {
+  const zone = createZone(7, 1, 'wall');
+  zone.cells[0] = 'floor'; // entry
+  zone.cells[5] = 'floor'; // isolated pocket
+  zone.cells[6] = 'floor';
+
+  const reached = ensureTraversable(zone, { entryPoints: [{ x: 0, y: 0 }], mode: 'prune' });
+
+  assert.equal(zone.cells[5], 'wall');
+  assert.equal(zone.cells[6], 'wall');
+  assert.ok(!reached.has('5,0'));
+});
+
+test('ensureTraversable prune mode leaves a mayBeIsolated stamp untouched', () => {
+  const zone = createZone(7, 1, 'wall');
+  zone.cells[0] = 'floor';
+  zone.cells[5] = 'floor';
+  zone.cells[6] = 'floor';
+  const stamp = { anchors: [], bounds: { x: 5, y: 0, width: 2, height: 1 }, mayBeIsolated: true };
+
+  ensureTraversable(zone, { entryPoints: [{ x: 0, y: 0 }], stamps: [stamp], mode: 'prune' });
+
+  assert.equal(zone.cells[5], 'floor');
+  assert.equal(zone.cells[6], 'floor');
+});
+
+test('ensureTraversable connect mode carves a corridor into an isolated pocket instead of destroying it', () => {
+  const zone = createZone(7, 1, 'wall');
+  zone.cells[0] = 'floor';
+  zone.cells[5] = 'floor';
+  zone.cells[6] = 'floor';
+
+  const reached = ensureTraversable(zone, { entryPoints: [{ x: 0, y: 0 }], mode: 'connect' });
+
+  for (let x = 0; x <= 6; x++) assert.equal(zone.cells[x], 'floor');
+  assert.ok(reached.has('5,0'));
+  assert.ok(reached.has('6,0'));
+});
+
+test('ensureTraversable respects a reachableVia stamp in both modes without carving a physical corridor', () => {
+  const buildZone = () => {
+    const zone = createZone(7, 1, 'wall');
+    zone.cells[0] = 'floor';
+    zone.cells[5] = 'floor';
+    zone.cells[6] = 'floor';
+    zone.logicalLinks = [{ id: 'teleporter-1', from: { x: 3, y: 0 }, to: { x: 5, y: 0 }, bidirectional: false }];
+    return zone;
+  };
+  const stamp = { anchors: [], bounds: { x: 5, y: 0, width: 2, height: 1 }, mayBeIsolated: false, reachableVia: 'teleporter-1' };
+
+  const pruned = buildZone();
+  ensureTraversable(pruned, { entryPoints: [{ x: 0, y: 0 }], stamps: [stamp], mode: 'prune' });
+  assert.equal(pruned.cells[3], 'wall');
+  assert.equal(pruned.cells[5], 'floor');
+
+  const connected = buildZone();
+  ensureTraversable(connected, { entryPoints: [{ x: 0, y: 0 }], stamps: [stamp], mode: 'connect' });
+  assert.equal(connected.cells[3], 'wall');
+  assert.equal(connected.cells[5], 'floor');
 });
