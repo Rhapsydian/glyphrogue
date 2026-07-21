@@ -12,16 +12,21 @@ npm-workspaces scaffolding, a purpose-built ECS (entity/component) layer,
 the generic registration mechanism, the action/rule dispatch pipeline
 (additive and priority-based exclusive resolution), the time-units
 scheduler, the engine loop (`lock`/`unlock`/`act`/`run`) with `TakeTurn`
-dispatch for non-player actors, and — as of session 17 — the public
-`createApi()` surface every consumer goes through, versioned save DTOs with
-a stepwise migration mechanism, a storage backend abstraction
-(memory/localStorage/filesystem, atomic writes), a no-op-default `platform`
-capability, and headless/deterministic testability (seeded RNG, a
-`node --test`-friendly save/load/continue loop with no timers involved).
-60 `node --test` cases passing. See:
+dispatch for non-player actors, the public `createApi()` surface every
+consumer goes through, versioned save DTOs with a stepwise migration
+mechanism, a storage backend abstraction (memory/localStorage/filesystem,
+atomic writes), a no-op-default `platform` capability, and
+headless/deterministic testability (seeded RNG, a `node --test`-friendly
+save/load/continue loop with no timers involved). Session 18 added the map
+generation interface and primitives: `registerGenerator`/`generateZone`
+with per-zone deterministic seeding, the `GenerationContext` (caller-
+injected neighbor-zone lookup, no core-owned zone storage), the composition
+primitives (`stampTemplate`, `carveCellularAutomata`, `connectCorridor`,
+the mandatory `runConnectivityPass`), and the seed+diff zone save strategy
+(`applyDiff`/`loadZone`). 91 `node --test` cases passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 18)
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 19)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -31,8 +36,8 @@ capability, and headless/deterministic testability (seeded RNG, a
 ```
 packages/
   core/     the runtime engine — implementation started (session 14): world.js, registry.js,
-            actions.js, scheduler.js, engine.js, api.js, save.js, storage.js, rng.js under
-            src/, tests under test/
+            actions.js, scheduler.js, engine.js, api.js, save.js, storage.js, rng.js,
+            mapgen.js, zoneComposition.js, zoneDiff.js under src/, tests under test/
   editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/  in-depth design docs, one per deep-dive planning session

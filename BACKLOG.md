@@ -17,9 +17,10 @@ implementation is underway per the "packages/core implementation
 roadmap" below: sessions 14 (monorepo scaffolding + ECS foundation), 15
 (action/rule pipeline), 16 (turn scheduler + engine loop), and 17 (public
 API surface + save/load) are done, each in its own
-`docs/session-logs/session-1{4,5,6,7}-2026-07-21.md` entry. The next
-`/dev-session` starts **session 18, map generation: interface &
-primitives**.
+`docs/session-logs/session-1{4,5,6,7}-2026-07-21.md` entry. Session 18
+(map generation: interface & primitives) is also done, see
+`docs/session-logs/session-18-2026-07-21.md`. The next `/dev-session`
+starts **session 19, map generation: built-in algorithms**.
 
 ## Deferred / future items
 
@@ -162,11 +163,20 @@ code, same caveat the deep-dive roadmap carried.
     continue) is proven out end-to-end by `packages/core/test/
     headless.test.js`. See
     `docs/session-logs/session-17-2026-07-21.md`.
-18. **Map generation: interface & primitives.** `GenerationContext`,
-    `registerGenerator`, composition primitives (stamp template, carve CA,
-    connect corridor, connectivity pass with physical + logical-link
-    edges), `ZoneDTO` shape, seed+diff save strategy
-    (`mapgen-and-editor.md`).
+18. ~~**Map generation: interface & primitives.**~~ — done, see
+    `packages/core/src/mapgen.js` (`registerGenerator`, `generateZone`,
+    per-zone deterministic seeding, `GenerationContext` with a
+    caller-injected `getNeighborZone` — no core-owned zone storage or
+    grid/coordinate system built this session), `packages/core/src/
+    zoneComposition.js` (`stampTemplate`, `carveCellularAutomata`,
+    `connectCorridor`, the mandatory `runConnectivityPass` over physical +
+    `logicalLinks` edges), and `packages/core/src/zoneDiff.js`
+    (`applyDiff`/`loadZone`, the seed+diff save strategy). Logical links
+    are an edge list on the zone, not entities — a togglable teleporter's
+    on/off behavior is an ordinary entity wired to its edge by shared
+    `id`, since the connectivity pass is a one-time topological check, not
+    a live switch-state simulation. See
+    `docs/session-logs/session-18-2026-07-21.md`.
 19. **Map generation: built-in algorithms.** BSP, cellular automata, WFC,
     and layered biome generation registered through session 18's
     interface, plus the optional world/region tier if scoped in. Split
