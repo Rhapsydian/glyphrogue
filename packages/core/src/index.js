@@ -30,3 +30,8 @@ export {
   resolvePlayerAction,
   run,
 } from './engine.js';
+
+export { createRng } from './rng.js';
+
+// The public API surface every consumer should prefer - see api.js.
+export { createApi } from './api.js';
