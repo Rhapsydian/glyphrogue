@@ -64,3 +64,14 @@ export {
   createSequencerState,
   advanceSequencer,
 } from './renderEvents.js';
+
+export {
+  MEMORY_TONE,
+  classifyVisibility,
+  updateRemembered,
+  computeLighting,
+  cellRenderState,
+  updateLastKnownLight,
+} from './visibility.js';
+
+export { MEMORY_COMPONENT, ensureMemory, updateEntityMemory } from './memory.js';
