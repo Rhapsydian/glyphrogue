@@ -118,3 +118,5 @@ export { registerSound, getSound } from './sound.js';
 export { playSound, playMusic } from './audio.js';
 
 export { createAudioLoader, loadBuffer, getBuffer } from './audioLoader.js';
+
+export { saveMixSettings, loadMixSettings } from './audioSettings.js';
