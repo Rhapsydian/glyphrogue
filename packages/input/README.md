@@ -13,8 +13,12 @@ subscribe/notify primitive for DOM state binding (`stateNotifier.js`), and
 an event-driven keyboard adapter (`keyboardSource.js`) that resolves
 physical keydown/keyup events through the keymap and reports discrete
 press/release input actions (no held-repeat — a game builds auto-repeat
-policy itself on top).
+policy itself on top), and a poll-based gamepad adapter
+(`gamepadSource.js`) that diffs each `poll()` call against the previous
+frame to edge-detect button presses/releases and analog-stick crossings of
+a deadzone threshold — the same discrete input actions a d-pad press would
+fire. Single active gamepad only (first connected); the consumer drives
+`poll()` from their own animation-frame loop.
 
-The gamepad adapter and keybinding persistence land in later checkpoints of
-the same session — see `../../docs/session-logs/` once that session log is
-written.
+Keybinding persistence lands in the next checkpoint of the same session —
+see `../../docs/session-logs/` once that session log is written.
