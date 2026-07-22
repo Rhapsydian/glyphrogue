@@ -39,8 +39,16 @@ calibration with a pinnable reference, `packages/core/src/tileset.js`'s
 symbol definition format, `packages/core/src/glyphRenderer.js`'s material-
 tinting draw-time fill resolution, and `packages/core/src/
 pixelyphImport.js`'s manifest-to-font-source transform) is also done, see
-`docs/session-logs/session-22-2026-07-21.md`. The next `/dev-session`
-starts **session 23, Input adapter + capture stack**.
+`docs/session-logs/session-22-2026-07-21.md`. Session 23 (Input adapter +
+capture stack: a new `packages/input` package, kept outside `packages/core`
+per `docs/design/ui-and-input.md` — `keymap.js`'s device-tagged keybinding
+table, `captureStack.js`'s minimal generic push/pop stack (session 24
+builds real screen entries on top of it), `inputPipeline.js` wiring the
+exclusive-capture-stack decision, `stateNotifier.js`'s coarse
+subscribe/notify primitive, `keyboardSource.js`'s event-driven adapter,
+`gamepadSource.js`'s poll+edge-detect adapter, and
+`keybindingStorage.js`'s settings-slice persistence) is also done. The next
+`/dev-session` starts **session 24, Custom screens + audio**.
 
 ## Deferred / future items
 
@@ -287,11 +295,19 @@ code, same caveat the deep-dive roadmap carried.
     deferred alongside every other DOM-path item this rendering arc has
     deferred — no DOM rendering path exists in this monorepo yet. See
     `docs/session-logs/session-22-2026-07-21.md`.
-23. **Input adapter + capture stack.** Physical input → input-action
-    mapping (keyboard event-driven, gamepad poll+edge-detect), the
-    exclusive capture stack, DOM state binding (coarse subscribe/notify),
-    keybinding/remapping + settings-slice persistence
-    (`ui-and-input.md`).
+23. ~~**Input adapter + capture stack.**~~ — done, see `packages/input/src/
+    keymap.js`, `captureStack.js`, `inputPipeline.js`, `stateNotifier.js`,
+    `keyboardSource.js`, `gamepadSource.js`, and `keybindingStorage.js`. A
+    new package, kept outside `packages/core` per `ui-and-input.md`'s
+    decision that core stays a pure state/rules engine with no DOM
+    dependency — `packages/input` stays dependency-free in the other
+    direction too, no import of `@glyphrogue/core`. The capture stack this
+    session built is deliberately minimal (a generic push/pop stack of
+    opaque ids, gating input actions only) — the real screen/dialog/menu
+    stack with lifecycle and focus management is session 24's job, built
+    on top of this same stack, resolved live with the user as this
+    session's one real architectural fork alongside the package-naming
+    decision above.
 24. **Custom screens + audio.** `PendingUI`, `registerScreen`, the screen
     lifecycle/pause contract, canvas-in-screen support, screen nesting,
     mid-screen save/reload behavior (`custom-ui-and-interactions.md`); Web

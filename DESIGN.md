@@ -27,12 +27,13 @@ wrapped by a larger app with UI/tooling) — not the workspaces mechanism
 itself, since that pair is actually two separately-published repos with an
 ordinary npm dependency between them, no `workspaces` field involved. Real
 workspaces are a Glyphrogue-specific choice, for lockstep pre-1.0
-development across `core`/`editor`/`cli`:
+development across `core`/`editor`/`cli`/`input`:
 
 ```
 glyphrogue/
   packages/
     core/     — the runtime engine (ships in every production game)
+    input/    — physical input → input-action adapter, outside core on purpose
     editor/   — dev-time tools, depends on core, never imported by games
     cli/      — create-glyphrogue-game scaffolding tool (later)
   docs/design/  — in-depth design docs, one per deep-dive planning session
@@ -42,11 +43,18 @@ glyphrogue/
 ```
 
 - **`packages/core`** (`@glyphrogue/core`) — rendering, ECS/game loop,
-  input, audio, save/load, **procedural map generation** (runs at
-  runtime — ships in every game, not a dev-only tool), and the
-  scripting/plugin API surface. Modeled on `pixelloom`'s discipline:
-  `sideEffects: false`, minimal dependencies, raw ESM `src/` with no build
-  step of its own — same as `pixelloom` ships itself.
+  audio, save/load, **procedural map generation** (runs at runtime — ships
+  in every game, not a dev-only tool), and the scripting/plugin API
+  surface. Modeled on `pixelloom`'s discipline: `sideEffects: false`,
+  minimal dependencies, raw ESM `src/` with no build step of its own —
+  same as `pixelloom` ships itself.
+- **`packages/input`** (`@glyphrogue/input`) — the physical input →
+  input-action adapter (keyboard event-driven, gamepad poll+edge-detect),
+  the exclusive capture stack, DOM state binding, and keybinding
+  persistence. Kept outside `core` on purpose (`docs/design/ui-and-input.md`):
+  core stays a pure state/rules engine with no DOM dependency, and this
+  package stays dependency-free in the other direction, handing resolved
+  input actions to whatever callback the consuming game wires up.
 - **`packages/editor`** (`@glyphrogue/editor`) — the dev-time **map
   editor** (hand-author maps, tune/preview procedural-generator parameters
   and seeds, stamp/override generated content), plus tileset editor,

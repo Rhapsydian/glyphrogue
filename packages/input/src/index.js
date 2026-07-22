@@ -4,3 +4,4 @@ export { createInputPipeline } from './inputPipeline.js';
 export { createNotifier } from './stateNotifier.js';
 export { createKeyboardSource } from './keyboardSource.js';
 export { createGamepadSource } from './gamepadSource.js';
+export { saveKeybindings, loadKeybindings } from './keybindingStorage.js';
