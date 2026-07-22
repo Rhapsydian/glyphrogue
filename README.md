@@ -7,7 +7,8 @@ production builds, and support for static HTML, GitHub Pages, itch.io, and a
 Steam-compatible Electron desktop build.
 
 The research & planning phase is complete, and **`packages/core`
-implementation is underway**: sessions 14-17 of the roadmap are done —
+implementation is complete** (sessions 14-25 of the roadmap): sessions
+14-17 —
 npm-workspaces scaffolding, a purpose-built ECS (entity/component) layer,
 the generic registration mechanism, the action/rule dispatch pipeline
 (additive and priority-based exclusive resolution), the time-units
@@ -124,10 +125,27 @@ performs `fetch` itself). `audioSettings.js` persists master/music/sfx
 mixing volume as its own settings slice, reusing the existing storage
 backends exactly the way `packages/input`'s keybinding persistence already
 does.
-283 `node --test` cases passing. See:
+Session 25 (the roadmap's last item) added `definitions.js`
+(`registerEntity`/`registerEntityType`/`instantiateEntity` — inert
+component-bag definitions, plus sugar decomposing into one `registerEntity`
+call and N `registerRule` calls auto-scoped to their own instances via an
+injected `EntityType` component); `scriptedEvents.js`
+(`registerScriptedEvent`/`waitFor` — a step list compiles down to a trigger
+rule plus one rule per `waitFor` step, progress tracked in `EventState` on a
+dedicated tracking entity created lazily on first trigger match; a
+`timeUnits` wait schedules a `Timer` entity — an ordinary scheduler actor
+with a negative initial budget, **no new engine primitive**); `mods.js`
+(mod module format + dependency-ordered loading reusing the existing
+generic topological sort, hand-rolled `^`/`~`/exact semver range checking
+to stay at zero runtime dependencies); and `recordingApi.js` (the
+manifest-derivation mechanism — a mod's `register(api)` run against a
+recording implementation instead of a real one, for editor content-browsing
+or load-time validation without hand-authoring a manifest).
+323 `node --test` cases passing (295 `packages/core`, 28 `packages/input`).
+See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 25)
+- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor`/`packages/cli`, not yet scoped)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -136,13 +154,14 @@ does.
 
 ```
 packages/
-  core/     the runtime engine — implementation started (session 14): world.js, registry.js,
+  core/     the runtime engine — implementation complete (sessions 14-25): world.js, registry.js,
             actions.js, scheduler.js, engine.js, api.js, save.js, storage.js, rng.js,
             mapgen.js, zoneComposition.js, zoneDiff.js, bsp.js, cellularAutomataGenerator.js,
             waveFunctionCollapse.js, layeredBiome.js, fov.js, pathfinding.js, behaviors.js,
             glyphMetrics.js, glyphRenderer.js, camera.js, renderEvents.js, visibility.js,
             memory.js, animation.js, renderLayers.js, palette.js, fontSources.js, tileset.js,
-            pixelyphImport.js, screen.js, sound.js, audio.js, audioLoader.js, audioSettings.js
+            pixelyphImport.js, screen.js, sound.js, audio.js, audioLoader.js, audioSettings.js,
+            definitions.js, scriptedEvents.js, mods.js, recordingApi.js
             under src/, tests under test/
   input/    physical input → input-action pipeline — implementation started (session 23): keymap.js,
             captureStack.js, inputPipeline.js, stateNotifier.js, keyboardSource.js, gamepadSource.js,
