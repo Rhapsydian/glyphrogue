@@ -53,6 +53,17 @@ starts **session 24, Custom screens + audio**.
 
 ## Deferred / future items
 
+- **A real asset-loading strategy for games** — session 24 drew
+  `audioLoader.js`'s line at "takes an already-fetched `ArrayBuffer`, never
+  fetches itself," matching the existing fonts/tileset-manifest/zone-template
+  precedent, but raised while writing it: no session has actually designed
+  how a shipped game is expected to fetch/sequence/preload its asset set
+  (sounds, fonts, zone templates) end to end — every doc so far just says
+  "the caller already has the loaded data." Worth a dedicated look once a
+  real game project exists to surface actual requirements (preload screens,
+  lazy zone-content loading, asset manifests), rather than guessing ahead of
+  a concrete need.
+
 - **Accessible alternative/description layer for the canvas viewport** —
   the canvas game map has no screen-reader-accessible equivalent; flagged
   as a real future addon in `docs/design/ui-and-input.md`'s accessibility

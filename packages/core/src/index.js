@@ -114,3 +114,7 @@ export {
 export { registerScreen, getScreen } from './screen.js';
 
 export { registerSound, getSound } from './sound.js';
+
+export { playSound, playMusic } from './audio.js';
+
+export { createAudioLoader, loadBuffer, getBuffer } from './audioLoader.js';
