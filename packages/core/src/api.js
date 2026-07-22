@@ -64,7 +64,13 @@ export function createApi({
     query: (types) => query(world, types),
 
     registerRule: (id, actionType, ruleFn, options) => registerRule(registry, id, actionType, ruleFn, options),
-    dispatch: (action) => dispatch(world, registry, action, mapQuery),
+    // Threads renderEvents/scheduler through the same as act()/
+    // resolvePlayerAction - previously omitted here, which meant a rule
+    // dispatched directly via api.dispatch (e.g. a scripted event's
+    // trigger) couldn't reach ctx.enqueueRenderEvent/addActor. Surfaced by
+    // registerScriptedEvent's timeUnits wait needing ctx.addActor to work
+    // from an ordinary api.dispatch() call, not just from inside act().
+    dispatch: (action) => dispatch(world, registry, action, mapQuery, renderEvents, scheduler),
 
     findPath: (from, to, opts) => findPath(from, to, { ...opts, isWalkable: mapQuery.isWalkable }),
     computeFov: (origin, radius, opts) => computeFov(origin, radius, { ...opts, isOpaque: mapQuery.isOpaque }),

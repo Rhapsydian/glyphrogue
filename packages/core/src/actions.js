@@ -12,6 +12,7 @@ import { findPath } from './pathfinding.js';
 import { computeFov } from './fov.js';
 import { enqueueRenderEvent } from './renderEvents.js';
 import { soundsFor } from './sound.js';
+import { addActor, removeActor } from './scheduler.js';
 
 export function registerRule(registry, id, actionType, ruleFn, options = {}) {
   const { priority = 0, ...registryOptions } = options;
@@ -47,8 +48,11 @@ function emitSounds(registry, action, ctx, renderEvents) {
 // callback may be omitted if a rule pipeline never needs it. `renderEvents`
 // (the render-event queue, renderEvents.js) is optional the same way -
 // omitted, ctx.enqueueRenderEvent is a no-op, so existing calls/tests that
-// predate rendering keep working unchanged.
-function createContext(world, mapQuery = {}, renderEvents) {
+// predate rendering keep working unchanged. `scheduler` is a further
+// optional trailing param, same precedent - omitted, ctx.addActor/
+// removeActor are no-ops. Needed so a rule (e.g. registerScriptedEvent's
+// compiled timeUnits wait) can schedule a Timer entity from inside dispatch.
+function createContext(world, mapQuery = {}, renderEvents, scheduler) {
   return {
     hasComponent: (entity, type) => hasComponent(world, entity, type),
     getComponent: (entity, type) => getComponent(world, entity, type),
@@ -62,14 +66,20 @@ function createContext(world, mapQuery = {}, renderEvents) {
     enqueueRenderEvent: (event) => {
       if (renderEvents) enqueueRenderEvent(renderEvents, event);
     },
+    addActor: (entity, initialBudget) => {
+      if (scheduler) addActor(scheduler, entity, initialBudget);
+    },
+    removeActor: (entity) => {
+      if (scheduler) removeActor(scheduler, entity);
+    },
   };
 }
 
-export function dispatch(world, registry, action, mapQuery, renderEvents) {
+export function dispatch(world, registry, action, mapQuery, renderEvents, scheduler) {
   const resolved = [];
   const vetoed = [];
   const queue = [action];
-  const ctx = createContext(world, mapQuery, renderEvents);
+  const ctx = createContext(world, mapQuery, renderEvents, scheduler);
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -110,8 +120,8 @@ export function dispatch(world, registry, action, mapQuery, renderEvents) {
 // types representing a mutually-exclusive choice (TakeTurn: an actor
 // can't both Flee and Guard the same turn), not the additive-reaction
 // shape most action types use.
-export function dispatchExclusive(world, registry, action, mapQuery, renderEvents) {
-  const ctx = createContext(world, mapQuery, renderEvents);
+export function dispatchExclusive(world, registry, action, mapQuery, renderEvents, scheduler) {
+  const ctx = createContext(world, mapQuery, renderEvents, scheduler);
   const pipeline = pipelineFor(registry, action.type);
 
   let winnerResult;
@@ -133,7 +143,7 @@ export function dispatchExclusive(world, registry, action, mapQuery, renderEvent
   emitSounds(registry, action, ctx, renderEvents);
 
   for (const followOnAction of winnerResult?.followOn ?? []) {
-    const sub = dispatch(world, registry, followOnAction, mapQuery, renderEvents);
+    const sub = dispatch(world, registry, followOnAction, mapQuery, renderEvents, scheduler);
     resolved.push(...sub.resolved);
     vetoed.push(...sub.vetoed);
   }

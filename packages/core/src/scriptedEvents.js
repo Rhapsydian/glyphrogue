@@ -43,11 +43,29 @@ function findEventEntity(ctx, id) {
   return ctx.query(['ScriptedEvent']).find((entity) => ctx.getComponent(entity, 'ScriptedEvent').id === id);
 }
 
+// A timeUnits wait resolves through the same "wait for a specific action"
+// mechanism as the plain action form (scripting-api.md) - it just schedules
+// a Timer entity (engine.js's act() dispatches its carried action once the
+// scheduler picks it, per the timer/scheduler-integration fork resolved
+// live at checkpoint 3) that emits this synthetic action when it fires.
+// Two distinct shapes for the same identifying fields: `timerAction` is a
+// real dispatchable action (keyed `type`, like any other action), while
+// `timerCondition` is a match condition for matchesCondition (keyed
+// `action`, like `trigger`/`waitFor` throughout this module).
+function timerAction(id, step) {
+  return { type: 'EventTimerElapsed', eventId: id, step };
+}
+
+function timerCondition(id, step) {
+  return { action: 'EventTimerElapsed', eventId: id, step };
+}
+
 // Runs every consecutive `do` step starting at fromIndex, stopping at the
 // next `waitFor` step (recorded into EventState.step for that step's rule
-// to pick up) or the end of the list (tracking entity destroyed - nothing
-// left to advance).
-function advance(ctx, entity, def, fromIndex) {
+// to pick up - a timeUnits step also gets its Timer entity scheduled here)
+// or the end of the list (tracking entity destroyed - nothing left to
+// advance).
+function advance(ctx, entity, def, fromIndex, id) {
   const actions = [];
   let index = fromIndex;
 
@@ -60,6 +78,13 @@ function advance(ctx, entity, def, fromIndex) {
     ctx.destroyEntity(entity);
   } else {
     ctx.addComponent(entity, 'EventState', { step: index });
+
+    const { timeUnits } = def.steps[index].waitFor;
+    if (timeUnits !== undefined) {
+      const timer = ctx.createEntity();
+      ctx.addComponent(timer, 'Timer', { action: timerAction(id, index) });
+      ctx.addActor(timer, -timeUnits);
+    }
   }
 
   return actions.length > 0 ? { followOn: actions } : undefined;
@@ -76,23 +101,23 @@ export function registerScriptedEvent(registry, id, def, options) {
     ctx.addComponent(entity, 'ScriptedEvent', { id });
     ctx.addComponent(entity, 'EventState', { step: 0 });
 
-    return advance(ctx, entity, def, 0);
+    return advance(ctx, entity, def, 0, id);
   });
 
   def.steps.forEach((step, index) => {
-    // timeUnits waits are wired up separately (session 25 checkpoint 3) -
-    // they compile to a scheduled timer entity, not a plain action-match
-    // rule, since nothing emits the wait's "action" until that timer fires.
-    if (!step.waitFor?.action) return;
+    if (!step.waitFor) return;
 
-    registerRule(registry, `${id}::step::${index}`, step.waitFor.action, (action, ctx) => {
-      if (!matchesCondition(action, step.waitFor, ctx)) return;
+    const actionType = step.waitFor.action ?? 'EventTimerElapsed';
+    const condition = step.waitFor.action ? step.waitFor : timerCondition(id, index);
+
+    registerRule(registry, `${id}::step::${index}`, actionType, (action, ctx) => {
+      if (!matchesCondition(action, condition, ctx)) return;
 
       const entity = findEventEntity(ctx, id);
       if (entity === undefined) return;
       if (ctx.getComponent(entity, 'EventState').step !== index) return;
 
-      return advance(ctx, entity, def, index + 1);
+      return advance(ctx, entity, def, index + 1, id);
     });
   });
 }

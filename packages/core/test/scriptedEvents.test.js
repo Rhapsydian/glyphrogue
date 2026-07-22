@@ -4,6 +4,7 @@ import { createWorld, getComponent } from '../src/world.js';
 import { createRegistry } from '../src/registry.js';
 import { dispatch } from '../src/actions.js';
 import { registerScriptedEvent, getScriptedEvent } from '../src/scriptedEvents.js';
+import { createApi } from '../src/api.js';
 
 function trackedEntity(world, id) {
   for (const [entity, data] of world.components.get('ScriptedEvent') ?? []) {
@@ -134,6 +135,52 @@ test('waitFor supports a predicate escape hatch alongside field matching', () =>
 
   const highEnough = dispatch(world, registry, { type: 'Check', value: 20 });
   assert.deepEqual(highEnough.resolved.map((a) => a.type), ['Check', 'Resolved']);
+});
+
+// A timer competing against a real actor: goblin starts at budget 60 and
+// spends 100/turn wandering, so it wins the first 3 act() calls (60, -40+100
+// top-up=60, -40+100=60 again) before the timer's -150 (topped up to 50 on
+// the 3rd top-up) finally out-budgets it on the 4th call. A timer alone in
+// the scheduler would win on the very first act() regardless of its
+// negative start - the wait is only meaningful relative to other actors
+// also competing for turns, same as any other budget in this scheduler.
+function setUpFuseWithCompetingActor(api, timeUnits) {
+  const goblin = api.createEntity();
+  api.addActor(goblin, 60);
+  api.registerRule('wanders', 'TakeTurn', (action) => ({
+    followOn: [{ type: 'Move', entity: action.entity, cost: 100 }],
+  }));
+
+  api.registerScriptedEvent('slow-fuse', {
+    trigger: { action: 'Start' },
+    steps: [
+      { waitFor: { timeUnits } },
+      { do: [{ type: 'Explode' }] },
+    ],
+  });
+
+  const exploded = [];
+  api.registerRule('watch-explode', 'Explode', () => { exploded.push(true); });
+  api.dispatch({ type: 'Start' });
+  return exploded;
+}
+
+test('a timeUnits waitFor schedules a Timer and advances once the engine\'s act() loop fires it', () => {
+  const api = createApi({ roundBudget: 100 });
+  const exploded = setUpFuseWithCompetingActor(api, 150);
+
+  for (let i = 0; i < 4; i++) api.act();
+
+  assert.deepEqual(exploded, [true]);
+});
+
+test('a timeUnits wait does not advance before its scheduled time', () => {
+  const api = createApi({ roundBudget: 100 });
+  const exploded = setUpFuseWithCompetingActor(api, 150);
+
+  for (let i = 0; i < 3; i++) api.act();
+
+  assert.deepEqual(exploded, []);
 });
 
 test('getScriptedEvent returns the raw registered definition', () => {

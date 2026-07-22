@@ -1,6 +1,6 @@
-import { hasComponent } from './world.js';
+import { hasComponent, getComponent, destroyEntity } from './world.js';
 import { dispatch, dispatchExclusive } from './actions.js';
-import { next, spend } from './scheduler.js';
+import { next, spend, removeActor } from './scheduler.js';
 
 export function createEngine(world, registry, scheduler, mapQuery, renderEvents) {
   return { world, registry, scheduler, mapQuery, renderEvents, locked: false };
@@ -30,13 +30,25 @@ export function act(engine) {
     return { entity, waiting: true };
   }
 
-  const result = dispatchExclusive(engine.world, engine.registry, { type: 'TakeTurn', entity }, engine.mapQuery, engine.renderEvents);
+  // A Timer entity (scripting-api.md's timeUnits waitFor, scheduled via a
+  // negative initial budget - see scriptedEvents.js) isn't a real actor: it
+  // dispatches its carried action once, then removes itself, rather than
+  // going through dispatchExclusive's TakeTurn/behaviors pipeline.
+  if (hasComponent(engine.world, entity, 'Timer')) {
+    const { action } = getComponent(engine.world, entity, 'Timer');
+    const result = dispatch(engine.world, engine.registry, action, engine.mapQuery, engine.renderEvents, engine.scheduler);
+    removeActor(engine.scheduler, entity);
+    destroyEntity(engine.world, entity);
+    return { entity, waiting: false, result };
+  }
+
+  const result = dispatchExclusive(engine.world, engine.registry, { type: 'TakeTurn', entity }, engine.mapQuery, engine.renderEvents, engine.scheduler);
   spend(engine.scheduler, entity, sumCost(result.resolved));
   return { entity, waiting: false, result };
 }
 
 export function resolvePlayerAction(engine, entity, action) {
-  const result = dispatch(engine.world, engine.registry, action, engine.mapQuery, engine.renderEvents);
+  const result = dispatch(engine.world, engine.registry, action, engine.mapQuery, engine.renderEvents, engine.scheduler);
   spend(engine.scheduler, entity, sumCost(result.resolved));
   unlock(engine);
   return result;

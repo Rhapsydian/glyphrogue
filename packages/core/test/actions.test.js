@@ -4,6 +4,7 @@ import { createWorld, createEntity, addComponent } from '../src/world.js';
 import { createRegistry, register } from '../src/registry.js';
 import { registerRule, dispatch, dispatchExclusive } from '../src/actions.js';
 import { createRenderEventQueue } from '../src/renderEvents.js';
+import { createScheduler } from '../src/scheduler.js';
 
 test('a rule only fires for its declared action type', () => {
   const world = createWorld();
@@ -293,6 +294,39 @@ test('ctx.enqueueRenderEvent is a no-op when no renderEvents queue is supplied',
 
   registerRule(registry, 'emits-render-event', 'Move', (action, ctx) => {
     ctx.enqueueRenderEvent({ kind: 'animation' });
+  });
+
+  assert.doesNotThrow(() => dispatch(world, registry, { type: 'Move' }));
+});
+
+test('ctx.addActor/removeActor thread through to the scheduler passed into dispatch()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+  const entity = createEntity(world);
+
+  registerRule(registry, 'schedules-a-timer', 'Move', (action, ctx) => {
+    ctx.addActor(entity, -50);
+  });
+
+  dispatch(world, registry, { type: 'Move' }, undefined, undefined, scheduler);
+
+  assert.equal(scheduler.actors.get(entity), -50);
+
+  registerRule(registry, 'removes-a-timer', 'Check', (action, ctx) => {
+    ctx.removeActor(entity);
+  });
+  dispatch(world, registry, { type: 'Check' }, undefined, undefined, scheduler);
+
+  assert.equal(scheduler.actors.has(entity), false);
+});
+
+test('ctx.addActor is a no-op when no scheduler is supplied', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+
+  registerRule(registry, 'schedules-a-timer', 'Move', (action, ctx) => {
+    ctx.addActor(1, -50);
   });
 
   assert.doesNotThrow(() => dispatch(world, registry, { type: 'Move' }));

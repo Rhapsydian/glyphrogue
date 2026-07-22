@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createWorld, createEntity, addComponent } from '../src/world.js';
+import { createWorld, createEntity, addComponent, hasComponent } from '../src/world.js';
 import { createRegistry } from '../src/registry.js';
 import { registerRule } from '../src/actions.js';
 import { createScheduler, addActor } from '../src/scheduler.js';
@@ -136,6 +136,45 @@ test('act() threads renderEvents through to a TakeTurn rule', () => {
 
   assert.equal(renderEvents.events.length, 1);
   assert.deepEqual(renderEvents.events[0], { kind: 'animation', entity: goblin });
+});
+
+test('a Timer entity fires its carried action once its negative budget clears, then self-removes', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+  const timer = createEntity(world);
+  addActor(scheduler, timer, -250);
+  addComponent(world, timer, 'Timer', { action: { type: 'EventTimerElapsed', eventId: 'e1', step: 0 } });
+
+  const seen = [];
+  registerRule(registry, 'observe-timer', 'EventTimerElapsed', (action) => { seen.push(action); });
+
+  // Alone in the scheduler, the timer is the only actor next() can ever
+  // return, so it wins the very first act() regardless of its negative
+  // start - the negative budget only delays it relative to competing
+  // actors (covered by scriptedEvents.test.js's end-to-end timeUnits case).
+  const engine = createEngine(world, registry, scheduler);
+  const turn = act(engine);
+
+  assert.equal(turn.entity, timer);
+  assert.deepEqual(seen, [{ type: 'EventTimerElapsed', eventId: 'e1', step: 0 }]);
+  assert.equal(scheduler.actors.has(timer), false);
+  assert.equal(hasComponent(world, timer, 'Timer'), false);
+});
+
+test('a Timer entity dispatches its own action instead of a TakeTurn/behaviors pipeline', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+  const timer = createEntity(world);
+  addActor(scheduler, timer, 10);
+  addComponent(world, timer, 'Timer', { action: { type: 'EventTimerElapsed' } });
+  setupWander(registry); // a TakeTurn rule that would add a Move follow-on, if it ever ran
+
+  const engine = createEngine(world, registry, scheduler);
+  const turn = act(engine);
+
+  assert.deepEqual(turn.result.resolved.map((a) => a.type), ['EventTimerElapsed']);
 });
 
 test('resolvePlayerAction threads renderEvents through to the dispatched action', () => {
