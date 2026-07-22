@@ -47,8 +47,9 @@ builds real screen entries on top of it), `inputPipeline.js` wiring the
 exclusive-capture-stack decision, `stateNotifier.js`'s coarse
 subscribe/notify primitive, `keyboardSource.js`'s event-driven adapter,
 `gamepadSource.js`'s poll+edge-detect adapter, and
-`keybindingStorage.js`'s settings-slice persistence) is also done. The next
-`/dev-session` starts **session 24, Custom screens + audio**.
+`keybindingStorage.js`'s settings-slice persistence) is also done, see
+`docs/session-logs/session-23-2026-07-22.md`. The next `/dev-session`
+starts **session 24, Custom screens + audio**.
 
 ## Deferred / future items
 
@@ -307,7 +308,7 @@ code, same caveat the deep-dive roadmap carried.
     stack with lifecycle and focus management is session 24's job, built
     on top of this same stack, resolved live with the user as this
     session's one real architectural fork alongside the package-naming
-    decision above.
+    decision above. See `docs/session-logs/session-23-2026-07-22.md`.
 24. **Custom screens + audio.** `PendingUI`, `registerScreen`, the screen
     lifecycle/pause contract, canvas-in-screen support, screen nesting,
     mid-screen save/reload behavior (`custom-ui-and-interactions.md`); Web
