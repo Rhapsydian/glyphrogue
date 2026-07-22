@@ -48,8 +48,18 @@ exclusive-capture-stack decision, `stateNotifier.js`'s coarse
 subscribe/notify primitive, `keyboardSource.js`'s event-driven adapter,
 `gamepadSource.js`'s poll+edge-detect adapter, and
 `keybindingStorage.js`'s settings-slice persistence) is also done, see
-`docs/session-logs/session-23-2026-07-22.md`. The next `/dev-session`
-starts **session 24, Custom screens + audio**.
+`docs/session-logs/session-23-2026-07-22.md`. Session 24 (Custom screens +
+audio: `registerScreen`/`PendingUI`/the pause contract expressed entirely
+via existing `lock()`/`unlock()`/`resolvePlayerAction`, no new engine
+primitive; `registerSound` baked automatically into
+`dispatch()`/`dispatchExclusive()`; a Web Audio playback backend
+(`packages/core/src/audio.js`) plus a separate optional
+`audioLoader.js` decode/cache convenience; mixing-settings persistence
+reusing the existing storage backends) is also done, kept bundled rather
+than split per the user's explicit choice — see
+`docs/session-logs/session-24-2026-07-22.md`. The next `/dev-session`
+starts **session 25, Scripted events + mod/plugin registration
+completion**.
 
 ## Deferred / future items
 
@@ -320,14 +330,33 @@ code, same caveat the deep-dive roadmap carried.
     on top of this same stack, resolved live with the user as this
     session's one real architectural fork alongside the package-naming
     decision above. See `docs/session-logs/session-23-2026-07-22.md`.
-24. **Custom screens + audio.** `PendingUI`, `registerScreen`, the screen
-    lifecycle/pause contract, canvas-in-screen support, screen nesting,
-    mid-screen save/reload behavior (`custom-ui-and-interactions.md`); Web
-    Audio backend, `registerSound` reading off the render-event buffer,
-    screen-direct playback, mixing settings (`audio.md`). Bundled since
-    both are comparatively small, additive layers on sessions 21/23's
-    stack and buffer — split into two sessions if it proves too big once
-    actually scoped.
+24. ~~**Custom screens + audio.**~~ — done, see `packages/core/src/
+    screen.js` (`registerScreen`/`getScreen`) plus `api.openScreen`/
+    `api.closeScreen`, which express the pause contract entirely via the
+    existing `lock()`/`unlock()`/`resolvePlayerAction` — no new engine
+    primitive needed. `packages/core/src/sound.js` (`registerSound`/
+    `soundsFor`) is baked directly into `dispatch()`/`dispatchExclusive()`
+    (`actions.js`), automatically enqueuing a render event for every
+    resolved action matching a registered sound's `trigger`/`match`, per
+    `audio.md`'s "core's rule-resolution machinery pushes entries onto this
+    buffer regardless of consumer." `packages/core/src/audio.js`
+    (`playSound`/`playMusic`) is the sole module touching real
+    `AudioContext`/`AudioBufferSourceNode`/`GainNode` calls, mirroring
+    `glyphRenderer.js`'s posture — takes an already-decoded `AudioBuffer`,
+    no swappable backend. `packages/core/src/audioLoader.js`
+    (`createAudioLoader`/`loadBuffer`/`getBuffer`) is a separate, optional
+    `decodeAudioData`+cache convenience — resolved live with the user
+    across several rounds as this session's one real architectural fork
+    (see the session log for the full discussion), landing on "core takes
+    a decoded buffer for playback, but ships a tested decode/cache
+    primitive alongside it rather than leaving every game to reinvent
+    that"; it takes an already-fetched `ArrayBuffer`, never performs
+    `fetch` itself. `packages/core/src/audioSettings.js`
+    (`saveMixSettings`/`loadMixSettings`) persists mixing volume as its own
+    settings slice, reusing the existing storage backends the same way
+    `packages/input`'s `keybindingStorage.js` already does. Kept bundled
+    rather than split, per the user's explicit choice. See
+    `docs/session-logs/session-24-2026-07-22.md`.
 25. **Scripted events + mod/plugin registration completion.**
     `registerScriptedEvent`/`waitFor` (action-match and `timeUnits`
     forms), `EventState`, synthetic `EventTimerElapsed`. Mod module format

@@ -102,10 +102,32 @@ binding), `keyboardSource.js` (event-driven, filters browser auto-repeat),
 press/release events — analog stick input becomes a discrete directional
 input action past a deadzone), and `keybindingStorage.js` (settings-slice
 persistence, entirely outside world-save data).
-265 `node --test` cases passing. See:
+Session 24 added custom screens and audio, both needing **no new engine
+primitive**: `screen.js` (`registerScreen`/`getScreen`, the generic
+core→UI hand-off registration) plus `api.openScreen`/`api.closeScreen`,
+which express the screen pause contract entirely in terms of the existing
+`lock()`/`unlock()`/`resolvePlayerAction` — opening a screen sets a
+`PendingUI({ screenId, payload })` marker and holds `lock()` open for the
+screen's whole lifetime, closing it dispatches one ordinary Action through
+the normal pipeline exactly like any other locked-turn resume. `sound.js`
+(`registerSound`) is reactive, not core-triggered: `dispatch()`/
+`dispatchExclusive()` (`actions.js`) now automatically enqueue a render
+event for every resolved action matching a registered sound's
+`trigger`/`match`, reusing the same render-event buffer rendering already
+needed. `audio.js` (`playSound`/`playMusic`) is the sole module touching
+real `AudioContext`/`AudioBufferSourceNode`/`GainNode` calls, mirroring
+`glyphRenderer.js`'s posture — takes an already-decoded `AudioBuffer`, no
+swappable backend (Web Audio is identical across every build target).
+`audioLoader.js` is a separate, optional `decodeAudioData`+cache
+convenience (takes an already-fetched `ArrayBuffer`; `core` still never
+performs `fetch` itself). `audioSettings.js` persists master/music/sfx
+mixing volume as its own settings slice, reusing the existing storage
+backends exactly the way `packages/input`'s keybinding persistence already
+does.
+283 `node --test` cases passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 24)
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 25)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -120,7 +142,7 @@ packages/
             waveFunctionCollapse.js, layeredBiome.js, fov.js, pathfinding.js, behaviors.js,
             glyphMetrics.js, glyphRenderer.js, camera.js, renderEvents.js, visibility.js,
             memory.js, animation.js, renderLayers.js, palette.js, fontSources.js, tileset.js,
-            pixelyphImport.js
+            pixelyphImport.js, screen.js, sound.js, audio.js, audioLoader.js, audioSettings.js
             under src/, tests under test/
   input/    physical input → input-action pipeline — implementation started (session 23): keymap.js,
             captureStack.js, inputPipeline.js, stateNotifier.js, keyboardSource.js, gamepadSource.js,
