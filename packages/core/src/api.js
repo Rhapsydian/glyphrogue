@@ -9,6 +9,7 @@ import { loadZone } from './zoneDiff.js';
 import { findPath } from './pathfinding.js';
 import { computeFov } from './fov.js';
 import { createRenderEventQueue, enqueueRenderEvent, createSequencerState, advanceSequencer } from './renderEvents.js';
+import { registerScreen, getScreen } from './screen.js';
 
 const noopPlatform = { unlockAchievement() {} };
 
@@ -71,6 +72,25 @@ export function createApi({
 
     addActor: (entity, initialBudget) => addActor(scheduler, entity, initialBudget),
     removeActor: (entity) => removeActor(scheduler, entity),
+
+    registerScreen: (id, definition, options) => registerScreen(registry, id, definition, options),
+    getScreen: (id) => getScreen(registry, id),
+    // custom-ui-and-interactions.md: opening a screen is simply holding
+    // lock() open for its lifetime; PendingUI is the core-triggered hand-off
+    // marker (UI-initiated screens - e.g. a player-pressed inventory key -
+    // skip this entirely and manage lock()/unlock() themselves).
+    openScreen: (entity, screenId, payload) => {
+      addComponent(world, entity, 'PendingUI', { screenId, payload });
+      lock(engine);
+    },
+    // Closing dispatches exactly one ordinary Action through the normal
+    // pipeline - no different in kind from the engine picking back up after
+    // any other locked turn, so this delegates to resolvePlayerAction
+    // rather than reimplementing dispatch+spend+unlock.
+    closeScreen: (entity, action) => {
+      removeComponent(world, entity, 'PendingUI');
+      return resolvePlayerAction(engine, entity, action);
+    },
 
     act: () => act(engine),
     resolvePlayerAction: (entity, action) => resolvePlayerAction(engine, entity, action),

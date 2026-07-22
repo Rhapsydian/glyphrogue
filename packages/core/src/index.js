@@ -110,3 +110,5 @@ export {
   entityDrawCommands,
   paintLayer,
 } from './renderLayers.js';
+
+export { registerScreen, getScreen } from './screen.js';
