@@ -126,6 +126,8 @@ export { registerScriptedEvent, getScriptedEvent } from './scriptedEvents.js';
 
 export { loadMods, satisfiesRange, CORE_API_VERSION } from './mods.js';
 
+export { createRecordingApi } from './recordingApi.js';
+
 export { playSound, playMusic } from './audio.js';
 
 export { createAudioLoader, loadBuffer, getBuffer } from './audioLoader.js';

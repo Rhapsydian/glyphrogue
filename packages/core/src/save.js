@@ -39,10 +39,18 @@ function componentsFromPlain(plain) {
 
 // serializeGame/mods are owned by the downstream game, not core -
 // core-architecture.md/scripting-api.md's split. Core only knows how to
-// serialize its own world/scheduler/rng state; the game slice is produced
-// by an injected hook, and mod slices (nothing produces these yet - no
-// mod-loading system exists) are passed through as-is.
-export function serialize(api, { gameDataVersion = 1, serializeGame = () => ({}), mods = {} } = {}) {
+// serialize its own world/scheduler/rng state; the game slice and each
+// mod's slice are produced by injected hooks.
+//
+// `mods` is a list of loaded-mod descriptors - `{ id, modDataVersion,
+// serialize(api) }` - one per dynamically-loaded mod (mods.js's
+// loadMods()), generalizing the single serializeGame hook to N
+// independently-versioned slices per scripting-api.md's per-mod save-slice
+// design. A mod's own deserialize hook (see deserialize() below) is
+// responsible for running its own migrations if it needs to, the same way
+// deserializeGame already receives the raw game slice with no migration
+// step run on its behalf by core.
+export function serialize(api, { gameDataVersion = 1, serializeGame = () => ({}), mods = [] } = {}) {
   return {
     coreSchemaVersion: CORE_SCHEMA_VERSION,
     core: {
@@ -57,7 +65,12 @@ export function serialize(api, { gameDataVersion = 1, serializeGame = () => ({})
     },
     gameDataVersion,
     game: serializeGame(api),
-    mods,
+    mods: Object.fromEntries(
+      mods.map(({ id, modDataVersion, serialize: serializeMod }) => [
+        id,
+        { modDataVersion, payload: serializeMod(api) },
+      ]),
+    ),
   };
 }
 
@@ -76,10 +89,10 @@ export function deserialize(dto, {
   seed = 1,
   platform,
   coreMigrations = {},
-  registeredModIds = [],
+  mods = [],
   deserializeGame,
 } = {}) {
-  checkModsPresent(dto, registeredModIds);
+  checkModsPresent(dto, mods.map(({ id }) => id));
 
   const core = runMigrations(dto.core, dto.coreSchemaVersion, CORE_SCHEMA_VERSION, coreMigrations);
 
@@ -97,6 +110,11 @@ export function deserialize(dto, {
   );
 
   api.rng.state = core.rng.state;
+
+  for (const { id, deserialize: deserializeMod } of mods) {
+    const slice = dto.mods?.[id];
+    if (slice) deserializeMod?.(slice, api);
+  }
 
   deserializeGame?.(dto.game);
 

@@ -74,21 +74,48 @@ test('deserializeGame hook receives the game slice on load', () => {
   assert.deepEqual(received, { questFlags: { metGoblin: true } });
 });
 
+test('serialize populates a slice per mod using its own serialize hook', () => {
+  const { api } = buildSampleApi();
+  const mods = [{ id: 'goblin-pack', modDataVersion: 1, serialize: () => ({ tamed: 3 }) }];
+
+  const dto = serialize(api, { mods });
+
+  assert.deepEqual(dto.mods, { 'goblin-pack': { modDataVersion: 1, payload: { tamed: 3 } } });
+});
+
 test('loading a save with an unknown mod slice throws', () => {
   const { api } = buildSampleApi();
-  const dto = serialize(api, { mods: { 'goblin-pack': { modDataVersion: 1, payload: {} } } });
+  const mods = [{ id: 'goblin-pack', modDataVersion: 1, serialize: () => ({}) }];
+  const dto = serialize(api, { mods });
 
   assert.throws(
-    () => deserialize(dto, { registeredModIds: [] }),
+    () => deserialize(dto, { mods: [] }),
     /goblin-pack/,
   );
 });
 
-test('loading a save whose mod slice matches an installed mod succeeds', () => {
+test('loading a save whose mod slice matches an installed mod calls its deserialize hook', () => {
   const { api } = buildSampleApi();
-  const dto = serialize(api, { mods: { 'goblin-pack': { modDataVersion: 1, payload: {} } } });
+  const mods = [{ id: 'goblin-pack', modDataVersion: 1, serialize: () => ({ tamed: 3 }) }];
+  const dto = serialize(api, { mods });
 
-  assert.doesNotThrow(() => deserialize(dto, { registeredModIds: ['goblin-pack'] }));
+  let received;
+  deserialize(dto, {
+    mods: [{ id: 'goblin-pack', deserialize: (slice) => { received = slice; } }],
+  });
+
+  assert.deepEqual(received, { modDataVersion: 1, payload: { tamed: 3 } });
+});
+
+test('a mod present at load time but absent from the save is simply skipped, not an error', () => {
+  const { api } = buildSampleApi();
+  const dto = serialize(api);
+
+  let called = false;
+  assert.doesNotThrow(() => deserialize(dto, {
+    mods: [{ id: 'goblin-pack', deserialize: () => { called = true; } }],
+  }));
+  assert.equal(called, false);
 });
 
 test('runMigrations applies a sparse stepwise chain in order', () => {
