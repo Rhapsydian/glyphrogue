@@ -12,6 +12,7 @@ import { createRenderEventQueue, enqueueRenderEvent, createSequencerState, advan
 import { registerScreen, getScreen } from './screen.js';
 import { registerSound } from './sound.js';
 import { registerEntity, registerEntityType, getEntityDefinition, instantiateEntity } from './definitions.js';
+import { registerScriptedEvent, getScriptedEvent } from './scriptedEvents.js';
 
 const noopPlatform = { unlockAchievement() {} };
 
@@ -81,6 +82,9 @@ export function createApi({
     registerEntityType: (id, def, options) => registerEntityType(registry, id, def, options),
     getEntityDefinition: (id) => getEntityDefinition(registry, id),
     instantiateEntity: (id, overrides) => instantiateEntity(registry, world, id, overrides),
+
+    registerScriptedEvent: (id, def, options) => registerScriptedEvent(registry, id, def, options),
+    getScriptedEvent: (id) => getScriptedEvent(registry, id),
     registerScreen: (id, definition, options) => registerScreen(registry, id, definition, options),
     getScreen: (id) => getScreen(registry, id),
     // custom-ui-and-interactions.md: opening a screen is simply holding

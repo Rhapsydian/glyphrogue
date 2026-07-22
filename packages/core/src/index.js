@@ -122,6 +122,8 @@ export {
   instantiateEntity,
 } from './definitions.js';
 
+export { registerScriptedEvent, getScriptedEvent } from './scriptedEvents.js';
+
 export { playSound, playMusic } from './audio.js';
 
 export { createAudioLoader, loadBuffer, getBuffer } from './audioLoader.js';
