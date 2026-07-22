@@ -11,6 +11,7 @@ import {
 import { findPath } from './pathfinding.js';
 import { computeFov } from './fov.js';
 import { enqueueRenderEvent } from './renderEvents.js';
+import { soundsFor } from './sound.js';
 
 export function registerRule(registry, id, actionType, ruleFn, options = {}) {
   const { priority = 0, ...registryOptions } = options;
@@ -25,6 +26,18 @@ function pipelineFor(registry, actionType) {
 
 function resolvePriority(entry, action, ctx) {
   return typeof entry.priority === 'function' ? entry.priority(action, ctx) : entry.priority;
+}
+
+// audio.md: "core's rule-resolution machinery pushes entries onto this
+// buffer regardless of consumer" - automatic on every resolved action, not
+// an opt-in step a consumer calls separately. One shared render-event
+// queue, same as rendering's sequencing needs.
+function emitSounds(registry, action, ctx, renderEvents) {
+  if (!renderEvents) return;
+  for (const { id, entry } of soundsFor(registry, action.type)) {
+    if (entry.match && !entry.match(action, ctx)) continue;
+    enqueueRenderEvent(renderEvents, { kind: 'sound', soundId: id, source: entry.source });
+  }
 }
 
 // `mapQuery` (`{ isWalkable, isOpaque }`) is caller-injected at
@@ -83,6 +96,7 @@ export function dispatch(world, registry, action, mapQuery, renderEvents) {
     }
 
     resolved.push(current);
+    emitSounds(registry, current, ctx, renderEvents);
     queue.push(...followOns);
   }
 
@@ -116,6 +130,7 @@ export function dispatchExclusive(world, registry, action, mapQuery, renderEvent
 
   const resolved = [action];
   const vetoed = [];
+  emitSounds(registry, action, ctx, renderEvents);
 
   for (const followOnAction of winnerResult?.followOn ?? []) {
     const sub = dispatch(world, registry, followOnAction, mapQuery, renderEvents);

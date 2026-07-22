@@ -112,3 +112,5 @@ export {
 } from './renderLayers.js';
 
 export { registerScreen, getScreen } from './screen.js';
+
+export { registerSound, getSound } from './sound.js';

@@ -10,6 +10,7 @@ import { findPath } from './pathfinding.js';
 import { computeFov } from './fov.js';
 import { createRenderEventQueue, enqueueRenderEvent, createSequencerState, advanceSequencer } from './renderEvents.js';
 import { registerScreen, getScreen } from './screen.js';
+import { registerSound } from './sound.js';
 
 const noopPlatform = { unlockAchievement() {} };
 
@@ -73,6 +74,7 @@ export function createApi({
     addActor: (entity, initialBudget) => addActor(scheduler, entity, initialBudget),
     removeActor: (entity) => removeActor(scheduler, entity),
 
+    registerSound: (id, definition, options) => registerSound(registry, id, definition, options),
     registerScreen: (id, definition, options) => registerScreen(registry, id, definition, options),
     getScreen: (id) => getScreen(registry, id),
     // custom-ui-and-interactions.md: opening a screen is simply holding
