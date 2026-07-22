@@ -88,10 +88,24 @@ redraw-cadence decoupling; a resolved gradient becomes a real
 `ctx.createLinearGradient`); and `pixelyphImport.js`
 (`glyphManifestToFontSource`, a pure transform consuming Pixelyph's
 already-shipped glyph-manifest export, no file I/O).
-237 `node --test` cases passing. See:
+Session 23 added a new `packages/input` package — physical input →
+input-action pipeline, kept outside `packages/core` on purpose (core stays
+a pure state/rules engine with no DOM dependency, and `packages/input`
+stays dependency-free in the other direction too): `keymap.js` (device-
+tagged keybinding table with rebind/lookup), `captureStack.js` (a minimal
+generic push/pop stack gating input actions to the topmost UI surface —
+the real screen/dialog/menu stack is a later session's job, built on top
+of this), `inputPipeline.js` (the exclusive-capture-stack routing),
+`stateNotifier.js` (a coarse subscribe/notify primitive for DOM state
+binding), `keyboardSource.js` (event-driven, filters browser auto-repeat),
+`gamepadSource.js` (poll+edge-detect, since the Gamepad API has no
+press/release events — analog stick input becomes a discrete directional
+input action past a deadzone), and `keybindingStorage.js` (settings-slice
+persistence, entirely outside world-save data).
+265 `node --test` cases passing. See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 23)
+- [`BACKLOG.md`](./BACKLOG.md) — the roadmap and what's next (session 24)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -107,6 +121,10 @@ packages/
             glyphMetrics.js, glyphRenderer.js, camera.js, renderEvents.js, visibility.js,
             memory.js, animation.js, renderLayers.js, palette.js, fontSources.js, tileset.js,
             pixelyphImport.js
+            under src/, tests under test/
+  input/    physical input → input-action pipeline — implementation started (session 23): keymap.js,
+            captureStack.js, inputPipeline.js, stateNotifier.js, keyboardSource.js, gamepadSource.js,
+            keybindingStorage.js, kept outside core and dependency-free
             under src/, tests under test/
   editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
