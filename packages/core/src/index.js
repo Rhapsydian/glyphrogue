@@ -115,6 +115,13 @@ export { registerScreen, getScreen } from './screen.js';
 
 export { registerSound, getSound } from './sound.js';
 
+export {
+  registerEntity,
+  registerEntityType,
+  getEntityDefinition,
+  instantiateEntity,
+} from './definitions.js';
+
 export { playSound, playMusic } from './audio.js';
 
 export { createAudioLoader, loadBuffer, getBuffer } from './audioLoader.js';

@@ -177,3 +177,23 @@ test('api.enqueueRenderEvent and api.advanceSequencer drive the same queue end-t
 
   assert.deepEqual(triggered, ['ding']);
 });
+
+test('api.registerEntityType + api.instantiateEntity produce a live, rule-reactive entity', () => {
+  const api = createApi();
+  const exploded = [];
+
+  api.registerEntityType('goblin', {
+    components: { Health: { current: 5, max: 5 }, ExplodesOnDeath: {} },
+    rules: [{
+      action: 'Death',
+      handler: (action) => { exploded.push(action.entity); },
+    }],
+  });
+
+  const goblin = api.instantiateEntity('goblin');
+  assert.deepEqual(api.getComponent(goblin, 'Health'), { current: 5, max: 5 });
+
+  api.dispatch({ type: 'Death', entity: goblin });
+
+  assert.deepEqual(exploded, [goblin]);
+});

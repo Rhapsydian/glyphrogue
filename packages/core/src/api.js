@@ -11,6 +11,7 @@ import { computeFov } from './fov.js';
 import { createRenderEventQueue, enqueueRenderEvent, createSequencerState, advanceSequencer } from './renderEvents.js';
 import { registerScreen, getScreen } from './screen.js';
 import { registerSound } from './sound.js';
+import { registerEntity, registerEntityType, getEntityDefinition, instantiateEntity } from './definitions.js';
 
 const noopPlatform = { unlockAchievement() {} };
 
@@ -75,6 +76,11 @@ export function createApi({
     removeActor: (entity) => removeActor(scheduler, entity),
 
     registerSound: (id, definition, options) => registerSound(registry, id, definition, options),
+
+    registerEntity: (id, def, options) => registerEntity(registry, id, def, options),
+    registerEntityType: (id, def, options) => registerEntityType(registry, id, def, options),
+    getEntityDefinition: (id) => getEntityDefinition(registry, id),
+    instantiateEntity: (id, overrides) => instantiateEntity(registry, world, id, overrides),
     registerScreen: (id, definition, options) => registerScreen(registry, id, definition, options),
     getScreen: (id) => getScreen(registry, id),
     // custom-ui-and-interactions.md: opening a screen is simply holding
