@@ -57,9 +57,14 @@ primitive; `registerSound` baked automatically into
 `audioLoader.js` decode/cache convenience; mixing-settings persistence
 reusing the existing storage backends) is also done, kept bundled rather
 than split per the user's explicit choice — see
-`docs/session-logs/session-24-2026-07-22.md`. The next `/dev-session`
-starts **session 25, Scripted events + mod/plugin registration
-completion**.
+`docs/session-logs/session-24-2026-07-22.md`. Session 25 (Scripted events +
+mod/plugin registration completion, plus `registerEntity`/
+`registerEntityType` added per a scope-gap decision made at kickoff) is
+also done, see `docs/session-logs/session-25-2026-07-22.md`. This closes
+out the `packages/core` implementation roadmap entirely — sessions 14-25
+are all complete. The next `/dev-session` scopes `packages/editor`/
+`packages/cli` from scratch; no roadmap item is pre-set for it, so that
+session's kickoff should discuss scope with the user directly.
 
 ## Deferred / future items
 
@@ -357,13 +362,33 @@ code, same caveat the deep-dive roadmap carried.
     `packages/input`'s `keybindingStorage.js` already does. Kept bundled
     rather than split, per the user's explicit choice. See
     `docs/session-logs/session-24-2026-07-22.md`.
-25. **Scripted events + mod/plugin registration completion.**
-    `registerScriptedEvent`/`waitFor` (action-match and `timeUnits`
-    forms), `EventState`, synthetic `EventTimerElapsed`. Mod module format
-    (descriptor + `register(api)`), the recording-api manifest mechanism,
-    versioning/compatibility (core API version vs. save schema version)
-    (`scripting-api.md`). Last since it ties together the full
-    registration surface everything else already built.
+25. ~~**Scripted events + mod/plugin registration completion.**~~ — done,
+    see `packages/core/src/scriptedEvents.js` (`registerScriptedEvent`/
+    `waitFor`, both action-match and `timeUnits` forms; `EventState`
+    progress tracks on a dedicated tracking entity created lazily on first
+    trigger match, tagged via a `ScriptedEvent` marker so it lives in
+    normal ECS state and saves/loads for free), `packages/core/src/
+    engine.js` (a `Timer` component-tag branch in `act()`, parallel to the
+    existing `PlayerControlled` check — a timed wait is an ordinary
+    scheduler actor with a negative initial budget, no new engine
+    primitive), `packages/core/src/mods.js` (mod module format +
+    dependency-ordered loading, reusing `registry.js`'s generic
+    topological sort for mod ids; hand-rolled `^`/`~`/exact semver range
+    checking to stay at zero runtime dependencies), and `packages/core/src/
+    recordingApi.js` (the manifest-derivation mechanism, mirroring only the
+    `register*` surface into a flat call-order list). Also closed a scope
+    gap per user decision at kickoff: `registerEntity`/`registerEntityType`
+    (`packages/core/src/definitions.js`) were listed in `scripting-api.md`
+    but missing from this session's original BACKLOG description despite
+    it being called the session that "ties together the full registration
+    surface" — added here instead of left as a new deferred item. See
+    `docs/session-logs/session-25-2026-07-22.md`.
+
+All planning-roadmap topics (1-11) and all `packages/core`
+implementation-roadmap sessions (14-25) are now complete. The next
+`/dev-session` scopes `packages/editor`/`packages/cli` from scratch — no
+roadmap pointer exists for that yet, so that session's kickoff step should
+discuss scope with the user rather than assume a pre-set item.
 
 After each session, check off the completed item here and move the NEXT
 SESSION pointer to the following one, same convention as the deep-dive
