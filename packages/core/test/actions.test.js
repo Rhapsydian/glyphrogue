@@ -348,3 +348,169 @@ test('renderEvents threads through dispatchExclusive follow-ons into their own d
 
   assert.equal(renderEvents.events.length, 1);
 });
+
+test('components filter: a rule with no filter always fires', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const seen = [];
+
+  registerRule(registry, 'always-fires', 'Move', (action) => {
+    seen.push(action.entity);
+  });
+
+  dispatch(world, registry, { type: 'Move', entity: createEntity(world) });
+
+  assert.equal(seen.length, 1);
+});
+
+test('components filter: a bare string entry is a presence-only check', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const seen = [];
+  const withFlag = createEntity(world);
+  const without = createEntity(world);
+  addComponent(world, withFlag, 'Flammable', {});
+
+  registerRule(registry, 'needs-flammable', 'Ignite', (action) => {
+    seen.push(action.entity);
+  }, { components: { all: ['Flammable'] } });
+
+  dispatch(world, registry, { type: 'Ignite', entity: withFlag });
+  dispatch(world, registry, { type: 'Ignite', entity: without });
+
+  assert.deepEqual(seen, [withFlag]);
+});
+
+test('components filter: an object entry checks presence plus field comparisons (partial match)', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const seen = [];
+  const goblinShaman = createEntity(world);
+  const goblinGrunt = createEntity(world);
+  addComponent(world, goblinShaman, 'EntityType', { type: 'Goblin' });
+  addComponent(world, goblinShaman, 'Class', { role: 'Shaman', level: 3 });
+  addComponent(world, goblinGrunt, 'EntityType', { type: 'Goblin' });
+  addComponent(world, goblinGrunt, 'Class', { role: 'Grunt', level: 1 });
+
+  registerRule(registry, 'cast-spell', 'TakeTurn', (action) => {
+    seen.push(action.entity);
+  }, {
+    components: {
+      all: [
+        { component: 'EntityType', equals: { type: 'Goblin' } },
+        { component: 'Class', equals: { role: 'Shaman' } },
+      ],
+    },
+  });
+
+  dispatch(world, registry, { type: 'TakeTurn', entity: goblinShaman });
+  dispatch(world, registry, { type: 'TakeTurn', entity: goblinGrunt });
+
+  // Extra unrelated field (level) on the matched component data doesn't
+  // break the match - partial, not whole-object, equality.
+  assert.deepEqual(seen, [goblinShaman]);
+});
+
+test('components filter: "any" matches when at least one entry matches (OR)', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const seen = [];
+  const mage = createEntity(world);
+  const shaman = createEntity(world);
+  const grunt = createEntity(world);
+  addComponent(world, mage, 'Class', { role: 'Mage' });
+  addComponent(world, shaman, 'Class', { role: 'Shaman' });
+  addComponent(world, grunt, 'Class', { role: 'Grunt' });
+
+  registerRule(registry, 'spellcasters', 'TakeTurn', (action) => {
+    seen.push(action.entity);
+  }, {
+    components: {
+      any: [
+        { component: 'Class', equals: { role: 'Mage' } },
+        { component: 'Class', equals: { role: 'Shaman' } },
+      ],
+    },
+  });
+
+  dispatch(world, registry, { type: 'TakeTurn', entity: mage });
+  dispatch(world, registry, { type: 'TakeTurn', entity: shaman });
+  dispatch(world, registry, { type: 'TakeTurn', entity: grunt });
+
+  assert.deepEqual(seen, [mage, shaman]);
+});
+
+test('components filter: "none" excludes entities matching any of its entries', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const seen = [];
+  const healthy = createEntity(world);
+  const silenced = createEntity(world);
+  addComponent(world, silenced, 'Status', { effect: 'Silenced' });
+
+  registerRule(registry, 'can-cast', 'TakeTurn', (action) => {
+    seen.push(action.entity);
+  }, {
+    components: {
+      none: [{ component: 'Status', equals: { effect: 'Silenced' } }],
+    },
+  });
+
+  dispatch(world, registry, { type: 'TakeTurn', entity: healthy });
+  dispatch(world, registry, { type: 'TakeTurn', entity: silenced });
+
+  assert.deepEqual(seen, [healthy]);
+});
+
+test('components filter: gt/gte/lt/lte/in/notIn operators compare a single field', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const low = createEntity(world);
+  const high = createEntity(world);
+  addComponent(world, low, 'Health', { current: 2 });
+  addComponent(world, high, 'Health', { current: 9 });
+
+  const seenGt = [];
+  registerRule(registry, 'hurt-gt', 'Check', (action) => {
+    seenGt.push(action.entity);
+  }, { components: { all: [{ component: 'Health', lt: { current: 5 } }] } });
+
+  dispatch(world, registry, { type: 'Check', entity: low });
+  dispatch(world, registry, { type: 'Check', entity: high });
+
+  assert.deepEqual(seenGt, [low]);
+
+  const seenIn = [];
+  registerRule(registry, 'in-check', 'CheckIn', (action) => {
+    seenIn.push(action.entity);
+  }, { components: { all: [{ component: 'Health', in: { current: [9] } }] } });
+
+  dispatch(world, registry, { type: 'CheckIn', entity: low });
+  dispatch(world, registry, { type: 'CheckIn', entity: high });
+
+  assert.deepEqual(seenIn, [high]);
+});
+
+test('components filter: dispatchExclusive skips non-matching rules as non-candidates', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const shaman = createEntity(world);
+  addComponent(world, shaman, 'Class', { role: 'Shaman' });
+
+  registerRule(registry, 'cast', 'TakeTurn', () => ({
+    followOn: [{ type: 'Cast' }],
+  }), {
+    priority: 100,
+    components: { all: [{ component: 'Class', equals: { role: 'Mage' } }] },
+  });
+  registerRule(registry, 'wander', 'TakeTurn', () => ({
+    followOn: [{ type: 'Wander' }],
+  }), { priority: 1 });
+
+  const result = dispatchExclusive(world, registry, { type: 'TakeTurn', entity: shaman });
+
+  assert.deepEqual(
+    result.resolved.map((a) => a.type),
+    ['TakeTurn', 'Wander'],
+  );
+});

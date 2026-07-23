@@ -15,14 +15,63 @@ import { soundsFor } from './sound.js';
 import { addActor, removeActor } from './scheduler.js';
 
 export function registerRule(registry, id, actionType, ruleFn, options = {}) {
-  const { priority = 0, ...registryOptions } = options;
-  register(registry, id, { actionType, ruleFn, priority }, registryOptions);
+  const { priority = 0, components, reads, writes, ...registryOptions } = options;
+  register(registry, id, { actionType, ruleFn, priority, components, reads, writes }, registryOptions);
 }
 
 function pipelineFor(registry, actionType) {
   return getOrderedIds(registry)
-    .map((id) => get(registry, id))
+    .map((id) => ({ id, ...get(registry, id) }))
     .filter((entry) => entry.actionType === actionType);
+}
+
+// editor.md's "components" filter: entity-gating enforced at dispatch time,
+// replacing hand-rolled ctx.hasComponent/ctx.getComponent guards inside
+// rule bodies. A string entry is presence-only; an object entry
+// ({ component, ...operators }) is presence plus partial-match field
+// comparisons - not whole-object equality, so extra unrelated fields on the
+// component data never break a match. Every operator's value is itself
+// { field: value } (or { field: [values] } for in/notIn). This is
+// deliberately not a full nested boolean expression language - all/any/none
+// combine with implicit AND between buckets, any is OR internally, none is
+// exclusion; register the same rule twice for an OR-of-AND shape.
+const FIELD_OPERATORS = {
+  equals: (data, field, value) => data?.[field] === value,
+  notEquals: (data, field, value) => data?.[field] !== value,
+  gt: (data, field, value) => data?.[field] > value,
+  gte: (data, field, value) => data?.[field] >= value,
+  lt: (data, field, value) => data?.[field] < value,
+  lte: (data, field, value) => data?.[field] <= value,
+  in: (data, field, values) => values.includes(data?.[field]),
+  notIn: (data, field, values) => !values.includes(data?.[field]),
+};
+
+function matchesComponentEntry(world, entity, entry) {
+  const componentType = typeof entry === 'string' ? entry : entry.component;
+  if (!hasComponent(world, entity, componentType)) return false;
+  if (typeof entry === 'string') return true;
+
+  const data = getComponent(world, entity, componentType);
+  return Object.entries(entry)
+    .filter(([key]) => key !== 'component')
+    .every(([operator, fields]) => {
+      const matchField = FIELD_OPERATORS[operator];
+      if (!matchField) {
+        throw new Error(`unknown component filter operator "${operator}"`);
+      }
+      return Object.entries(fields).every(([field, value]) => matchField(data, field, value));
+    });
+}
+
+function matchesComponentFilter(world, entity, filter) {
+  if (!filter) return true;
+  const { all = [], any = [], none = [] } = filter;
+
+  if (!all.every((entry) => matchesComponentEntry(world, entity, entry))) return false;
+  if (any.length > 0 && !any.some((entry) => matchesComponentEntry(world, entity, entry))) return false;
+  if (none.some((entry) => matchesComponentEntry(world, entity, entry))) return false;
+
+  return true;
 }
 
 function resolvePriority(entry, action, ctx) {
@@ -88,8 +137,9 @@ export function dispatch(world, registry, action, mapQuery, renderEvents, schedu
     let isVetoed = false;
     const followOns = [];
 
-    for (const { ruleFn } of pipeline) {
-      const result = ruleFn(current, ctx);
+    for (const entry of pipeline) {
+      if (!matchesComponentFilter(world, current.entity, entry.components)) continue;
+      const result = entry.ruleFn(current, ctx);
       if (!result) continue;
       if (result.veto) {
         isVetoed = true;
@@ -128,6 +178,7 @@ export function dispatchExclusive(world, registry, action, mapQuery, renderEvent
   let winnerPriority = -Infinity;
 
   for (const entry of pipeline) {
+    if (!matchesComponentFilter(world, action.entity, entry.components)) continue;
     const result = entry.ruleFn(action, ctx);
     if (!result) continue;
 

@@ -31,10 +31,8 @@ export function registerEntityType(registry, id, def, options) {
   registerEntity(registry, id, { components: def.components }, options);
 
   (def.rules ?? []).forEach(({ action, handler }, index) => {
-    registerRule(registry, `${id}::rule::${index}`, action, (actionObj, ctx) => {
-      if (!ctx.hasComponent(actionObj.entity, 'EntityType')) return;
-      if (ctx.getComponent(actionObj.entity, 'EntityType').type !== id) return;
-      return handler(actionObj, ctx);
+    registerRule(registry, `${id}::rule::${index}`, action, handler, {
+      components: { all: [{ component: 'EntityType', equals: { type: id } }] },
     });
   });
 }
