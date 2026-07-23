@@ -126,6 +126,13 @@ export { registerScriptedEvent, getScriptedEvent } from './scriptedEvents.js';
 
 export { loadPlugins, satisfiesRange, CORE_API_VERSION } from './plugins.js';
 
+export {
+  bspPlugin,
+  cellularAutomataPlugin,
+  wfcPlugin,
+  layeredBiomePlugin,
+} from './generatorPlugins.js';
+
 export { createRecordingApi } from './recordingApi.js';
 
 export { playSound, playMusic } from './audio.js';
