@@ -108,8 +108,23 @@ per-write provenance — see
 consumer of `@glyphrogue/core` (nothing had loaded it in a real browser
 before this session's dev fixture), and the same externalization issue in
 `devServerPlugin.js`'s own build step. `packages/editor` test count: 0 →
-15 (360 total). The next `/dev-session` is roadmap item 3, plugin
-management.
+15 (360 total). Session 30 kicked off intending roadmap item 3 (plugin
+management) but was redirected live at kickoff: a real drift was found
+between `scripting-api.md`'s Plugin architecture (first-party content
+should use the same module format as end-user plugins) and `packages/core`'s
+actual generator/behavior code (plain exported functions, never
+reconciled). Produced `scripting-api.md`'s new "Plugin kinds: Content vs.
+Service" (a new Service plugin kind for single-slot, swappable concerns
+like `memory`/`audioLoader`, alongside the existing Content model),
+`editor.md`'s updated "Plugin management" (two-source discovery, a new
+Services selector), `docs/glossary.md`, and this file's new "packages/core
+plugin reconciliation roadmap" below — see
+`docs/session-logs/session-30-2026-07-23.md`. Also trimmed the root
+`README.md` (a mid-session redirect, unrelated to the reconciliation) from
+~260 lines of duplicated session narrative down to a short status summary
+linking out to `docs/session-logs/`. No code touched, test count unchanged
+at 360. The next `/dev-session` is the "packages/core plugin reconciliation
+roadmap" below, **not** roadmap item 3 directly — item 3 now depends on it.
 
 ## Deferred / future items
 
