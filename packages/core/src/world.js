@@ -49,3 +49,13 @@ export function query(world, types) {
   }
   return result;
 }
+
+export function getComponentsForEntity(world, entity) {
+  const result = {};
+  for (const [type, store] of world.components) {
+    if (store.has(entity)) {
+      result[type] = store.get(entity);
+    }
+  }
+  return result;
+}

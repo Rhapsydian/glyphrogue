@@ -7,6 +7,7 @@ import {
   createEntity,
   destroyEntity,
   query,
+  getComponentsForEntity,
 } from './world.js';
 import { findPath } from './pathfinding.js';
 import { computeFov } from './fov.js';
@@ -139,6 +140,7 @@ function createContext(world, mapQuery = {}, renderEvents, scheduler) {
     createEntity: () => createEntity(world),
     destroyEntity: (entity) => destroyEntity(world, entity),
     query: (types) => query(world, types),
+    getComponentsForEntity: (entity) => getComponentsForEntity(world, entity),
     findPath: (from, to, opts) => findPath(from, to, { ...opts, isWalkable: mapQuery.isWalkable }),
     computeFov: (origin, radius, opts) => computeFov(origin, radius, { ...opts, isOpaque: mapQuery.isOpaque }),
     enqueueRenderEvent: (event) => {

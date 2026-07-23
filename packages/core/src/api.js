@@ -1,4 +1,4 @@
-import { createWorld, createEntity, destroyEntity, addComponent, removeComponent, getComponent, hasComponent, query } from './world.js';
+import { createWorld, createEntity, destroyEntity, addComponent, removeComponent, getComponent, hasComponent, query, getComponentsForEntity } from './world.js';
 import { createRegistry, register, get, has, getOrderedIds } from './registry.js';
 import { registerRule, dispatch } from './actions.js';
 import { createScheduler, addActor, removeActor } from './scheduler.js';
@@ -63,6 +63,7 @@ export function createApi({
     getComponent: (entity, type) => getComponent(world, entity, type),
     hasComponent: (entity, type) => hasComponent(world, entity, type),
     query: (types) => query(world, types),
+    getComponentsForEntity: (entity) => getComponentsForEntity(world, entity),
 
     registerRule: (id, actionType, ruleFn, options) => registerRule(registry, id, actionType, ruleFn, options),
     // Threads renderEvents/scheduler through the same as act()/
