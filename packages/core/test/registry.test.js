@@ -45,7 +45,7 @@ test('dependsOn reorders getOrderedIds, even when registered out of order', () =
   const registry = createRegistry();
   // 'b' is registered first but declares a dependency on 'a', registered
   // after — a forward reference. This is the whole point of dependsOn:
-  // registration order (e.g. mod load order) doesn't have to match
+  // registration order (e.g. plugin load order) doesn't have to match
   // dependency order.
   register(registry, 'b', {}, { dependsOn: ['a'] });
   register(registry, 'a', {});

@@ -1,6 +1,6 @@
 // Recording api (scripting-api.md): a manifest is *derived*, never
 // hand-authored - dev tooling (an editor's content browser, a load-time
-// validator) calls a mod's register(api) against this recording
+// validator) calls a plugin's register(api) against this recording
 // implementation instead of a real one, logging each call rather than
 // mutating any world/registry state, then reads the manifest back from
 // what was logged. Mirrors only the register* surface - the declarative

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRecordingApi } from '../src/recordingApi.js';
 
-test('a mod\'s register(api) run against the recording api produces a manifest, mutating nothing real', () => {
+test('a plugin\'s register(api) run against the recording api produces a manifest, mutating nothing real', () => {
   const { api, manifest } = createRecordingApi();
 
   function register(recordingApi) {

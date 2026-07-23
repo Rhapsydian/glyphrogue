@@ -1,16 +1,16 @@
-// Mod module format + dependency-ordered loading (scripting-api.md): a mod
-// is a single default export shaped { id, version, dependencies, register }.
-// Load order reuses registry.js's existing generic topological sort
-// (createRegistry/register/getOrderedIds) applied to mod ids, rather than
-// writing a second sort - the same reuse precedent that motivated building
-// getOrderedIds generically in the first place (session 15). `core` is
-// deliberately excluded from the dependency graph itself (it isn't
-// "loaded" the way a mod is) and checked separately via satisfiesRange
-// against the declared core range.
+// Plugin module format + dependency-ordered loading (scripting-api.md): a
+// plugin is a single default export shaped { id, version, dependencies,
+// register }. Load order reuses registry.js's existing generic topological
+// sort (createRegistry/register/getOrderedIds) applied to plugin ids,
+// rather than writing a second sort - the same reuse precedent that
+// motivated building getOrderedIds generically in the first place (session
+// 15). `core` is deliberately excluded from the dependency graph itself (it
+// isn't "loaded" the way a plugin is) and checked separately via
+// satisfiesRange against the declared core range.
 //
 // Missing dependency and dependency-cycle errors come straight from
-// getOrderedIds. Version-incompatibility (core or mod-to-mod) is also a
-// hard load-time error here, matching this doc's broader posture of
+// getOrderedIds. Version-incompatibility (core or plugin-to-plugin) is also
+// a hard load-time error here, matching this doc's broader posture of
 // resolving every ambiguous-state question as an explicit error rather
 // than a best-effort fallback.
 
@@ -18,7 +18,7 @@ import { createRegistry, register, get, getOrderedIds } from './registry.js';
 
 // This project's plugin-API version (scripting-api.md's "independent of
 // the save schema" version number) - bumped whenever register()'s surface
-// changes in a way mods should be able to check compatibility against.
+// changes in a way plugins should be able to check compatibility against.
 export const CORE_API_VERSION = '0.1.0';
 
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
@@ -63,39 +63,39 @@ export function satisfiesRange(version, range) {
   return compareVersions(actual, parseVersion(range)) === 0;
 }
 
-// Registers every mod's descriptor into its own dependency-graph registry
-// (id-namespaced separately from the main content registry - mod ids and
-// content ids are different namespaces), resolves load order, checks
-// version compatibility, then calls register(api) on each mod in order.
-// Returns the resolved load order (mod ids).
-export function loadMods(api, mods, { coreApiVersion = CORE_API_VERSION } = {}) {
-  const modRegistry = createRegistry();
+// Registers every plugin's descriptor into its own dependency-graph
+// registry (id-namespaced separately from the main content registry -
+// plugin ids and content ids are different namespaces), resolves load
+// order, checks version compatibility, then calls register(api) on each
+// plugin in order. Returns the resolved load order (plugin ids).
+export function loadPlugins(api, plugins, { coreApiVersion = CORE_API_VERSION } = {}) {
+  const pluginRegistry = createRegistry();
 
-  for (const mod of mods) {
-    const dependsOn = Object.keys(mod.dependencies ?? {}).filter((depId) => depId !== 'core');
-    register(modRegistry, mod.id, mod, { dependsOn });
+  for (const plugin of plugins) {
+    const dependsOn = Object.keys(plugin.dependencies ?? {}).filter((depId) => depId !== 'core');
+    register(pluginRegistry, plugin.id, plugin, { dependsOn });
   }
 
-  const order = getOrderedIds(modRegistry);
+  const order = getOrderedIds(pluginRegistry);
 
   for (const id of order) {
-    const mod = get(modRegistry, id);
+    const plugin = get(pluginRegistry, id);
 
-    for (const [depId, range] of Object.entries(mod.dependencies ?? {})) {
+    for (const [depId, range] of Object.entries(plugin.dependencies ?? {})) {
       if (depId === 'core') {
         if (!satisfiesRange(coreApiVersion, range)) {
-          throw new Error(`mod "${id}" requires core ${range}, but core is ${coreApiVersion}`);
+          throw new Error(`plugin "${id}" requires core ${range}, but core is ${coreApiVersion}`);
         }
         continue;
       }
 
-      const dependency = get(modRegistry, depId);
+      const dependency = get(pluginRegistry, depId);
       if (!satisfiesRange(dependency.version, range)) {
-        throw new Error(`mod "${id}" requires "${depId}" ${range}, but "${depId}" is ${dependency.version}`);
+        throw new Error(`plugin "${id}" requires "${depId}" ${range}, but "${depId}" is ${dependency.version}`);
       }
     }
 
-    mod.register(api);
+    plugin.register(api);
   }
 
   return order;

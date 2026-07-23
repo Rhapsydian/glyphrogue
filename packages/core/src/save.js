@@ -4,9 +4,9 @@ import { createApi } from './api.js';
 // own schema version, bumped whenever the shape below changes.
 export const CORE_SCHEMA_VERSION = 1;
 
-// Generic stepwise-migration runner, shared by the core/game/mod slices
+// Generic stepwise-migration runner, shared by the core/game/plugin slices
 // (only the core slice actually has migrations registered yet - the
-// mechanism is reusable once a game/mod defines its own migrations).
+// mechanism is reusable once a game/plugin defines its own migrations).
 // `migrations` is keyed by the *target* version each step reaches, so a
 // sparse chain (e.g. only { 3: fn } if versions 1-2 never shipped a real
 // schema change) works without empty placeholder steps.
@@ -37,20 +37,20 @@ function componentsFromPlain(plain) {
   );
 }
 
-// serializeGame/mods are owned by the downstream game, not core -
+// serializeGame/plugins are owned by the downstream game, not core -
 // core-architecture.md/scripting-api.md's split. Core only knows how to
 // serialize its own world/scheduler/rng state; the game slice and each
-// mod's slice are produced by injected hooks.
+// plugin's slice are produced by injected hooks.
 //
-// `mods` is a list of loaded-mod descriptors - `{ id, modDataVersion,
-// serialize(api) }` - one per dynamically-loaded mod (mods.js's
-// loadMods()), generalizing the single serializeGame hook to N
-// independently-versioned slices per scripting-api.md's per-mod save-slice
-// design. A mod's own deserialize hook (see deserialize() below) is
-// responsible for running its own migrations if it needs to, the same way
-// deserializeGame already receives the raw game slice with no migration
-// step run on its behalf by core.
-export function serialize(api, { gameDataVersion = 1, serializeGame = () => ({}), mods = [] } = {}) {
+// `plugins` is a list of loaded-plugin descriptors - `{ id,
+// pluginDataVersion, serialize(api) }` - one per dynamically-loaded plugin
+// (plugins.js's loadPlugins()), generalizing the single serializeGame hook
+// to N independently-versioned slices per scripting-api.md's per-plugin
+// save-slice design. A plugin's own deserialize hook (see deserialize()
+// below) is responsible for running its own migrations if it needs to, the
+// same way deserializeGame already receives the raw game slice with no
+// migration step run on its behalf by core.
+export function serialize(api, { gameDataVersion = 1, serializeGame = () => ({}), plugins = [] } = {}) {
   return {
     coreSchemaVersion: CORE_SCHEMA_VERSION,
     core: {
@@ -65,22 +65,22 @@ export function serialize(api, { gameDataVersion = 1, serializeGame = () => ({})
     },
     gameDataVersion,
     game: serializeGame(api),
-    mods: Object.fromEntries(
-      mods.map(({ id, modDataVersion, serialize: serializeMod }) => [
+    plugins: Object.fromEntries(
+      plugins.map(({ id, pluginDataVersion, serialize: serializePlugin }) => [
         id,
-        { modDataVersion, payload: serializeMod(api) },
+        { pluginDataVersion, payload: serializePlugin(api) },
       ]),
     ),
   };
 }
 
-// A save requires its full mod set to load (scripting-api.md) - fails hard
-// rather than silently dropping a mod's data if it isn't currently
+// A save requires its full plugin set to load (scripting-api.md) - fails
+// hard rather than silently dropping a plugin's data if it isn't currently
 // installed, same as every other ambiguous-state question in that doc.
-function checkModsPresent(dto, registeredModIds) {
-  for (const modId of Object.keys(dto.mods ?? {})) {
-    if (!registeredModIds.includes(modId)) {
-      throw new Error(`save contains a slice for mod "${modId}", which is not currently installed`);
+function checkPluginsPresent(dto, registeredPluginIds) {
+  for (const pluginId of Object.keys(dto.plugins ?? {})) {
+    if (!registeredPluginIds.includes(pluginId)) {
+      throw new Error(`save contains a slice for plugin "${pluginId}", which is not currently installed`);
     }
   }
 }
@@ -89,10 +89,10 @@ export function deserialize(dto, {
   seed = 1,
   platform,
   coreMigrations = {},
-  mods = [],
+  plugins = [],
   deserializeGame,
 } = {}) {
-  checkModsPresent(dto, mods.map(({ id }) => id));
+  checkPluginsPresent(dto, plugins.map(({ id }) => id));
 
   const core = runMigrations(dto.core, dto.coreSchemaVersion, CORE_SCHEMA_VERSION, coreMigrations);
 
@@ -111,9 +111,9 @@ export function deserialize(dto, {
 
   api.rng.state = core.rng.state;
 
-  for (const { id, deserialize: deserializeMod } of mods) {
-    const slice = dto.mods?.[id];
-    if (slice) deserializeMod?.(slice, api);
+  for (const { id, deserialize: deserializePlugin } of plugins) {
+    const slice = dto.plugins?.[id];
+    if (slice) deserializePlugin?.(slice, api);
   }
 
   deserializeGame?.(dto.game);

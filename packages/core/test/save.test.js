@@ -21,7 +21,7 @@ function buildSampleApi() {
   return { api, goblin, player };
 }
 
-test('serialize produces a versioned DTO with core/game/mods slices', () => {
+test('serialize produces a versioned DTO with core/game/plugins slices', () => {
   const { api } = buildSampleApi();
 
   const dto = serialize(api);
@@ -29,7 +29,7 @@ test('serialize produces a versioned DTO with core/game/mods slices', () => {
   assert.equal(dto.coreSchemaVersion, CORE_SCHEMA_VERSION);
   assert.equal(dto.gameDataVersion, 1);
   assert.deepEqual(dto.game, {});
-  assert.deepEqual(dto.mods, {});
+  assert.deepEqual(dto.plugins, {});
   assert.ok(Array.isArray(dto.core.entities));
   assert.equal(typeof dto.core.rng.state, 'number');
 });
@@ -74,46 +74,46 @@ test('deserializeGame hook receives the game slice on load', () => {
   assert.deepEqual(received, { questFlags: { metGoblin: true } });
 });
 
-test('serialize populates a slice per mod using its own serialize hook', () => {
+test('serialize populates a slice per plugin using its own serialize hook', () => {
   const { api } = buildSampleApi();
-  const mods = [{ id: 'goblin-pack', modDataVersion: 1, serialize: () => ({ tamed: 3 }) }];
+  const plugins = [{ id: 'goblin-pack', pluginDataVersion: 1, serialize: () => ({ tamed: 3 }) }];
 
-  const dto = serialize(api, { mods });
+  const dto = serialize(api, { plugins });
 
-  assert.deepEqual(dto.mods, { 'goblin-pack': { modDataVersion: 1, payload: { tamed: 3 } } });
+  assert.deepEqual(dto.plugins, { 'goblin-pack': { pluginDataVersion: 1, payload: { tamed: 3 } } });
 });
 
-test('loading a save with an unknown mod slice throws', () => {
+test('loading a save with an unknown plugin slice throws', () => {
   const { api } = buildSampleApi();
-  const mods = [{ id: 'goblin-pack', modDataVersion: 1, serialize: () => ({}) }];
-  const dto = serialize(api, { mods });
+  const plugins = [{ id: 'goblin-pack', pluginDataVersion: 1, serialize: () => ({}) }];
+  const dto = serialize(api, { plugins });
 
   assert.throws(
-    () => deserialize(dto, { mods: [] }),
+    () => deserialize(dto, { plugins: [] }),
     /goblin-pack/,
   );
 });
 
-test('loading a save whose mod slice matches an installed mod calls its deserialize hook', () => {
+test('loading a save whose plugin slice matches an installed plugin calls its deserialize hook', () => {
   const { api } = buildSampleApi();
-  const mods = [{ id: 'goblin-pack', modDataVersion: 1, serialize: () => ({ tamed: 3 }) }];
-  const dto = serialize(api, { mods });
+  const plugins = [{ id: 'goblin-pack', pluginDataVersion: 1, serialize: () => ({ tamed: 3 }) }];
+  const dto = serialize(api, { plugins });
 
   let received;
   deserialize(dto, {
-    mods: [{ id: 'goblin-pack', deserialize: (slice) => { received = slice; } }],
+    plugins: [{ id: 'goblin-pack', deserialize: (slice) => { received = slice; } }],
   });
 
-  assert.deepEqual(received, { modDataVersion: 1, payload: { tamed: 3 } });
+  assert.deepEqual(received, { pluginDataVersion: 1, payload: { tamed: 3 } });
 });
 
-test('a mod present at load time but absent from the save is simply skipped, not an error', () => {
+test('a plugin present at load time but absent from the save is simply skipped, not an error', () => {
   const { api } = buildSampleApi();
   const dto = serialize(api);
 
   let called = false;
   assert.doesNotThrow(() => deserialize(dto, {
-    mods: [{ id: 'goblin-pack', deserialize: () => { called = true; } }],
+    plugins: [{ id: 'goblin-pack', deserialize: () => { called = true; } }],
   }));
   assert.equal(called, false);
 });
@@ -150,7 +150,7 @@ test('deserialize runs coreMigrations before restoring state', () => {
     },
     gameDataVersion: 1,
     game: {},
-    mods: {},
+    plugins: {},
   };
 
   const coreMigrations = {

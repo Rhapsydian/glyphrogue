@@ -124,7 +124,7 @@ export {
 
 export { registerScriptedEvent, getScriptedEvent } from './scriptedEvents.js';
 
-export { loadMods, satisfiesRange, CORE_API_VERSION } from './mods.js';
+export { loadPlugins, satisfiesRange, CORE_API_VERSION } from './plugins.js';
 
 export { createRecordingApi } from './recordingApi.js';
 

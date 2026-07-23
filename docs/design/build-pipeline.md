@@ -212,7 +212,9 @@ templating framework): a `templates/default/` directory inside
 `vite.config.js`/`index.html`/`dev.html` from above, a starter
 `package.json` with `@glyphrogue/core` in `dependencies` and
 `@glyphrogue/editor` in `devDependencies`, and starter content folders —
-`src/maps/`, `src/mods/`, `assets/fonts/` — each with one minimal working
+`src/maps/`, `src/plugins/` (each plugin its own `src/plugins/<pluginId>/`
+folder per `docs/design/editor.md`'s plugin-management design),
+`assets/fonts/` — each with one minimal working
 example, not empty), copied into the target directory with a small number
 of string substitutions (game name into `package.json`, into `index.html`'s
 `<title>`). A downstream game is its own repo, not a workspace member of
@@ -227,7 +229,7 @@ the scaffold's `package.json` depends on the **published**
   discipline vs. a tool like Changesets) is implementation-time detail,
   deferred until there's an actual first release to cut.
 - **Scaffold template content specifics** — the exact starter example
-  under each content folder (what the one example map/mod/font looks like)
+  under each content folder (what the one example map/plugin/font looks like)
   is implementation-time detail, not a planning-pass decision, same
   treatment `fonts-and-tilesets.md` gave the calibration-derivation formula.
 - **Electron/Steam packaging** — explicitly out of scope, carried to session

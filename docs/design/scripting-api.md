@@ -11,10 +11,11 @@ This doc defines the **authoring/registration contract**. It does not cover
 how an end-user mod is discovered, installed, or distributed — that's
 scoped to the packaging session (topic 8); see "Scope boundary" at the end.
 
-## Mod module format
+## Plugin module format
 
-A mod module — first-party or (later) end-user — is a single default
-export: a descriptor object, not a function or a set of named exports.
+A plugin module — first-party or (later) end-user-authored — is a single
+default export: a descriptor object, not a function or a set of named
+exports.
 
 ```js
 export default {
@@ -27,27 +28,27 @@ export default {
 
 **Why one entry point, not named exports per content type**: the loading
 *mechanism* differs between first-party content (statically imported at
-build time) and end-user mods (loaded at runtime, once that's built out —
-see "Scope boundary"), but the module *contract* mod authors write against
-should not. A single `register(api)` call, using the same public
-inspection/mutation API `core-architecture.md` already defined as the one
-surface every consumer (game runtime, editor, mods) goes through, works
-identically regardless of how the module was loaded. Named exports per
-content type were considered and rejected: every new content type added
-later would be a new export name every loader has to know about, and
-function-shaped registrations (generators, rules) don't fit a "plain data
-export" pattern anyway.
+build time) and end-user-authored plugins (loaded at runtime, once that's
+built out — see "Scope boundary"), but the module *contract* plugin authors
+write against should not. A single `register(api)` call, using the same
+public inspection/mutation API `core-architecture.md` already defined as
+the one surface every consumer (game runtime, editor, plugins) goes
+through, works identically regardless of how the module was loaded. Named
+exports per content type were considered and rejected: every new content
+type added later would be a new export name every loader has to know
+about, and function-shaped registrations (generators, rules) don't fit a
+"plain data export" pattern anyway.
 
-**No hand-authored manifest.** A descriptor listing "what this mod
+**No hand-authored manifest.** A descriptor listing "what this plugin
 contains" would drift from what `register()` actually does. Instead, a
 manifest is *derived*: dev tooling (the editor's content browser, a
 load-time validator) calls `register()` with a **recording** implementation
 of the same public api — one that logs each registration instead of
 mutating real state — and produces the manifest from that. Zero drift risk,
-no second surface for mod authors to maintain, and the recording api is a
-core/editor-side dev tool, not something a mod author ever writes to
+no second surface for plugin authors to maintain, and the recording api is
+a core/editor-side dev tool, not something a plugin author ever writes to
 directly. It also gives a natural place for load-time validation (duplicate
-ids, `register()` throwing) before a mod runs against the real api.
+ids, `register()` throwing) before a plugin runs against the real api.
 
 ## Data-driven definitions vs. behavior
 
@@ -69,7 +70,7 @@ api.registerRule('goblin-explode-on-death', 'Death', (action, ctx) => {
 });
 ```
 
-This means a mod adding "goblins explode on death" never touches core's
+This means a plugin adding "goblins explode on death" never touches core's
 own `Attack` → `Damage` → `Death` chain — it adds one more rule downstream
 of `Death` that checks for a component. Matching on components rather than
 hardcoded ids keeps this composable: the same rule applies to any future
@@ -77,7 +78,7 @@ entity tagged `ExplodesOnDeath`, not just goblins specifically.
 
 **Multiple rules per action type run as an ordered pipeline**, not
 single-owner. Each applicable rule can veto legality and/or emit follow-on
-actions. This is what lets a mod layer in reactive behavior
+actions. This is what lets a plugin layer in reactive behavior
 (explode-on-death, poison-on-hit) without overriding or replacing core's
 own rules for the same action type — it extends `core-architecture.md`'s
 own chaining example ("an Attack rule validates range, emits Damage,
@@ -119,7 +120,7 @@ There is no separate event/hook mechanism alongside rules — that would be
 two competing ways to react to the same state changes. "Hooks" in this
 design *are* rules registered against action types, as above. The only
 things that warrant a distinct, small **lifecycle hook** concept are things
-that aren't in-game actions at all: mod loaded, save loading/migrating.
+that aren't in-game actions at all: plugin loaded, save loading/migrating.
 These are out of scope for this doc beyond flagging that they exist as a
 separate, much smaller mechanism from the rule pipeline.
 
@@ -215,50 +216,51 @@ api.registerScriptedEvent(id, def, options?)
 ### Load order: dependency graph, not declaration order
 
 "Last-registered-wins" only means anything if load order is deterministic.
-Each mod declares its dependencies (including on `core` itself — see
+Each plugin declares its dependencies (including on `core` itself — see
 "Versioning & compatibility"), and load order is derived by **topologically
 sorting the dependency graph** — dependencies load before dependents — not
 by declaration-list order or filesystem enumeration order (which varies by
 platform).
 
-This also closes a gap in the override design: a mod overriding another
-mod's registration must declare that mod as a dependency, guaranteeing load
-order — otherwise "overriding something not registered yet" is already an
-error per the rule above. The dependency graph and the override mechanism
-reinforce each other rather than needing to be kept in sync by hand.
+This also closes a gap in the override design: a plugin overriding another
+plugin's registration must declare that plugin as a dependency, guaranteeing
+load order — otherwise "overriding something not registered yet" is already
+an error per the rule above. The dependency graph and the override
+mechanism reinforce each other rather than needing to be kept in sync by
+hand.
 
 Two failure modes are hard errors at load time, same as everything else
 here: a **dependency cycle** (no valid order exists), and a **missing
-dependency** (declared mod isn't present/enabled).
+dependency** (declared plugin isn't present/enabled).
 
 ## Save-data integration
 
 Builds directly on `core-architecture.md`'s `coreSchemaVersion`/`core` vs.
-`gameDataVersion`/`game` split, extended for multiple mods:
+`gameDataVersion`/`game` split, extended for multiple plugins:
 
 - **`game` payload + `gameDataVersion`** — one slice, one migration chain,
   owned by the game. Everything registered by **statically-imported
   (build-time) modules** writes here — this covers all first-party content,
   regardless of how many separate `register()` files the game's own
   codebase is organized into internally. The static-vs-dynamic import
-  distinction from "Mod module format" *is* the save-versioning boundary;
-  no separate "is this first-party?" flag is needed.
-- **Per-mod slices** — `mods: { [modId]: { modDataVersion, payload } }`,
-  each independently versioned with its own migration chain, for anything
-  registered by a **dynamically-loaded (runtime) mod**. A mod ships,
-  updates, or is removed without touching the game's own version or
-  migrations.
+  distinction from "Plugin module format" *is* the save-versioning
+  boundary; no separate "is this first-party?" flag is needed.
+- **Per-plugin slices** — `plugins: { [pluginId]: { pluginDataVersion,
+  payload } }`, each independently versioned with its own migration chain,
+  for anything registered by a **dynamically-loaded (runtime) plugin**. A
+  plugin ships, updates, or is removed without touching the game's own
+  version or migrations.
 
-**A save requires its full mod set to load.** If a save contains a slice
-for a mod that isn't currently installed, the game **fails to load** rather
-than silently dropping or dormant-carrying that data — consistent with
-every other ambiguous-state question in this doc being resolved as an
+**A save requires its full plugin set to load.** If a save contains a slice
+for a plugin that isn't currently installed, the game **fails to load**
+rather than silently dropping or dormant-carrying that data — consistent
+with every other ambiguous-state question in this doc being resolved as an
 explicit, actionable error rather than an implicit best-effort behavior
 (Factorio uses the same model: a save with mods refuses to load without
 them present, with a clear missing-mods message). This applies specifically
-to a mod being **absent**; a mod that's present at a different, compatible
-version is handled by that mod's own migration chain, not this failure
-mode.
+to a plugin being **absent**; a plugin that's present at a different,
+compatible version is handled by that plugin's own migration chain, not
+this failure mode.
 
 ## Versioning & compatibility
 
@@ -268,20 +270,21 @@ axes:
 
 - **`coreSchemaVersion`** — governs the save DTO shape and migrations (from
   `core-architecture.md`).
-- **An API version** (mods check compatibility against this for
+- **An API version** (plugins check compatibility against this for
   `registerEntity`/`registerRule`/etc.'s signatures and behavior) —
   independent of the save schema; the plugin surface can change without a
   save-format change and vice versa.
 
-`core` is declared in a mod's `dependencies` map like any other dependency,
-using the API version:
+`core` is declared in a plugin's `dependencies` map like any other
+dependency, using the API version:
 
 ```js
 dependencies: { core: '^0.5.0', 'base-bestiary': '^1.2.0' }
 ```
 
 Version ranges use standard semver syntax (npm-style `^`/`~`/exact) for
-both core and mod-to-mod dependencies — no custom compatibility scheme.
+both core and plugin-to-plugin dependencies — no custom compatibility
+scheme.
 
 ## Sandboxing / trust boundary
 
@@ -351,5 +354,5 @@ disable mechanism depends on.
   — implementation time.
 - `waitFor` predicate-function escape hatch's exact contract —
   implementation time.
-- Lifecycle hooks (mod loaded, save loading/migrating) — flagged as
+- Lifecycle hooks (plugin loaded, save loading/migrating) — flagged as
   existing, not designed in depth here.

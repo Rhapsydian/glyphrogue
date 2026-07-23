@@ -40,7 +40,7 @@ export function has(registry, id) {
 // register()), so registrations can happen in any order — a rule can
 // declare dependsOn an id that hasn't been registered yet, as long as it
 // exists by the time the order is actually needed. This is what makes
-// dependsOn useful at all: real mod/content loading order isn't
+// dependsOn useful at all: real plugin/content loading order isn't
 // guaranteed to match dependency order, that's the whole reason a
 // topological sort is needed instead of trusting registration order.
 export function getOrderedIds(registry) {

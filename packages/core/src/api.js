@@ -17,7 +17,7 @@ import { registerScriptedEvent, getScriptedEvent } from './scriptedEvents.js';
 const noopPlatform = { unlockAchievement() {} };
 
 // The one public inspection/mutation surface every consumer (game runtime,
-// first-party content, editor, mods) goes through, per core-architecture.md.
+// first-party content, editor, plugins) goes through, per core-architecture.md.
 // Closes over one world+registry+scheduler+engine instance the same way
 // actions.js's internal createContext(world) already does for rules - just
 // promoted to the public, documented surface.
