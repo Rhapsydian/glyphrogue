@@ -693,12 +693,20 @@ described layout at all, unlike every other tool in this doc).
 
 **Decision: discovery/enabled-state is derived, not hand-maintained** —
 same "derive, don't hand-maintain" posture as the mod/plugin manifest, the
-`components` filter, and the touched-files log elsewhere in this doc. The
-tool scans `src/plugins/` (the CLI scaffold's content folder, per
-`build-pipeline.md`) for candidate plugin modules, and cross-references
-that list against whatever the bootstrap file's `loadPlugins(api, [...])`
-array actually lists to derive enabled-vs-available — no separately
-tracked enabled flag to drift out of sync.
+`components` filter, and the touched-files log elsewhere in this doc.
+Discovery has **two sources, not one**: the tool scans `src/plugins/` (the
+CLI scaffold's content folder, per `build-pipeline.md`) for author-authored
+candidate plugin modules, and separately recognizes `@glyphrogue/core`
+imports in the bootstrap file as core-bundled plugins (`scripting-api.md`'s
+Content plugins shipped with the engine itself — the four first-party
+generators, four first-party behaviors; see `mapgen-and-editor.md`). Both
+sources cross-reference against whatever the bootstrap file's
+`loadPlugins(api, [...])` array actually lists to derive enabled-vs-
+available — no separately tracked enabled flag to drift out of sync. The
+two sources render as one combined list but stay visually distinguishable:
+only author-authored entries have a `src/plugins/` folder to toggle,
+import, or export — a core-bundled entry's toggle just adds/removes its
+import and array entry, nothing more.
 
 **Decision: a per-plugin enable/disable toggle**, not a toggle-plus-manual-
 reorder list. Toggling adds/removes the plugin's import and array entry in
@@ -715,7 +723,8 @@ mismatch errors surface as UI feedback here instead of a console throw.
 file. This is what makes import/export (below) a plain filesystem
 operation rather than needing a real bundler/packaging step, and is
 worth establishing now, before a large body of existing plugins exists to
-migrate later.
+migrate later. Applies to author-authored plugins only — a core-bundled
+plugin has no folder in the downstream game's own repo at all.
 
 **Decision: import/export for author-to-author plugin sharing.** Import
 copies a plugin folder an author received into `src/plugins/` via the
@@ -726,7 +735,32 @@ artifact) for handing to another author — matches this project's
 low-ceremony bias, no new packaging machinery needed. Both are strictly
 dev-time, author-to-author sharing — distinct from, and no substitute
 for, actual end-user mod distribution (`scripting-api.md`'s "Scope
-boundary" section, still out of scope everywhere).
+boundary" section, still out of scope everywhere). Neither applies to a
+core-bundled plugin: there's nothing on disk in the game's own repo to
+export, and "importing" one just means adding the existing `@glyphrogue/
+core` import to the bootstrap, indistinguishable from an ordinary toggle.
+
+### Services
+
+Service plugins (`scripting-api.md`'s "Plugin kinds: Content vs. Service")
+get a distinct section here, not folded into the content list above — a
+service is single-slot, so per-item enable/disable doesn't apply the same
+way: two services can't both fill the same slot at once.
+
+**Decision: a per-slot selector, not a toggle list.** For each known
+service slot (`memory`, `audioLoader`), the Services section shows which
+plugin currently fills it — core-bundled, an author's own override, or
+none — with a control to switch to a different available implementation or
+turn the slot off entirely (the game simply runs without it, e.g. no
+remembered-tile persistence). Switching writes the same kind of bootstrap
+edit content's toggle does — add/remove an import and array entry, with
+`id`/`override` set correctly for a swap — through the same file-write API.
+
+Discovery for the selector's option list follows the same two-source,
+derived posture as content above: core-bundled service plugins shipped
+from `@glyphrogue/core`, plus any author-authored override candidates
+found in `src/plugins/`, cross-referenced against the bootstrap array to
+determine which one (if any) is currently active for each slot.
 
 ## Open items carried forward
 
@@ -747,3 +781,9 @@ sequenced independently of them rather than grouped in), then shared UI
 infrastructure (live-preview + narrow form primitives), then the
 individual tools in dependency order (map editor, content browser,
 composition wizard, tileset/calibration editor, config UI).
+
+Plugin management additionally now depends on `BACKLOG.md`'s "packages/core
+plugin reconciliation roadmap" being done first — the generators/behaviors/
+memory/audioLoader Content and Service plugins this section's discovery and
+Services selector operate on don't exist as real plugins until that
+reconciliation lands.

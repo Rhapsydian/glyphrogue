@@ -438,6 +438,52 @@ code, same caveat the deep-dive roadmap carried.
 All planning-roadmap topics (1-11) and all `packages/core`
 implementation-roadmap sessions (14-25) are now complete.
 
+## packages/core plugin reconciliation roadmap
+
+Scoped after a real drift was found: `scripting-api.md` (session 5) already
+specified that first-party content uses the same Plugin module format as
+end-user plugins, but the actual generator/behavior code that landed in
+sessions 19-20 never carried that back — they're plain exported functions a
+game wires up by hand. `docs/design/scripting-api.md`'s "Plugin kinds:
+Content vs. Service" and `docs/design/editor.md`'s updated "Plugin
+management" now specify the reconciled design; this roadmap is the
+implementation work to make `packages/core`'s actual code match it. Strict
+dependency order — each step's plugin wrapper needs the primitive below it:
+
+1. **`api.registerService` + recording-api support** — add
+   `registerService(id, implementation)` to `api.js` (merges
+   `implementation`'s methods flat onto the live `api`) and to
+   `recordingApi.js` (logs `{ kind: 'service', id }`, same uniform pattern
+   as every other `registerX` stub). Needed before any Service plugin can
+   exist. No first-party instance yet — this step is infrastructure only.
+2. **Wrap the four generators as Content plugins** — one plugin per
+   generator (`bspGenerator`, `cellularAutomataGenerator`, the minimal-WFC
+   generator, `layeredBiomeGenerator`), each `{ id, version, dependencies,
+   register(api) }` with `register` calling the existing `registerGenerator`
+   for its own id. Ships from `@glyphrogue/core` itself, not a
+   `src/plugins/` folder.
+3. **Wrap the four behaviors as Content plugins** — same shape, one plugin
+   per behavior (`Wanders`, `ChasesPlayer`, `Flees`, `Guards`), `register`
+   calling the existing `registerRule`.
+4. **Wrap `memory.js` as a Service plugin** — `register(api)` builds the
+   bound `ensureMemory`/`updateEntityMemory` methods and calls
+   `api.registerService('memory', { ensureMemory, updateEntityMemory })`.
+   Depends on step 1.
+5. **Wrap `audioLoader.js` as a Service plugin** — `register(api)` calls
+   `createAudioLoader()` itself, closes over the result, and calls
+   `api.registerService('audioLoader', { ... })`. Depends on step 1.
+6. **Give `packages/editor/dev/`'s fixture a real bootstrap** — a
+   `dev/bootstrap.js`-equivalent calling `loadPlugins(api, [...])` with all
+   eight Content plugins plus both Service plugins by default, so plugin
+   management (below) has something genuine to discover, toggle, and
+   verify against manually, not an empty array.
+
+`packages/editor` design roadmap item 3 (Plugin management) depends on all
+six steps above — its discovery and Services selector operate on plugins
+that don't exist until this roadmap lands. Confirm scope live against real
+code at that session's kickoff, same caveat every roadmap in this file
+carries.
+
 ## packages/editor design roadmap
 
 Scoped in session 26's design survey (`docs/design/editor.md`) after the
@@ -472,13 +518,19 @@ live against real code, same caveat every roadmap in this file carries.
    (derived from live `git status --untracked-files=all` decorated with
    per-write provenance). Everything below mounts inside this.
 3. **Plugin management** — the enable/disable list (derived discovery
-   against `loadPlugins`'s array), the folder-per-plugin convention
-   (`src/plugins/<pluginId>/`), and import/export. Split out from the
-   "shared UI infrastructure" grouping below — it doesn't actually use
-   either shared primitive there, its only real dependencies are the
-   `plugins.js` rename (item 1) and the file-write API (item 2, now done),
-   so there's no reason to sequence it after the live-preview/form-primitive
-   work.
+   against `loadPlugins`'s array, now spanning two sources: core-bundled
+   Content plugins from `@glyphrogue/core` and author-authored ones in
+   `src/plugins/`), the folder-per-plugin convention (`src/plugins/
+   <pluginId>/`) and import/export for author-authored plugins, and a
+   separate Services section (per-slot selector, not a toggle list) for
+   Service plugins — see `docs/design/editor.md`'s "Plugin management" and
+   `scripting-api.md`'s "Plugin kinds: Content vs. Service". Split out from
+   the "shared UI infrastructure" grouping below — it doesn't actually use
+   either shared primitive there. Its dependencies are the `plugins.js`
+   rename (item 1), the file-write API (item 2, now done), **and** the
+   "packages/core plugin reconciliation roadmap" above (the actual Content/
+   Service plugins this section operates on don't exist yet) — no reason to
+   sequence it after the live-preview/form-primitive work otherwise.
 4. **Shared UI infrastructure** — the live-preview rendering primitive and
    the narrow form primitive (map editor params + audio mixing). Map
    editor, tileset/calibration editor, and config UI below each depend on

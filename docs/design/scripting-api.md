@@ -50,6 +50,55 @@ a core/editor-side dev tool, not something a plugin author ever writes to
 directly. It also gives a natural place for load-time validation (duplicate
 ids, `register()` throwing) before a plugin runs against the real api.
 
+## Plugin kinds: Content vs. Service
+
+Two structurally different kinds of things get registered through this same
+module contract, and the difference matters enough to name.
+
+**Content plugins** — the default kind, covered by "Registering systems,
+rules, and generators through one mechanism" below. Multi-instance: many
+entities, many rules, many generators all coexist simultaneously, selected
+by id or by component match. This is what `registerEntity`/
+`registerEntityType`/`registerRule`/`registerGenerator`/`registerScreen`/
+`registerSound`/`registerScriptedEvent` all produce.
+
+**Service plugins** — single-slot, swappable. A game has exactly one active
+implementation of a given concern (how remembered-tile/fog-of-war state
+persists, how decoded audio buffers get cached) at a time; a second
+implementation doesn't coexist alongside the first, it replaces it. Declared
+through a new registration call:
+
+```js
+api.registerService(id, implementation)
+```
+
+`id` names the concern (`'memory'`, `'audioLoader'`), not an individual
+method. `implementation` is a plain object of already-bound methods — the
+plugin constructs whatever internal state it needs itself (e.g. calling
+`createAudioLoader()`) and closes over it before handing the methods over.
+`loadPlugins` merges `implementation`'s methods directly onto the live `api`
+object, flat (`api.ensureMemory`, not `api.memory.ensureMemory`) —
+consistent with the rest of `api`'s surface.
+
+**Swapping reuses the existing override mechanism as-is, nothing new.** An
+author replacing the `memory` service writes a plugin with `id: 'memory',
+override: 'memory'` — the same last-registered-wins semantics "Conflict
+handling" below already defines for content. A plugin depending on a
+service existing declares it the same way as any other dependency
+(`dependencies: { memory: '^1.0.0' }`); the existing topological sort
+already guarantees load order.
+
+**Why not have `register(api)` just assign onto `api` directly**
+(`api.ensureMemory = fn`), skipping a new call entirely? Because the
+manifest-derivation mechanism above depends on every meaningful
+registration going through a `registerX`-shaped call — the recording
+implementation only observes the methods it explicitly stubs, not
+arbitrary property sets on the object it hands to `register()`. Raw
+assignment would silently vanish from the derived manifest.
+`registerService` is logged by the recording api the same uniform way as
+everything else (`{ kind: 'service', id }`), keeping "the manifest is
+derived, never hand-authored" true for services too, not just content.
+
 ## Data-driven definitions vs. behavior
 
 **Definitions are inert data.** `registerEntity` (and the `registerEntityType`
@@ -198,6 +247,12 @@ api.registerRule(id, actionType, ruleFn, options?)
 api.registerGenerator(id, generatorFn, options?)
 api.registerScriptedEvent(id, def, options?)
 ```
+
+`api.registerService(id, implementation)` (see "Plugin kinds: Content vs.
+Service" above) is deliberately not in this list — it takes an id and a
+single implementation object, not content-specific arguments plus trailing
+options, since it's registering a swappable single-slot implementation
+rather than one more instance of id-keyed content.
 
 ### Conflict handling
 

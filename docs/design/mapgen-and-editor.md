@@ -176,10 +176,15 @@ Logical links generalize across the world/local-zone tier too: a portal
 connecting two zones uses the same mechanism as one connecting two points
 within a single zone, not a special case bolted on separately.
 
-**Deferred**: full plugin/module packaging for generator registration —
-discovery, versioning of the registration mechanism itself, how a mod
-package declares which generators it provides — is scripting-api session
-(4) territory, not decided here.
+**Resolved by `scripting-api.md`**: full plugin/module packaging for
+generator registration — each of the four first-party generators is a
+**Content plugin** (`scripting-api.md`'s "Plugin kinds: Content vs.
+Service"), `register(api)` calling `registerGenerator` for its own id. One
+plugin per generator, not a bundle — a game can drop e.g. the WFC generator
+without carrying its plugin. Core-bundled, shipped from `@glyphrogue/core`
+itself rather than a `src/plugins/<id>/` folder; the "default-enabled"
+posture and the reconciliation work to get there is tracked in
+`BACKLOG.md`'s "packages/core plugin reconciliation roadmap."
 
 ## Map editor: hand-authoring, tuning, and previewing
 
