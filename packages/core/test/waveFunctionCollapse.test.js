@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import { createZone, ensureTraversable } from '../src/zoneComposition.js';
-import { collapseWfc, wfcGenerator } from '../src/waveFunctionCollapse.js';
+import { collapseWfc, wfcGenerator, DEFAULT_MAX_RETRIES } from '../src/waveFunctionCollapse.js';
+import { createRegistry } from '../src/registry.js';
+import { registerGenerator, generateZone } from '../src/mapgen.js';
 
 function allDirectionAdjacency(pairs) {
   const adjacency = [];
@@ -142,4 +144,28 @@ test('wfcGenerator auto-connects a stamp placed on the checkerboard collapse', (
 
   assert.equal(zone.cells[7 * 8 + 7], 'floor');
   assert.ok(reached.has('7,7'));
+});
+
+test('registerGenerator paramsDefaults built from waveFunctionCollapse.js\'s exported DEFAULT_MAX_RETRIES flows through generateZone', () => {
+  const tiles = [{ id: 'A', cell: 'floor' }, { id: 'B', cell: 'wall' }];
+  const adjacency = allDirectionAdjacency([['A', 'B'], ['B', 'A']]);
+  const registry = createRegistry();
+  registerGenerator(registry, 'wfc', wfcGenerator, {
+    paramsDefaults: { maxRetries: DEFAULT_MAX_RETRIES },
+  });
+
+  const withOmittedField = generateZone(registry, {
+    generatorId: 'wfc',
+    worldSeed: 2,
+    zoneId: 'a',
+    params: { width: 6, height: 6, tiles, adjacency },
+  });
+  const withExplicitSameValue = generateZone(registry, {
+    generatorId: 'wfc',
+    worldSeed: 2,
+    zoneId: 'a',
+    params: { width: 6, height: 6, tiles, adjacency, maxRetries: DEFAULT_MAX_RETRIES },
+  });
+
+  assert.deepEqual(withOmittedField.cells, withExplicitSameValue.cells);
 });

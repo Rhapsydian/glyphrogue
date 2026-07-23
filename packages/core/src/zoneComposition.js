@@ -73,6 +73,10 @@ function isWallAt(cells, width, region, x, y) {
   return cells[y * width + x] === 'wall';
 }
 
+export const DEFAULT_FILL_PROBABILITY = 0.45;
+export const DEFAULT_PASSES = 4;
+export const DEFAULT_WALL_THRESHOLD = 5;
+
 // Iterative neighbor-count cellular automata carve: random fill, then
 // `passes` smoothing rounds (a cell becomes wall when >= wallThreshold of
 // its 8 neighbors are wall). Out-of-region neighbors count as wall, so the
@@ -80,9 +84,9 @@ function isWallAt(cells, width, region, x, y) {
 // a given seed and fixed row-major iteration order.
 export function carveCellularAutomata(zone, rng, options = {}) {
   const {
-    fillProbability = 0.45,
-    passes = 4,
-    wallThreshold = 5,
+    fillProbability = DEFAULT_FILL_PROBABILITY,
+    passes = DEFAULT_PASSES,
+    wallThreshold = DEFAULT_WALL_THRESHOLD,
     region = { x: 0, y: 0, width: zone.width, height: zone.height },
   } = options;
 

@@ -1,8 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
-import { createZone, carveCellularAutomata, ensureTraversable } from '../src/zoneComposition.js';
+import {
+  createZone,
+  carveCellularAutomata,
+  ensureTraversable,
+  DEFAULT_FILL_PROBABILITY,
+  DEFAULT_PASSES,
+  DEFAULT_WALL_THRESHOLD,
+} from '../src/zoneComposition.js';
 import { cellularAutomataGenerator } from '../src/cellularAutomataGenerator.js';
+import { createRegistry } from '../src/registry.js';
+import { registerGenerator, generateZone } from '../src/mapgen.js';
 
 test('cellularAutomataGenerator is deterministic for a given seed', () => {
   const a = cellularAutomataGenerator({ rng: createRng(1), params: { width: 20, height: 20 } });
@@ -58,4 +67,36 @@ test('a mayBeIsolated stamp survives pruning even on an all-wall carve', () => {
   });
 
   assert.equal(zone.cells[10 * 20 + 10], 'floor');
+});
+
+test('registerGenerator paramsDefaults built from zoneComposition.js\'s exported constants flow through generateZone', () => {
+  const registry = createRegistry();
+  registerGenerator(registry, 'ca', cellularAutomataGenerator, {
+    paramsDefaults: {
+      fillProbability: DEFAULT_FILL_PROBABILITY,
+      passes: DEFAULT_PASSES,
+      wallThreshold: DEFAULT_WALL_THRESHOLD,
+    },
+  });
+
+  const withOmittedField = generateZone(registry, {
+    generatorId: 'ca',
+    worldSeed: 1,
+    zoneId: 'a',
+    params: { width: 20, height: 20 },
+  });
+  const withExplicitSameValue = generateZone(registry, {
+    generatorId: 'ca',
+    worldSeed: 1,
+    zoneId: 'a',
+    params: {
+      width: 20,
+      height: 20,
+      fillProbability: DEFAULT_FILL_PROBABILITY,
+      passes: DEFAULT_PASSES,
+      wallThreshold: DEFAULT_WALL_THRESHOLD,
+    },
+  });
+
+  assert.deepEqual(withOmittedField.cells, withExplicitSameValue.cells);
 });

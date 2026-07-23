@@ -1,5 +1,8 @@
 import { createZone, stampTemplate, connectCorridor, runConnectivityPass } from './zoneComposition.js';
 
+export const DEFAULT_MIN_PARTITION_SIZE = 6;
+export const DEFAULT_ROOM_MARGIN = 1;
+
 // Splits `region` along one axis, at a random position that keeps both
 // children >= minPartitionSize. Returns null once neither axis has room
 // left to split - that region becomes a leaf.
@@ -79,8 +82,8 @@ function buildBsp(zone, rng, region, minPartitionSize, roomMargin, rooms) {
 export function carveBsp(zone, rng, options = {}) {
   const {
     region = { x: 0, y: 0, width: zone.width, height: zone.height },
-    minPartitionSize = 6,
-    roomMargin = 1,
+    minPartitionSize = DEFAULT_MIN_PARTITION_SIZE,
+    roomMargin = DEFAULT_ROOM_MARGIN,
   } = options;
 
   const rooms = [];

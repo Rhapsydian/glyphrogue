@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRng } from '../src/rng.js';
 import { createZone, ensureTraversable } from '../src/zoneComposition.js';
-import { carveBsp, bspGenerator } from '../src/bsp.js';
+import { carveBsp, bspGenerator, DEFAULT_MIN_PARTITION_SIZE, DEFAULT_ROOM_MARGIN } from '../src/bsp.js';
+import { createRegistry } from '../src/registry.js';
+import { registerGenerator, generateZone } from '../src/mapgen.js';
 
 test('bspGenerator is deterministic for a given seed', () => {
   const a = bspGenerator({ rng: createRng(1), params: { width: 30, height: 20 } });
@@ -69,4 +71,31 @@ test('bspGenerator auto-connects a stamp placed away from any generated room', (
 
   assert.equal(zone.cells[0], 'floor');
   assert.ok(reached.has('0,0'));
+});
+
+test('registerGenerator paramsDefaults built from bsp.js\'s exported constants flow through generateZone', () => {
+  const registry = createRegistry();
+  registerGenerator(registry, 'bsp', bspGenerator, {
+    paramsDefaults: { minPartitionSize: DEFAULT_MIN_PARTITION_SIZE, roomMargin: DEFAULT_ROOM_MARGIN },
+  });
+
+  const withOmittedField = generateZone(registry, {
+    generatorId: 'bsp',
+    worldSeed: 1,
+    zoneId: 'a',
+    params: { width: 20, height: 10 },
+  });
+  const withExplicitSameValue = generateZone(registry, {
+    generatorId: 'bsp',
+    worldSeed: 1,
+    zoneId: 'a',
+    params: {
+      width: 20,
+      height: 10,
+      minPartitionSize: DEFAULT_MIN_PARTITION_SIZE,
+      roomMargin: DEFAULT_ROOM_MARGIN,
+    },
+  });
+
+  assert.deepEqual(withOmittedField.cells, withExplicitSameValue.cells);
 });

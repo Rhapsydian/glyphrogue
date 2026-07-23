@@ -1,8 +1,9 @@
 import { register, get } from './registry.js';
 import { createRng } from './rng.js';
 
-export function registerGenerator(registry, id, generatorFn, options) {
-  register(registry, id, generatorFn, options);
+export function registerGenerator(registry, id, generatorFn, options = {}) {
+  const { paramsDefaults, ...registryOptions } = options;
+  register(registry, id, { generatorFn, paramsDefaults }, registryOptions);
 }
 
 // FNV-1a over the (worldSeed, zoneId) pair - deterministic across JS engines
@@ -19,13 +20,14 @@ function hashSeed(worldSeed, zoneId) {
 }
 
 export function generateZone(registry, { generatorId, worldSeed, zoneId, params = {}, getNeighborZone }) {
-  const generatorFn = get(registry, generatorId);
-  if (!generatorFn) {
+  const entry = get(registry, generatorId);
+  if (!entry) {
     throw new Error(`no generator registered under id "${generatorId}"`);
   }
 
   const rng = createRng(hashSeed(worldSeed, zoneId));
-  const ctx = { rng, params, getNeighborZone };
+  const mergedParams = entry.paramsDefaults ? { ...entry.paramsDefaults, ...params } : params;
+  const ctx = { rng, params: mergedParams, getNeighborZone };
 
-  return generatorFn(ctx);
+  return entry.generatorFn(ctx);
 }

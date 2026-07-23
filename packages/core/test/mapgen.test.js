@@ -89,3 +89,49 @@ test('getNeighborZone is undefined-safe when the caller supplies none', () => {
 
   assert.equal(zone.neighborLookupSeen, undefined);
 });
+
+test('paramsDefaults fills in a field omitted from params', () => {
+  const registry = createRegistry();
+  registerGenerator(registry, 'stub', stubGenerator, {
+    paramsDefaults: { minPartitionSize: 6, roomMargin: 1 },
+  });
+
+  const zone = generateZone(registry, {
+    generatorId: 'stub',
+    worldSeed: 1,
+    zoneId: 'a',
+    params: { roomMargin: 2 },
+  });
+
+  assert.deepEqual(zone.paramsSeen, { minPartitionSize: 6, roomMargin: 2 });
+});
+
+test('a field provided in params overrides its paramsDefaults value', () => {
+  const registry = createRegistry();
+  registerGenerator(registry, 'stub', stubGenerator, {
+    paramsDefaults: { minPartitionSize: 6 },
+  });
+
+  const zone = generateZone(registry, {
+    generatorId: 'stub',
+    worldSeed: 1,
+    zoneId: 'a',
+    params: { minPartitionSize: 12 },
+  });
+
+  assert.equal(zone.paramsSeen.minPartitionSize, 12);
+});
+
+test('a generator registered with no paramsDefaults behaves exactly as before', () => {
+  const registry = createRegistry();
+  registerGenerator(registry, 'stub', stubGenerator);
+
+  const zone = generateZone(registry, {
+    generatorId: 'stub',
+    worldSeed: 1,
+    zoneId: 'a',
+    params: { biome: 'cave' },
+  });
+
+  assert.deepEqual(zone.paramsSeen, { biome: 'cave' });
+});

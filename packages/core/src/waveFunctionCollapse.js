@@ -1,5 +1,7 @@
 import { createZone, stampTemplate, ensureTraversable } from './zoneComposition.js';
 
+export const DEFAULT_MAX_RETRIES = 50;
+
 const DIRECTIONS = [
   [1, 0],
   [-1, 0],
@@ -129,7 +131,7 @@ export function collapseWfc(zone, rng, options = {}) {
     region = { x: 0, y: 0, width: zone.width, height: zone.height },
     tiles,
     adjacency = [],
-    maxRetries = 50,
+    maxRetries = DEFAULT_MAX_RETRIES,
   } = options;
 
   if (!tiles || tiles.length === 0) {
