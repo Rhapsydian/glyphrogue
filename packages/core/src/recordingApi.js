@@ -49,6 +49,9 @@ export function createRecordingApi() {
           steps: def.steps?.length ?? 0,
         });
       },
+      registerService: (id) => {
+        record('service', id);
+      },
     },
   };
 }

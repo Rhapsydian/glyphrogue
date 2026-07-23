@@ -197,3 +197,11 @@ test('api.registerEntityType + api.instantiateEntity produce a live, rule-reacti
 
   assert.deepEqual(exploded, [goblin]);
 });
+
+test('api.registerService merges a Service plugin\'s implementation flat onto api', () => {
+  const api = createApi();
+
+  api.registerService('example', { bar: () => 42 });
+
+  assert.equal(api.bar(), 42);
+});

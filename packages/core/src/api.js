@@ -43,7 +43,7 @@ export function createApi({
   const engine = createEngine(world, registry, scheduler, mapQuery, renderEvents, devMode);
   const rng = createRng(seed);
 
-  return {
+  const api = {
     world,
     registry,
     scheduler,
@@ -119,4 +119,12 @@ export function createApi({
     unlock: () => unlock(engine),
     isLocked: () => isLocked(engine),
   };
+
+  // Service plugins (scripting-api.md's "Plugin kinds: Content vs.
+  // Service") merge flat onto this same live object - registerService
+  // has to close over `api` itself, which an anonymous returned literal
+  // can't do, hence naming it above instead of `return { ... }` directly.
+  api.registerService = (id, implementation) => Object.assign(api, implementation);
+
+  return api;
 }

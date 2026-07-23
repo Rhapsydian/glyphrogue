@@ -19,6 +19,7 @@ test('a plugin\'s register(api) run against the recording api produces a manifes
       trigger: { action: 'EnterRegion' },
       steps: [{ do: [] }, { waitFor: { action: 'DefeatAll' } }],
     });
+    recordingApi.registerService('memory', { ensureMemory: () => {} });
   }
 
   register(api);
@@ -31,6 +32,7 @@ test('a plugin\'s register(api) run against the recording api produces a manifes
     { kind: 'screen', id: 'inventory' },
     { kind: 'sound', id: 'hit', trigger: 'Attack' },
     { kind: 'scriptedEvent', id: 'ambush', trigger: 'EnterRegion', steps: 2 },
+    { kind: 'service', id: 'memory' },
   ]);
 });
 
