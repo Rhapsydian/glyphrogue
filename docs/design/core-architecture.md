@@ -43,6 +43,12 @@ API (session 4 of the roadmap) — a mod or a game's own content registers
 rules the same way, whether it's first-party content or a third-party mod
 (see "Modding" below).
 
+**Extended by `docs/design/editor.md`**: `registerRule` gains an optional
+declarative `components` filter (entity-gating enforced at dispatch time)
+and optional `{ reads, writes }` declarations (made load-bearing via a
+dev-mode-only `ctx` wrapper) — both motivated by `packages/editor`'s
+tooling needs, cross-referenced there rather than re-decided here.
+
 ## Turn-based scheduling: time-units engine
 
 Two established patterns exist for turn scheduling:

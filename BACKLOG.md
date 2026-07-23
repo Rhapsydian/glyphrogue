@@ -69,9 +69,22 @@ calibration editor, content browser, composition wizard, config UI, and
 the hot-reload harness, plus two `core` extensions the tooling needs
 (`registerRule`'s `components` filter + reads/writes tracking, generator
 `paramsDefaults`) — see `docs/session-logs/session-26-2026-07-22.md`. See
-the new "packages/editor design roadmap" below for the proposed
-implementation session order; the next `/dev-session` is session 1 of
-that roadmap (the `core` mechanisms bundle).
+the "packages/editor design roadmap" below for the proposed implementation
+session order. Session 27 was a design-hardening pass over `editor.md`
+before implementation starts — no source touched: replaced the Preact+htm
+decision with Svelte 5 (compiled ahead of time, only the compiled output
+published — the one package with a real build step), fleshed out the
+content browser, tileset/font-calibration editor, and config UI layouts
+(the last had no described layout at all before this pass), resolved a
+`paramsDefaults` migration wrinkle (`layeredBiomeGenerator`'s `seedCount`
+default is dynamic, documented as an exception), fully designed plugin
+management (folder-per-plugin convention, author-to-author import/export),
+pulled the `mods.js` → Plugin rename forward into roadmap item 1, and
+split plugin management out of "shared UI infrastructure" into its own
+roadmap item since it doesn't depend on either primitive there — see
+`docs/session-logs/session-27-2026-07-23.md`. The next `/dev-session` is
+still session 1 of that roadmap (the `core` mechanisms bundle, now
+including the pulled-forward Plugin rename).
 
 ## Deferred / future items
 
@@ -80,12 +93,6 @@ that roadmap (the `core` mechanisms bundle).
   source); a genuinely new `core`-level feature (a persisted,
   player-toggleable enabled-mods settings slice, read at boot) is flagged
   but not designed there, no session scoped for it yet.
-- **`mods.js` → Plugin renaming pass** — `docs/design/editor.md` splits
-  "Plugin" (dev-time) from "Mod" (player-facing) terminology, but
-  everything that exists today (`packages/core/src/mods.js`,
-  `scripting-api.md`, the save DTO's `mods:` slice) still uses "mod" for
-  what's now called "Plugin." Not done in session 26, no source touched;
-  a natural follow-up whenever `core` next gets touched.
 
 - **A real asset-loading strategy for games** — session 24 drew
   `audioLoader.js`'s line at "takes an already-fetched `ArrayBuffer`, never
@@ -415,26 +422,49 @@ live against real code, same caveat every roadmap in this file carries.
 
 1. **`core` mechanisms bundle** — `registerRule`'s `components` filter +
    `registerEntityType` rewiring, generator `paramsDefaults` + the four
-   first-party generators' constant-extraction fix, the dev-mode
-   reads/writes enforcing `ctx` wrapper, `getComponentsForEntity`. Pure
-   `core` work, no UI, independent of everything below — same posture as
-   sessions 14-25.
+   first-party generators' constant-extraction fix (`layeredBiomeGenerator`'s
+   `seedCount` is a documented exception — its `biomes.length * 2` default
+   is dynamic, not a candidate for a static `paramsDefaults` entry), the
+   dev-mode reads/writes enforcing `ctx` wrapper, `getComponentsForEntity`.
+   **Also pulled forward from the deferred list**: the `mods.js` → Plugin
+   renaming pass (`loadMods` → a `loadPlugins`-equivalent, `mods.js` →
+   `plugins.js`, the save DTO's `mods:` slice key, `scripting-api.md`'s
+   terminology, `mods.test.js` → `plugins.test.js`, and `packages/cli`'s
+   scaffold content folder `src/mods/` → `src/plugins/` per
+   `build-pipeline.md` — plus adopting the plugin-management design's new
+   folder-per-plugin convention, `src/plugins/<pluginId>/`, in that same
+   scaffold) — done now rather than left open-ended, since it touches the
+   same files this session is already touching and doing it before rather
+   than after avoids a second churn pass. Pure `core` work, no UI,
+   independent of everything below — same posture as sessions 14-25.
 2. **Editor harness foundation** — package scaffold, mount API,
-   Preact+htm, hot-reload snapshot/restore, dev fixture, the shared
-   file-write API (Vite plugin), the touched-files log. Everything else
-   below mounts inside this.
-3. **Shared UI infrastructure** — the live-preview rendering primitive,
-   the narrow form primitive (map editor params + audio mixing), plugin
-   management. All three tools below depend on at least one of these.
-4. **Map editor** — most prior art, most fully specified tool in
+   Svelte 5 (compiled-output-only build step), hot-reload snapshot/restore,
+   dev fixture, the shared file-write API (Vite plugin), the touched-files
+   log. Everything else below mounts inside this.
+3. **Plugin management** — the enable/disable list (derived discovery
+   against `loadPlugins`'s array), the folder-per-plugin convention
+   (`src/plugins/<pluginId>/`), and import/export. Split out from the
+   "shared UI infrastructure" grouping below — it doesn't actually use
+   either shared primitive there, its only real dependencies are the
+   `plugins.js` rename (item 1) and the file-write API (item 2), so
+   there's no reason to sequence it after the live-preview/form-primitive
+   work.
+4. **Shared UI infrastructure** — the live-preview rendering primitive and
+   the narrow form primitive (map editor params + audio mixing). Map
+   editor, tileset/calibration editor, and config UI below each depend on
+   at least one of these.
+5. **Map editor** — most prior art, most fully specified tool in
    `editor.md`; likely wants the `checkpoint-plan` treatment given its
    scope (in-context/standalone flows, pin/lock, panel layout).
-5. **Content browser** — first-pass in `editor.md`, needs its own deeper
-   design pass before implementation, but unlocks the composition wizard.
-6. **Composition wizard** — depends on the content browser existing.
-7. **Tileset/font-calibration editor** — first-pass in `editor.md`, also
-   needs deeper design first; depends on the live-preview primitive.
-8. **Config UI** — depends on both shared primitives, the file-write API,
+6. **Content browser** — data model, filtering shape, and
+   cross-navigation settled in `editor.md`; unlocks the composition
+   wizard. Exact panel/detail-pane visual layout is the one piece still
+   left to implementation time.
+7. **Composition wizard** — depends on the content browser existing.
+8. **Tileset/font-calibration editor** — two-tab layout, reference-change
+   confirmation, and the glyph-picker shape are all settled in
+   `editor.md`; depends on the live-preview primitive.
+9. **Config UI** — depends on both shared primitives, the file-write API,
    and the capture stack.
 
 `packages/cli` remains later, separately-scoped work — this roadmap covers

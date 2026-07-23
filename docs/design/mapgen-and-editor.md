@@ -133,6 +133,12 @@ stores, so freshly-generated and loaded-from-seed-plus-diff zones feed
 identical downstream code (rendering, core state) with no special-casing
 for "was this generated or loaded."
 
+**Extended by `docs/design/editor.md`**: `registerGenerator` gains an
+optional load-bearing `paramsDefaults` object — `generateZone` merges
+declared defaults into `params` whenever a field is omitted — motivated
+by the content browser and map editor's params panel needing something to
+introspect. Cross-referenced there rather than re-decided here.
+
 `core` also exposes **composition primitives** that generator functions
 call into, rather than each generator reimplementing carving/pathing logic
 from scratch:

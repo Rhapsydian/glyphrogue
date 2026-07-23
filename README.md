@@ -151,13 +151,33 @@ harness, map editor, tileset/calibration editor, content browser,
 composition wizard, config UI, and the two `core` extensions the tooling
 needs (`registerRule`'s declarative `components` filter, generator
 `paramsDefaults`). `BACKLOG.md`'s new "packages/editor design roadmap"
-scopes the 8 implementation sessions ahead, starting with a `core`-only
+scoped the implementation sessions ahead, starting with a `core`-only
 mechanisms session.
+
+Session 27 was a design-hardening pass over `editor.md` before
+implementation starts — still no source touched. Replaced the Preact+htm
+UI decision with Svelte 5 (compiled ahead of time, only the compiled
+output published — the one package in the monorepo with a real build
+step), fleshed out three sections that had never gotten a layout pass
+(content browser, tileset/font-calibration editor, and config UI — the
+last had no described panel layout at all), resolved a `paramsDefaults`
+migration wrinkle (`layeredBiomeGenerator`'s `seedCount` default is
+dynamically computed, so it's a documented exception rather than forced
+into the mechanism), fully designed plugin management (a folder-per-plugin
+convention plus author-to-author import/export), and pulled the
+`mods.js` → Plugin renaming pass forward into the very next implementation
+session. A closing full read-through caught several stale cross-
+references and one roadmap sequencing issue (plugin management had been
+bundled into "shared UI infrastructure" despite not depending on either
+primitive there — split into its own roadmap item). `BACKLOG.md`'s
+roadmap now scopes 9 implementation sessions, still starting with the
+`core`-only mechanisms session (now also including the pulled-forward
+rename).
 
 See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor` implementation roadmap, 8 sessions scoped)
+- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor` implementation roadmap, 9 sessions scoped)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -180,8 +200,8 @@ packages/
             keybindingStorage.js, kept outside core and dependency-free
             under src/, tests under test/
   editor/   dev-time companion tools (map editor, tileset/calibration editor, content browser,
-            composition wizard, config UI) — designed (session 26, docs/design/editor.md),
-            implementation not yet started, never ships in production
+            composition wizard, config UI) — designed (session 26, refined session 27,
+            docs/design/editor.md), implementation not yet started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/  in-depth design docs, one per deep-dive planning session
 docs/session-logs/  one log per session

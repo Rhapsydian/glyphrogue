@@ -59,12 +59,16 @@ in *where the array of what-to-load comes from*:
   anything modding-related. Genuinely new `core`-level work, out of scope
   for this doc.
 
-**Renaming consequence, not urgent**: everything that exists today in
-`core` uses "mod" for what this doc calls "Plugin" — `packages/core/src/
-mods.js`, `scripting-api.md`, the save DTO's `mods: { [modId]: ... }`
-slice. A rename pass (`loadMods` → a `loadPlugins`-equivalent, the
-save-slice key, etc.) is a natural follow-up whenever `core` next gets
-touched — not part of this doc's own scope, no source renamed here.
+**Renaming consequence**: everything that exists today in `core` uses
+"mod" for what this doc calls "Plugin" — `packages/core/src/mods.js`,
+`scripting-api.md`, the save DTO's `mods: { [modId]: ... }` slice. Scoped
+into the very next implementation session (`BACKLOG.md`'s "packages/editor
+design roadmap" item 1, alongside the `core` mechanisms bundle below) —
+`loadMods` → a `loadPlugins`-equivalent, `mods.js` → `plugins.js`, the
+save-slice key, `scripting-api.md`'s terminology, and the CLI scaffold's
+`src/mods/` → `src/plugins/` folder. No source renamed in this doc itself
+— that's implementation, not design — but no longer an open-ended
+someday.
 
 ## Core extension: `registerRule`'s `components` filter
 
@@ -200,9 +204,22 @@ design goal — an author can call it directly without going through
 primitive's own signature default to that constant (preserving standalone
 usability), and have the generator's registration-time `paramsDefaults`
 reference the same imported constant — one literal value, read from two
-call sites, never duplicated. Applies to `bspGenerator`,
-`cellularAutomataGenerator`, and (presumed, not yet individually checked)
-`wfcGenerator`/`layeredBiomeGenerator`.
+call sites, never duplicated. Confirmed (not just presumed) against all
+four generators: `bspGenerator`, `cellularAutomataGenerator`, and
+`wfcGenerator` (`collapseWfc`'s `maxRetries = 50`) all migrate cleanly.
+
+**Exception: `layeredBiomeGenerator`'s `seedCount` doesn't migrate.**
+`partitionBiomes`'s buried default is `biomes.length * 2` — computed from
+another param, not a static value — so it can't be lifted into an
+exported constant the way the other three generators' defaults can;
+`paramsDefaults` is values-only, set at registration time, before
+`biomes` is known. **Decision**: leave it as a documented exception rather
+than forcing a static fallback into the mechanism (which would risk
+silently changing behavior for any caller currently relying on the
+size-relative default) — no `paramsDefaults` entry for `seedCount`,
+`partitionBiomes`'s dynamic default stays exactly as-is, and the params
+panel simply shows no default for that one field, same as any
+undeclared-default param today.
 
 ## Core gap, flagged but not fixed by this doc: bulk entity introspection
 
@@ -238,18 +255,37 @@ Canvas+DOM hybrid and `ui-and-input.md`'s "no frontend framework assumed"
 stance for game code. No iframe, no overlay-over-canvas, no
 editor-hosts-the-game inversion of control.
 
-**Decision**: `packages/editor`'s own internal UI uses **Preact + htm** —
-real component reactivity/diffing, no JSX, no compile step (tagged
-template literals only). This is a different question from the
+**Decision**: `packages/editor`'s own internal UI is authored in **Svelte
+5**, compiled ahead of time, with only the compiled output published —
+never the `.svelte` source, never a Svelte compiler dependency imposed on
+whoever consumes the package. This is a different question from the
 game-facing "no framework assumed" decision (`ui-and-input.md`) — that one
 keeps `core`/`input` agnostic since games pick their own stack;
 `packages/editor` is a single codebase fully owned by this project, never
 shipped into a game, with genuinely complex stateful UI (a schema-driven
-params panel, a scripting console, a tileset picker). Preact+htm preserves
-editor shipping as raw importable ESM source — no downstream Vite config
-changes needed to consume it, unlike a JSX-requiring framework would need.
-First true runtime dependency anywhere in this project; justified
-specifically by editor's own UI complexity.
+params panel, a tileset picker) that benefits from real component
+authoring. Svelte compiles reactivity away entirely rather
+than diffing a vdom at runtime, which is a better match for this doc's
+actual UI shape than a Preact+htm alternative would be — live-tuning
+surfaces (calibration sliders, a params panel reacting to every keystroke)
+get direct, surgical DOM updates instead of a tree diff on every change.
+
+**Consequence — the one package in this monorepo with a real build
+step.** Every other package (`core`, `input`, `cli`) ships raw `src/`, no
+build step, `package.json` `exports` pointing straight at source
+(session 14's decision). `packages/editor` deliberately breaks that
+pattern: `svelte` and `@sveltejs/vite-plugin-svelte` are *devDependencies*
+only, never installed by a consuming project; `exports` points at a
+compiled `dist/` instead of `src/`; `dist/` is gitignored and regenerated
+by a `build` script wired to `prepublishOnly` so a publish can't happen
+against stale output. What a downstream game actually imports is still
+plain, dependency-light compiled ESM — no unbundled framework runtime to
+install, arguably closer to "raw importable source" than Preact+htm's own
+runtime dependency would have been. `packages/editor`'s own contributor
+inner loop (editing the editor's UI itself, a different question from the
+hot-reload-a-consuming-game's-world-state harness decision below) runs
+`.svelte` source directly through Vite's Svelte plugin with real
+component-level HMR.
 
 **Decision**: hot-reload state preservation reuses `packages/core/src/
 save.js`'s existing `serialize`/`deserialize` plus `storage.js`'s
@@ -327,16 +363,17 @@ historical audit trail of every past action including later-reverted ones.
 
 ## Shared live-preview rendering primitive
 
-Three concrete consumers identified in this doc alone — calibration
-tuning (glyph alignment preview), palette editing (color/gradient
-preview), and the map editor (zone preview) — all needing the exact same
-thing: draw glyphs/data via `packages/core/src/glyphRenderer.js`'s
-existing `drawGlyphCell`/`drawTileCell` functions, fed with whatever
-tentative, not-yet-saved data the active tool is tuning.
+Four concrete consumers identified in this doc alone — calibration
+tuning (glyph alignment preview), symbol/tileset authoring (assembled-tile
+preview), palette editing (color/gradient preview), and the map editor
+(zone preview) — all needing the exact same thing: draw glyphs/data via
+`packages/core/src/glyphRenderer.js`'s existing `drawGlyphCell`/
+`drawTileCell` functions, fed with whatever tentative, not-yet-saved data
+the active tool is tuning.
 
 **Decision**: build this as one shared "live preview surface" piece of
 harness infrastructure, a thin wrapper around the existing render
-functions, rather than three independent implementations. This meets the
+functions, rather than four independent implementations. This meets the
 bar this doc otherwise holds everything to (generalize only once 2+ real,
 identically-shaped needs exist) — unlike the schema-driven form primitive
 below, where the needs turned out *not* to be identically shaped despite
@@ -468,11 +505,29 @@ entities actually exist right now and what components they currently
 carry — needs a live `api`/world, and directly depends on the
 `getComponentsForEntity` gap above getting filled).
 
-**First-pass status**: this section covers the browser's data model and
-the two-view split, but not exact UI layout/navigation — whichever future
-session implements this should treat it as needing its own scoping
-discussion first, same as `mapgen-and-editor.md`'s original map-editor
-sketch needed before this doc filled it in.
+**Decision: facet-able list, not a fixed hierarchy or separate
+index-browsing UI.** The static/registry view is a search/filter bar over
+a `kind`-grouped list (rules, generators, entity types, screens, sounds,
+scripted events, plugins) by default. The two computed cross-reference
+indexes above aren't a separate feature — they're alternate *entry
+points* into the same list: selecting a component or entity type from a
+detail panel re-filters the list to "everything referencing this," rather
+than the browser needing its own index-specific views. The live/world
+view mirrors this — an entity list filterable by the same
+type/component facets, querying the live world (`ctx.query`/
+`getComponentsForEntity`) instead of the manifest; selecting an entity
+shows its full live component set.
+
+**Decision: a deliberate cross-navigation shortcut between the two
+views, without conflating their data sources.** Selecting an entity
+*type* in the static view offers a "show live instances of this" jump
+into the live view. This stays consistent with "two distinct kinds of
+browsing, treated as separate views" above — it's a navigation shortcut
+between two independently-sourced views, not a merged data model.
+
+Exact panel/detail-pane visual layout is still left to implementation
+time — the data model, filtering shape, and cross-navigation affordance
+above are now settled.
 
 ## Composition wizard
 
@@ -548,10 +603,31 @@ editable relative to itself), and changing the reference is a real,
 semi-destructive action (recalculates every other source's derived
 defaults) deserving a clear confirmation step, not a casual toggle.
 
-**First-pass status**: same caveat as the content browser — this section
-establishes the two-sub-tool split and its two wrinkles, but not exact
-panel layout; needs its own scoping discussion at whichever future
-session tackles it.
+**Decision: two tabs, mirroring the content browser's own layout
+pattern.** Calibration tuning: a font-source selector (the reference
+source visibly badged, not left implicit) + the `scale`/`baselineOffset`/
+`horizontalCenteringMode` sliders + the shared live-preview primitive
+rendering a calibration grid that updates live as sliders move. Symbol
+authoring: a searchable/filterable table of registered symbols (id, font
+source, codepoint, glyph preview swatch) — the same list-plus-detail-panel
+shape the content browser settled on — with an editor form per symbol
+(font source picker, glyph picker, palette-token color pickers), also
+reusing the live-preview primitive to render the assembled tile
+(`drawTileCell`), not just the calibration grid.
+
+**Decision: reference-source change confirmation is a plain modal
+warning**, naming how many other sources' derived defaults will get
+recalculated — not a full diff/preview of the actual numeric changes.
+Simplest thing that still stops an accidental click on a semi-destructive
+action.
+
+**Decision: the non-manifest glyph picker combines raw input with
+presets, not one or the other.** Raw hex/codepoint text input always
+works and needs no maintenance; on its own, though, it's not really
+"browsable" if the author doesn't already know the codepoint they want. A
+small set of common Unicode block-range quick-jump presets (Latin-1, Box
+Drawing, etc.) sits on top of raw input as a discovery aid, not a
+replacement for it.
 
 ## Config UI
 
@@ -594,13 +670,63 @@ Config UI can't reuse the content-browser's manifest approach for "what's
 the vocabulary here" — it has to read the actual keymap/palette object
 directly.
 
+**Panel layout: three tabs — Palette / Keybindings / Audio** — matching
+the three-way mechanism split above (this section otherwise had no
+described layout at all, unlike every other tool in this doc).
+
+- **Palette tab**: a token list, accounting for the recursive structure (a
+  token is a color or a gradient with nested stops, each possibly
+  referencing another token), each with a live-preview swatch via the
+  shared live-preview primitive. Edits write back to the palette source
+  file (whole-file overwrite via the file-write API).
+- **Keybindings tab**: an input-action list, each showing its current
+  binding(s) (variable-length, array-per-action) plus the "capture next
+  key" affordance (the exclusive capture stack). Writes to the game's
+  default-settings source.
+- **Audio tab**: the three 0-1 sliders, via the narrow shared form
+  primitive already decided for exactly this shape. "Preview live" means
+  actually hearing the mix while adjusting, using the same runtime
+  playback mechanism a player would get. Writes to the default-settings
+  source.
+
 ## Plugin management
 
-**Decision**: a dev-time toggle/swap list over what goes into
-`loadMods()`'s input array (see "Plugin vs. Mod" above), writing back to
-whatever bootstrap/config file constructs that array via the file-write
-API, and surfacing `mods.js`'s existing dependency-cycle/version-mismatch
-errors as UI feedback instead of a console throw.
+**Decision: discovery/enabled-state is derived, not hand-maintained** —
+same "derive, don't hand-maintain" posture as the mod/plugin manifest, the
+`components` filter, and the touched-files log elsewhere in this doc. The
+tool scans `src/plugins/` (the CLI scaffold's content folder, per
+`build-pipeline.md`) for candidate plugin modules, and cross-references
+that list against whatever the bootstrap file's `loadPlugins(api, [...])`
+array actually lists to derive enabled-vs-available — no separately
+tracked enabled flag to drift out of sync.
+
+**Decision: a per-plugin enable/disable toggle**, not a toggle-plus-manual-
+reorder list. Toggling adds/removes the plugin's import and array entry in
+the bootstrap file via the file-write API's existing "surface a one-line
+instruction rather than silently rewrite a file the tool doesn't fully
+own" pattern (same as scaffold generation elsewhere in this doc). Manual
+reordering is deliberately not a feature — `loadPlugins`'s dependency-based
+topological sort already resolves load order, so a manual order control
+wouldn't do anything. `plugins.js`'s existing dependency-cycle/version-
+mismatch errors surface as UI feedback here instead of a console throw.
+
+**Decision: a plugin is a self-contained folder, `src/plugins/<pluginId>/`
+— an entry module plus any assets it needs** — not a loose single `.js`
+file. This is what makes import/export (below) a plain filesystem
+operation rather than needing a real bundler/packaging step, and is
+worth establishing now, before a large body of existing plugins exists to
+migrate later.
+
+**Decision: import/export for author-to-author plugin sharing.** Import
+copies a plugin folder an author received into `src/plugins/` via the
+file-write API, then surfaces the same one-line "wire it into your
+bootstrap" instruction scaffold generation already uses. Export packages
+a plugin's own folder (plain filesystem copy/zip, not a real package/npm
+artifact) for handing to another author — matches this project's
+low-ceremony bias, no new packaging machinery needed. Both are strictly
+dev-time, author-to-author sharing — distinct from, and no substitute
+for, actual end-user mod distribution (`scripting-api.md`'s "Scope
+boundary" section, still out of scope everywhere).
 
 ## Open items carried forward
 
@@ -608,18 +734,16 @@ errors as UI feedback instead of a console throw.
   doc (see "Plugin vs. Mod" above); genuinely new `core`-level work
   (a persisted, player-toggleable enabled-mods settings slice) with no
   session scoped for it yet.
-- **Content browser and tileset/calibration editor UI layout** — both
-  sections above are first-pass; exact panel/navigation design needs its
-  own scoping discussion at implementation time.
-- **`mods.js` → Plugin renaming pass** — not done in this doc, no source
-  touched; a natural follow-up whenever `core` next gets touched.
 
 ## Implementation sequencing
 
 See `BACKLOG.md`'s "packages/editor design roadmap" for the proposed
 session order. Summary: a `core`-only mechanisms session first (both
-extensions above, `getComponentsForEntity`), then the harness, then shared
-UI infrastructure (live-preview + narrow form primitives, plugin
-management), then the individual tools in dependency order (map editor,
-content browser, composition wizard, tileset/calibration editor, config
-UI).
+extensions above, `getComponentsForEntity`, plus the `mods.js` → Plugin
+rename pulled forward from "Open items carried forward"), then the
+harness, then plugin management (its only real dependencies are the
+rename and the harness's file-write API, not the shared UI primitives —
+sequenced independently of them rather than grouped in), then shared UI
+infrastructure (live-preview + narrow form primitives), then the
+individual tools in dependency order (map editor, content browser,
+composition wizard, tileset/calibration editor, config UI).
