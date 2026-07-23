@@ -1,5 +1,19 @@
 import { unmount } from 'svelte';
-import { createApi, createLocalStorageBackend } from '@glyphrogue/core';
+import {
+  createApi,
+  createLocalStorageBackend,
+  loadPlugins,
+  bspPlugin,
+  cellularAutomataPlugin,
+  wfcPlugin,
+  layeredBiomePlugin,
+  wandersPlugin,
+  chasesPlayerPlugin,
+  fleesPlugin,
+  guardsPlugin,
+  memoryPlugin,
+  audioLoaderPlugin,
+} from '@glyphrogue/core';
 import { mountEditor } from '../src/mount.js';
 import { snapshotWorld, restoreWorldFromSnapshot } from '../src/hotReload.js';
 
@@ -11,6 +25,25 @@ const HOT_RELOAD_KEY = 'glyphrogue-editor-dev-fixture';
 
 const restored = await restoreWorldFromSnapshot(hotReloadStorage, HOT_RELOAD_KEY);
 const api = restored ?? createApi();
+
+// Plugin registrations (rules/generators/services) aren't part of
+// serialize/deserialize's round-tripped world data - only entities/
+// components are - so this has to run every time this module runs,
+// restored or not, not just on a genuine cold start. Gives plugin
+// management (editor roadmap item 3) something genuine to discover,
+// toggle, and verify against, per BACKLOG.md's reconciliation roadmap.
+loadPlugins(api, [
+  bspPlugin,
+  cellularAutomataPlugin,
+  wfcPlugin,
+  layeredBiomePlugin,
+  wandersPlugin,
+  chasesPlayerPlugin,
+  fleesPlugin,
+  guardsPlugin,
+  memoryPlugin,
+  audioLoaderPlugin,
+]);
 
 // A minimal real game, not a mock - editor.md's harness operates on
 // whatever live api/world a consuming game already built, so the fixture
@@ -24,6 +57,7 @@ if (!restored) {
 
   const goblin = api.createEntity();
   api.addComponent(goblin, 'Position', { x: 5, y: 1 });
+  api.addComponent(goblin, 'Wanders', {});
 }
 
 // Exposed for manual hot-reload verification only (checking that a
