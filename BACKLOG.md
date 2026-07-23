@@ -62,11 +62,30 @@ mod/plugin registration completion, plus `registerEntity`/
 `registerEntityType` added per a scope-gap decision made at kickoff) is
 also done, see `docs/session-logs/session-25-2026-07-22.md`. This closes
 out the `packages/core` implementation roadmap entirely — sessions 14-25
-are all complete. The next `/dev-session` scopes `packages/editor`/
-`packages/cli` from scratch; no roadmap item is pre-set for it, so that
-session's kickoff should discuss scope with the user directly.
+are all complete. Session 26 (originally scoped as "implement the editor
+harness," redirected live to a full design survey of `packages/editor`
+instead) produced `docs/design/editor.md` — the map editor, tileset/
+calibration editor, content browser, composition wizard, config UI, and
+the hot-reload harness, plus two `core` extensions the tooling needs
+(`registerRule`'s `components` filter + reads/writes tracking, generator
+`paramsDefaults`) — see `docs/session-logs/session-26-2026-07-22.md`. See
+the new "packages/editor design roadmap" below for the proposed
+implementation session order; the next `/dev-session` is session 1 of
+that roadmap (the `core` mechanisms bundle).
 
 ## Deferred / future items
+
+- **Player-facing Mod management** — `docs/design/editor.md` deliberately
+  scopes only dev-time **Plugin** management (author-managed, baked into
+  source); a genuinely new `core`-level feature (a persisted,
+  player-toggleable enabled-mods settings slice, read at boot) is flagged
+  but not designed there, no session scoped for it yet.
+- **`mods.js` → Plugin renaming pass** — `docs/design/editor.md` splits
+  "Plugin" (dev-time) from "Mod" (player-facing) terminology, but
+  everything that exists today (`packages/core/src/mods.js`,
+  `scripting-api.md`, the save DTO's `mods:` slice) still uses "mod" for
+  what's now called "Plugin." Not done in session 26, no source touched;
+  a natural follow-up whenever `core` next gets touched.
 
 - **A real asset-loading strategy for games** — session 24 drew
   `audioLoader.js`'s line at "takes an already-fetched `ArrayBuffer`, never
@@ -385,10 +404,42 @@ code, same caveat the deep-dive roadmap carried.
     `docs/session-logs/session-25-2026-07-22.md`.
 
 All planning-roadmap topics (1-11) and all `packages/core`
-implementation-roadmap sessions (14-25) are now complete. The next
-`/dev-session` scopes `packages/editor`/`packages/cli` from scratch — no
-roadmap pointer exists for that yet, so that session's kickoff step should
-discuss scope with the user rather than assume a pre-set item.
+implementation-roadmap sessions (14-25) are now complete.
+
+## packages/editor design roadmap
+
+Scoped in session 26's design survey (`docs/design/editor.md`) after the
+`packages/core` implementation roadmap finished. Dependency order, not a
+fixed commitment — each session's own kickoff should still confirm scope
+live against real code, same caveat every roadmap in this file carries.
+
+1. **`core` mechanisms bundle** — `registerRule`'s `components` filter +
+   `registerEntityType` rewiring, generator `paramsDefaults` + the four
+   first-party generators' constant-extraction fix, the dev-mode
+   reads/writes enforcing `ctx` wrapper, `getComponentsForEntity`. Pure
+   `core` work, no UI, independent of everything below — same posture as
+   sessions 14-25.
+2. **Editor harness foundation** — package scaffold, mount API,
+   Preact+htm, hot-reload snapshot/restore, dev fixture, the shared
+   file-write API (Vite plugin), the touched-files log. Everything else
+   below mounts inside this.
+3. **Shared UI infrastructure** — the live-preview rendering primitive,
+   the narrow form primitive (map editor params + audio mixing), plugin
+   management. All three tools below depend on at least one of these.
+4. **Map editor** — most prior art, most fully specified tool in
+   `editor.md`; likely wants the `checkpoint-plan` treatment given its
+   scope (in-context/standalone flows, pin/lock, panel layout).
+5. **Content browser** — first-pass in `editor.md`, needs its own deeper
+   design pass before implementation, but unlocks the composition wizard.
+6. **Composition wizard** — depends on the content browser existing.
+7. **Tileset/font-calibration editor** — first-pass in `editor.md`, also
+   needs deeper design first; depends on the live-preview primitive.
+8. **Config UI** — depends on both shared primitives, the file-write API,
+   and the capture stack.
+
+`packages/cli` remains later, separately-scoped work — this roadmap covers
+`packages/editor` only, same relationship the `packages/core`
+implementation roadmap had to `packages/editor`/`packages/cli` before it.
 
 After each session, check off the completed item here and move the NEXT
 SESSION pointer to the following one, same convention as the deep-dive

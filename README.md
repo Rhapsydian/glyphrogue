@@ -2,9 +2,10 @@
 
 A web-based game engine for ASCII/glyph-driven roguelikes, in the spirit of
 *Caves of Qud*. Monospace/pixel-font glyph rendering, a full dev-time
-toolchain (map editor, tileset tools, scripting console) that stays out of
-production builds, and support for static HTML, GitHub Pages, itch.io, and a
-Steam-compatible Electron desktop build.
+toolchain (map editor, tileset/calibration editor, content browser,
+composition wizard, config UI) that stays out of production builds, and
+support for static HTML, GitHub Pages, itch.io, and a Steam-compatible
+Electron desktop build.
 
 The research & planning phase is complete, and **`packages/core`
 implementation is complete** (sessions 14-25 of the roadmap): sessions
@@ -142,10 +143,21 @@ manifest-derivation mechanism — a mod's `register(api)` run against a
 recording implementation instead of a real one, for editor content-browsing
 or load-time validation without hand-authoring a manifest).
 323 `node --test` cases passing (295 `packages/core`, 28 `packages/input`).
+
+Session 26 surveyed and designed `packages/editor` (the dev-time
+companion tooling above — no implementation yet, no source touched):
+[`docs/design/editor.md`](docs/design/editor.md) covers the hot-reload
+harness, map editor, tileset/calibration editor, content browser,
+composition wizard, config UI, and the two `core` extensions the tooling
+needs (`registerRule`'s declarative `components` filter, generator
+`paramsDefaults`). `BACKLOG.md`'s new "packages/editor design roadmap"
+scopes the 8 implementation sessions ahead, starting with a `core`-only
+mechanisms session.
+
 See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor`/`packages/cli`, not yet scoped)
+- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor` implementation roadmap, 8 sessions scoped)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -167,7 +179,9 @@ packages/
             captureStack.js, inputPipeline.js, stateNotifier.js, keyboardSource.js, gamepadSource.js,
             keybindingStorage.js, kept outside core and dependency-free
             under src/, tests under test/
-  editor/   dev-time tools (map editor, tileset editor, scripting console) — not started, never ships in production
+  editor/   dev-time companion tools (map editor, tileset/calibration editor, content browser,
+            composition wizard, config UI) — designed (session 26, docs/design/editor.md),
+            implementation not yet started, never ships in production
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/  in-depth design docs, one per deep-dive planning session
 docs/session-logs/  one log per session

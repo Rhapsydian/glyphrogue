@@ -55,15 +55,18 @@ glyphrogue/
   core stays a pure state/rules engine with no DOM dependency, and this
   package stays dependency-free in the other direction, handing resolved
   input actions to whatever callback the consuming game wires up.
-- **`packages/editor`** (`@glyphrogue/editor`) — the dev-time **map
-  editor** (hand-author maps, tune/preview procedural-generator parameters
-  and seeds, stamp/override generated content), plus tileset editor,
-  scripting console, and config UI, with a hot-reload dev harness. Depends
-  on `core` for live preview — the editor is a design-time surface over the
-  same procgen API a shipped game calls at runtime, not a separate map
-  format. Structurally excluded from production builds by being a
-  **separate package** a game's production entry point never imports — not
-  a subpath of `core`, and not just tree-shaken out.
+- **`packages/editor`** (`@glyphrogue/editor`) — an IDE **companion**, not
+  a replacement IDE: the dev-time **map editor** (hand-author maps, tune/
+  preview procedural-generator parameters and seeds, stamp/override
+  generated content), tileset/font-calibration editor, content browser,
+  composition wizard (schema-aware scaffolding for entities/rules/
+  generators), config UI, and plugin management, all mounted inside a
+  hot-reload dev harness. Depends on `core` for live preview — the editor
+  is a design-time surface over the same procgen API a shipped game calls
+  at runtime, not a separate map format. Structurally excluded from
+  production builds by being a **separate package** a game's production
+  entry point never imports — not a subpath of `core`, and not just
+  tree-shaken out.
 - A **game project** (separate repo, same relationship `pixelyph` has to
   `pixelloom`) depends on the published `@glyphrogue/core` for its
   production entry and adds `@glyphrogue/editor` as a dev dependency,
@@ -263,6 +266,28 @@ custom battle screen's own private opponent logic (per the custom UI doc's
 opacity model) is the screen author's concern, not this mechanism's. Full
 depth in
 [`docs/design/ai-and-behavior.md`](docs/design/ai-and-behavior.md).
+
+## Editor & dev tooling
+
+`packages/editor` is an IDE **companion**, not a replacement IDE — authors
+keep their own code editor for actual logic; the companion owns what a
+text editor structurally can't do (live rendering/interactive tuning,
+runtime introspection), writing outcomes back to real project files via a
+shared dev-server file-write API (whole-file writes only, never surgical
+edits of author-owned files). Two `core` extensions fell out of this
+tooling work: `registerRule` gains a declarative `components` filter
+(`all`/`any`/`none` of string-or-object entries, load-bearing — enforced
+by `dispatch`, not merely descriptive) resolving rule↔component gating,
+and `registerGenerator` gains load-bearing `paramsDefaults` so a
+generator's tunable params are finally introspectable (neither existed
+before this doc). The map editor supports both in-context editing (the
+live world's current zone) and standalone template/preset authoring
+against a scratch zone, sharing one `api` instance rather than needing a
+sandboxed second `core` instance. A content browser and composition wizard
+share one underlying registered-content catalog (derived from
+`scripting-api.md`'s recording-API manifest) rather than being separate
+mechanisms. Full depth in
+[`docs/design/editor.md`](docs/design/editor.md).
 
 ## Build targets
 
