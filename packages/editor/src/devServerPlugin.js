@@ -6,7 +6,11 @@
 // write-capable tool in this doc routes through dev-server middleware).
 import { access } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { writeFileAtomic } from '@glyphrogue/core';
+
+const execAsync = promisify(exec);
 
 // Cheap hygiene, not a real threat-model response (editor.md) - this only
 // ever runs against a local, dev-only server, never shipped. Resolves
@@ -52,6 +56,36 @@ export function createProvenanceStore() {
       return [...entries].map(([path, info]) => ({ path, ...info }));
     },
   };
+}
+
+// Pure parser for `git status --porcelain` output - one line per changed
+// path, `XY<space>path` (XY is the two-character status code). Exported
+// and unit-tested directly; the actual `git status` child-process
+// invocation below is exercised via manual verification instead, same
+// split as the write/exists endpoints above.
+export function parseGitStatusPorcelain(output) {
+  return output
+    .split('\n')
+    .filter((line) => line.length > 0)
+    .map((line) => ({ status: line.slice(0, 2), path: line.slice(3) }));
+}
+
+async function getGitStatusEntries(projectRoot) {
+  try {
+    // --untracked-files=all: without it, git collapses an entirely-new
+    // directory to one summary line (e.g. `?? src/`) instead of listing
+    // the files inside it - since provenance is recorded per exact file
+    // path, a collapsed directory entry would never match up and the
+    // label would silently fail to show.
+    const { stdout } = await execAsync('git status --porcelain --untracked-files=all', { cwd: projectRoot });
+    return parseGitStatusPorcelain(stdout);
+  } catch {
+    // Not a git repo, git not installed, or some other git failure - the
+    // touched-files log just has nothing to derive from, not a hard error
+    // (editor.md: derived from live state, no independent source of truth
+    // to fall back on when that state isn't available).
+    return [];
+  }
 }
 
 async function fileExists(path) {
@@ -120,10 +154,25 @@ export function createFileWriteApi({ projectRoot = process.cwd() } = {}) {
         }
       });
 
-      // Checkpoint 5 (touched-files log) adds a
-      // /__glyphrogue_editor/touched-files endpoint here, combining
-      // provenance.list() with live `git status` - same plugin instance,
-      // same provenance store already populated by writes above.
+      // Derived from live git state, not an independently-maintained
+      // ledger (editor.md) - git status is the source of truth for "what's
+      // actually changed on disk right now"; provenance is purely
+      // decoration layered on top. A path with provenance that git no
+      // longer reports (reverted, or the whole file deleted outside the
+      // editor) just stops appearing - no stale entries to clean up.
+      server.middlewares.use('/__glyphrogue_editor/touched-files', async (req, res) => {
+        const gitEntries = await getGitStatusEntries(projectRoot);
+        const provenanceByPath = new Map(provenance.list().map((entry) => [entry.path, entry]));
+
+        const touchedFiles = gitEntries.map(({ status, path }) => ({
+          path,
+          status,
+          tool: provenanceByPath.get(path)?.tool,
+          label: provenanceByPath.get(path)?.label,
+        }));
+
+        sendJson(res, 200, { touchedFiles });
+      });
     },
   };
 }

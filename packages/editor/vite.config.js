@@ -48,6 +48,8 @@ export default defineConfig(({ command }) => ({
         // checkpoint 2), even though nothing here is ever browser-loaded.
         'node:fs/promises',
         'node:path',
+        'node:child_process',
+        'node:util',
       ],
     },
   } : undefined,

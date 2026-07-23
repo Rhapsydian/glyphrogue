@@ -1,7 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
-import { resolveContainedPath, parseWriteRequest, createProvenanceStore } from '../src/devServerPlugin.js';
+import {
+  resolveContainedPath,
+  parseWriteRequest,
+  createProvenanceStore,
+  parseGitStatusPorcelain,
+} from '../src/devServerPlugin.js';
 
 test('resolveContainedPath resolves an ordinary relative path under the project root', () => {
   const resolved = resolveContainedPath('/project', 'src/maps/overrides/zone1.json');
@@ -68,4 +73,20 @@ test('createProvenanceStore records overwrite the prior entry for the same path'
 
   assert.equal(store.list().length, 1);
   assert.equal(store.list()[0].label, 'second');
+});
+
+test('parseGitStatusPorcelain parses one entry per line', () => {
+  const output = '?? src/maps/overrides/zone1.json\n M src/maps/presets/goblin-camp.json\n';
+  assert.deepEqual(parseGitStatusPorcelain(output), [
+    { status: '??', path: 'src/maps/overrides/zone1.json' },
+    { status: ' M', path: 'src/maps/presets/goblin-camp.json' },
+  ]);
+});
+
+test('parseGitStatusPorcelain returns an empty list for clean status output', () => {
+  assert.deepEqual(parseGitStatusPorcelain(''), []);
+});
+
+test('parseGitStatusPorcelain ignores a trailing blank line', () => {
+  assert.deepEqual(parseGitStatusPorcelain('?? a.json\n'), [{ status: '??', path: 'a.json' }]);
 });
