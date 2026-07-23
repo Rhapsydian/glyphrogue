@@ -25,12 +25,12 @@ function moveTo(result) {
   return move?.to;
 }
 
-test('wandersRule no-ops for an entity without a Wanders component', () => {
+test('an entity without a Wanders component never invokes wandersRule (registerRule\'s components filter)', () => {
   const world = createWorld();
   const registry = createRegistry();
   const goblin = createEntity(world);
   addComponent(world, goblin, 'Position', { x: 0, y: 0 });
-  registerRule(registry, 'wanders', 'TakeTurn', wandersRule);
+  registerRule(registry, 'wanders', 'TakeTurn', wandersRule, { components: { all: ['Wanders'] } });
 
   const result = takeTurn(world, registry, goblin, { isWalkable: openWalkable });
 
@@ -80,7 +80,7 @@ test('wandersRule no-ops when every direction is blocked', () => {
   assert.equal(moveTo(result), undefined);
 });
 
-test('chasesPlayerRule no-ops for an entity without a ChasesPlayer component', () => {
+test('an entity without a ChasesPlayer component never invokes chasesPlayerRule (registerRule\'s components filter)', () => {
   const world = createWorld();
   const registry = createRegistry();
   const goblin = createEntity(world);
@@ -88,7 +88,7 @@ test('chasesPlayerRule no-ops for an entity without a ChasesPlayer component', (
   const player = createEntity(world);
   addComponent(world, player, 'Position', { x: 2, y: 0 });
   addComponent(world, player, 'PlayerControlled', {});
-  registerRule(registry, 'chase', 'TakeTurn', chasesPlayerRule);
+  registerRule(registry, 'chase', 'TakeTurn', chasesPlayerRule, { components: { all: ['ChasesPlayer'] } });
 
   const result = takeTurn(world, registry, goblin, { isWalkable: openWalkable, isOpaque: () => false });
 
@@ -161,12 +161,12 @@ test('fleesRule steps toward the neighbor that maximizes distance from a visible
   assert.deepEqual(moveTo(result), { x: 1, y: 0 });
 });
 
-test('guardsRule no-ops for an entity without a Guards component', () => {
+test('an entity without a Guards component never invokes guardsRule (registerRule\'s components filter)', () => {
   const world = createWorld();
   const registry = createRegistry();
   const goblin = createEntity(world);
   addComponent(world, goblin, 'Position', { x: 5, y: 5 });
-  registerRule(registry, 'guards', 'TakeTurn', guardsRule);
+  registerRule(registry, 'guards', 'TakeTurn', guardsRule, { components: { all: ['Guards'] } });
 
   const result = takeTurn(world, registry, goblin, { isWalkable: openWalkable });
 

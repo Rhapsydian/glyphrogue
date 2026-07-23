@@ -133,6 +133,13 @@ export {
   layeredBiomePlugin,
 } from './generatorPlugins.js';
 
+export {
+  wandersPlugin,
+  chasesPlayerPlugin,
+  fleesPlugin,
+  guardsPlugin,
+} from './behaviorPlugins.js';
+
 export { createRecordingApi } from './recordingApi.js';
 
 export { playSound, playMusic } from './audio.js';

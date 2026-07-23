@@ -1,13 +1,16 @@
 import { fovContains } from './fov.js';
 
 // First-party TakeTurn rules (ai-and-behavior.md): AI as rules on the
-// existing action/rule pipeline, matched by marker component exactly the
-// way any other rule matches (`if (!ctx.hasComponent(...)) return;`). Not
-// auto-registered onto createApi() - same precedent as
+// existing action/rule pipeline, matched by marker component via
+// registerRule's own `components` filter (session 28) rather than a
+// hand-rolled `if (!ctx.hasComponent(...)) return;` guard inside the rule
+// body - the filter stops a non-matching entity's turn from invoking the
+// rule at all, so the rule body itself can assume the marker is present.
+// Not auto-registered onto createApi() - same precedent as
 // bspGenerator/cellularAutomataGenerator etc: "a generator id is content,
-// not infrastructure." A game calls
-// api.registerRule('wanders', 'TakeTurn', wandersRule, { priority: WANDERS_PRIORITY })
-// itself.
+// not infrastructure." behaviorPlugins.js is what actually calls
+// api.registerRule('wanders', 'TakeTurn', wandersRule, { priority:
+// WANDERS_PRIORITY, components: { all: ['Wanders'] } }) for each of these.
 //
 // Fixed default priorities per the design doc - self-preservation beats
 // duty beats aggression beats idling.
@@ -48,8 +51,6 @@ function findVisiblePlayer(ctx, position, radius) {
 // primitive, not a second one just for this. No-ops if every direction is
 // blocked.
 export function wandersRule(action, ctx) {
-  if (!ctx.hasComponent(action.entity, 'Wanders')) return undefined;
-
   const position = ctx.getComponent(action.entity, 'Position');
   const wanders = ctx.getComponent(action.entity, 'Wanders') ?? {};
   const startIndex = wanders.lastDirection ?? 0;
@@ -75,8 +76,6 @@ export function wandersRule(action, ctx) {
 // last-known position - out of sight is a no-op, letting a lower-priority
 // behavior (Wanders) win instead.
 export function chasesPlayerRule(action, ctx) {
-  if (!ctx.hasComponent(action.entity, 'ChasesPlayer')) return undefined;
-
   const { radius = 8 } = ctx.getComponent(action.entity, 'ChasesPlayer') ?? {};
   const position = ctx.getComponent(action.entity, 'Position');
   const playerPosition = findVisiblePlayer(ctx, position, radius);
@@ -97,8 +96,6 @@ export function chasesPlayerRule(action, ctx) {
 // resolve to whichever direction comes first in DIRECTIONS, deterministic
 // but not a claim of a single "most away" direction existing.
 export function fleesRule(action, ctx) {
-  if (!ctx.hasComponent(action.entity, 'Flees')) return undefined;
-
   const { radius = 8 } = ctx.getComponent(action.entity, 'Flees') ?? {};
   const position = ctx.getComponent(action.entity, 'Position');
   const playerPosition = findVisiblePlayer(ctx, position, radius);
@@ -130,7 +127,6 @@ export function fleesRule(action, ctx) {
 // around battle-screen-internal AI.
 export function guardsRule(action, ctx) {
   const guards = ctx.getComponent(action.entity, 'Guards');
-  if (!guards) return undefined;
 
   const position = ctx.getComponent(action.entity, 'Position');
   if (position.x === guards.post.x && position.y === guards.post.y) return undefined;
