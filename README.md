@@ -16,13 +16,19 @@ input → input-action pipeline) is underway (session 23). `packages/editor`
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
 foundation implemented (session 29); the individual tools (map editor,
 content browser, etc.) haven't started. `packages/cli`
-(`create-glyphrogue-game` scaffolding) hasn't started. 360 `node --test`
+(`create-glyphrogue-game` scaffolding) hasn't started. 382 `node --test`
 cases pass across the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
-Plugin architecture and `packages/core`'s actual generator/behavior code —
-see `BACKLOG.md`'s new "packages/core plugin reconciliation roadmap," which
-the next `packages/editor` session (plugin management) now depends on.
+Plugin architecture and `packages/core`'s actual generator/behavior code;
+session 31 implemented that reconciliation in full — the four built-in
+generators and four AI behaviors now ship as Content plugins
+(`generatorPlugins.js`, `behaviorPlugins.js`), `memory`/`audioLoader` ship
+as Service plugins (`servicePlugins.js`) via the new `api.registerService`,
+and the editor's `dev/` fixture bootstraps all ten via `loadPlugins`. See
+`BACKLOG.md`'s "packages/core plugin reconciliation roadmap." This
+unblocks `packages/editor` design roadmap item 3 (plugin management), the
+next `/dev-session`.
 
 ## See also
 
@@ -46,7 +52,8 @@ packages/
             animation.js, renderLayers.js, palette.js, fontSources.js, tileset.js,
             pixelyphImport.js, screen.js, sound.js, audio.js, audioLoader.js,
             audioSettings.js, definitions.js, scriptedEvents.js, plugins.js,
-            recordingApi.js — under src/, tests under test/
+            recordingApi.js, generatorPlugins.js, behaviorPlugins.js,
+            servicePlugins.js — under src/, tests under test/
   input/    physical input → input-action pipeline — underway (session 23).
             keymap.js, captureStack.js, inputPipeline.js, stateNotifier.js,
             keyboardSource.js, gamepadSource.js, keybindingStorage.js — kept

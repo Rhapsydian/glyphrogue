@@ -123,8 +123,16 @@ plugin reconciliation roadmap" below — see
 `README.md` (a mid-session redirect, unrelated to the reconciliation) from
 ~260 lines of duplicated session narrative down to a short status summary
 linking out to `docs/session-logs/`. No code touched, test count unchanged
-at 360. The next `/dev-session` is the "packages/core plugin reconciliation
-roadmap" below, **not** roadmap item 3 directly — item 3 now depends on it.
+at 360. Session 31 then implemented the "packages/core plugin
+reconciliation roadmap" below in full, six checkpoints (see
+`docs/session-logs/session-31-2026-07-23.md`): `api.registerService` +
+recording support, the four generators and four behaviors wrapped as
+Content plugins (the latter migrating from hand-rolled guards to
+`registerRule`'s `components` filter), `memory`/`audioLoader` wrapped as
+Service plugins, and a real `loadPlugins` bootstrap in `packages/editor/
+dev/main.js`. Test count 360 → 382. The next `/dev-session` is now
+`packages/editor` design roadmap item 3, plugin management — no longer
+blocked, see that roadmap section below.
 
 ## Deferred / future items
 
@@ -465,39 +473,45 @@ management" now specify the reconciled design; this roadmap is the
 implementation work to make `packages/core`'s actual code match it. Strict
 dependency order — each step's plugin wrapper needs the primitive below it:
 
-1. **`api.registerService` + recording-api support** — add
-   `registerService(id, implementation)` to `api.js` (merges
-   `implementation`'s methods flat onto the live `api`) and to
-   `recordingApi.js` (logs `{ kind: 'service', id }`, same uniform pattern
-   as every other `registerX` stub). Needed before any Service plugin can
-   exist. No first-party instance yet — this step is infrastructure only.
-2. **Wrap the four generators as Content plugins** — one plugin per
-   generator (`bspGenerator`, `cellularAutomataGenerator`, the minimal-WFC
-   generator, `layeredBiomeGenerator`), each `{ id, version, dependencies,
-   register(api) }` with `register` calling the existing `registerGenerator`
-   for its own id. Ships from `@glyphrogue/core` itself, not a
-   `src/plugins/` folder.
-3. **Wrap the four behaviors as Content plugins** — same shape, one plugin
-   per behavior (`Wanders`, `ChasesPlayer`, `Flees`, `Guards`), `register`
-   calling the existing `registerRule`.
-4. **Wrap `memory.js` as a Service plugin** — `register(api)` builds the
-   bound `ensureMemory`/`updateEntityMemory` methods and calls
-   `api.registerService('memory', { ensureMemory, updateEntityMemory })`.
-   Depends on step 1.
-5. **Wrap `audioLoader.js` as a Service plugin** — `register(api)` calls
-   `createAudioLoader()` itself, closes over the result, and calls
-   `api.registerService('audioLoader', { ... })`. Depends on step 1.
-6. **Give `packages/editor/dev/`'s fixture a real bootstrap** — a
-   `dev/bootstrap.js`-equivalent calling `loadPlugins(api, [...])` with all
-   eight Content plugins plus both Service plugins by default, so plugin
-   management (below) has something genuine to discover, toggle, and
-   verify against manually, not an empty array.
+1. ~~**`api.registerService` + recording-api support**~~ — done (session
+   31), see `docs/session-logs/session-31-2026-07-23.md`. `api.js`'s
+   `createApi()` restructured to a named `const` (was an anonymous
+   returned literal) so `registerService(id, implementation)` can
+   `Object.assign` the implementation onto that same live object;
+   `recordingApi.js` got the matching `{ kind: 'service', id }` stub.
+2. ~~**Wrap the four generators as Content plugins**~~ — done (session
+   31). `packages/core/src/generatorPlugins.js`: `bspPlugin`/
+   `cellularAutomataPlugin`/`wfcPlugin`/`layeredBiomePlugin`
+   (content/plugin ids `'bsp'`/`'cellular-automata'`/`'wfc'`/
+   `'layered-biome'`), each registering with whatever `paramsDefaults`
+   constants already existed for it (`cellular-automata` and
+   `layered-biome`'s `seedCount` get none, per the documented exceptions).
+3. ~~**Wrap the four behaviors as Content plugins**~~ — done (session
+   31). `packages/core/src/behaviorPlugins.js`: `wandersPlugin`/
+   `chasesPlayerPlugin`/`fleesPlugin`/`guardsPlugin`, each using
+   `registerRule`'s `components` filter (`{ all: [marker] }`) rather than
+   a hand-rolled guard — `behaviors.js`'s rule bodies had their now-
+   redundant marker-component checks removed as part of this step, not
+   left duplicated.
+4. ~~**Wrap `memory.js` as a Service plugin**~~ — done (session 31),
+   `packages/core/src/servicePlugins.js`'s `memoryPlugin` (`id: 'memory'`
+   — pinned, since dependents/override plugins both declare it by that
+   exact name).
+5. ~~**Wrap `audioLoader.js` as a Service plugin**~~ — done (session 31),
+   same file's `audioLoaderPlugin` (`id: 'audioLoader'`).
+6. ~~**Give `packages/editor/dev/`'s fixture a real bootstrap**~~ — done
+   (session 31). `packages/editor/dev/main.js` calls `loadPlugins` with
+   all ten plugins unconditionally right after `createApi()`/restore —
+   plugin registrations aren't part of the serialized world snapshot, so
+   they need registering fresh every run, restored or not. Verified
+   manually in-browser: all 8 content ids and both service methods
+   present on the live api, no console/server errors, existing
+   touched-files panel unaffected.
 
-`packages/editor` design roadmap item 3 (Plugin management) depends on all
-six steps above — its discovery and Services selector operate on plugins
-that don't exist until this roadmap lands. Confirm scope live against real
-code at that session's kickoff, same caveat every roadmap in this file
-carries.
+`packages/core` test count: 339 (317 → 318 → 326 → 333 → 339 across the
+six steps above; 382 total with `packages/editor`'s 15 and
+`packages/input`'s 28). `packages/editor` design roadmap item 3 (Plugin
+management, below) is now unblocked.
 
 ## packages/editor design roadmap
 
@@ -541,11 +555,11 @@ live against real code, same caveat every roadmap in this file carries.
    Service plugins — see `docs/design/editor.md`'s "Plugin management" and
    `scripting-api.md`'s "Plugin kinds: Content vs. Service". Split out from
    the "shared UI infrastructure" grouping below — it doesn't actually use
-   either shared primitive there. Its dependencies are the `plugins.js`
-   rename (item 1), the file-write API (item 2, now done), **and** the
-   "packages/core plugin reconciliation roadmap" above (the actual Content/
-   Service plugins this section operates on don't exist yet) — no reason to
-   sequence it after the live-preview/form-primitive work otherwise.
+   either shared primitive there. Its dependencies were the `plugins.js`
+   rename (item 1), the file-write API (item 2), and the "packages/core
+   plugin reconciliation roadmap" above — all three now done (session 31
+   finished the reconciliation roadmap), so this is the next
+   `/dev-session`, no longer blocked.
 4. **Shared UI infrastructure** — the live-preview rendering primitive and
    the narrow form primitive (map editor params + audio mixing). Map
    editor, tileset/calibration editor, and config UI below each depend on
