@@ -140,6 +140,8 @@ export {
   guardsPlugin,
 } from './behaviorPlugins.js';
 
+export { memoryPlugin, audioLoaderPlugin } from './servicePlugins.js';
+
 export { createRecordingApi } from './recordingApi.js';
 
 export { playSound, playMusic } from './audio.js';
