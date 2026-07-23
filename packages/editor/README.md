@@ -1,9 +1,27 @@
-# @glyphrogue/editor (placeholder)
+# @glyphrogue/editor
 
-Dev-time tools: map editor, tileset editor, scripting console, config UI,
-hot-reload dev harness. Depends on `@glyphrogue/core` for live preview.
-Never imported by a game's production build.
+Dev-time companion tooling: map editor, tileset/calibration editor, content
+browser, composition wizard, config UI, and the hot-reload dev harness they
+all mount inside. `@glyphrogue/core` is a `peerDependency` — the editor
+operates on whatever live `api`/world the consuming game already built,
+never constructing its own instance. Never imported by a game's production
+build.
 
-No code yet — this package is scaffolded ahead of the deep-dive planning
-sessions in `../../BACKLOG.md`. See `../../DESIGN.md` for the architecture
-this package will implement.
+Authored in Svelte 5, compiled ahead of time — `dist/` (built via `npm run
+build`) is the only thing published; `.svelte` source and the Svelte
+compiler are dev-time only. See `../../docs/design/editor.md` for the full
+design and `../../BACKLOG.md`'s "packages/editor design roadmap" for
+implementation sequencing.
+
+## Usage
+
+```js
+import { mountEditor } from '@glyphrogue/editor';
+
+mountEditor(document.getElementById('editor-root'), api);
+```
+
+## Status
+
+Harness foundation in progress (design roadmap item 2). `mountEditor`
+currently mounts a placeholder shell — no tools are wired in yet.
