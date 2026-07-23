@@ -514,3 +514,74 @@ test('components filter: dispatchExclusive skips non-matching rules as non-candi
     ['TakeTurn', 'Wander'],
   );
 });
+
+test('dev-mode reads/writes: a rule reading an undeclared component throws when devMode is on', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const entity = createEntity(world);
+  addComponent(world, entity, 'Health', { current: 5 });
+
+  registerRule(registry, 'sneaky-read', 'Check', (action, ctx) => {
+    ctx.getComponent(action.entity, 'Health');
+  }, { reads: ['Position'] });
+
+  assert.throws(
+    () => dispatch(world, registry, { type: 'Check', entity }, undefined, undefined, undefined, true),
+    /read undeclared component "Health"/,
+  );
+});
+
+test('dev-mode reads/writes: a rule writing an undeclared component throws when devMode is on', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const entity = createEntity(world);
+
+  registerRule(registry, 'sneaky-write', 'Check', (action, ctx) => {
+    ctx.addComponent(action.entity, 'Health', { current: 1 });
+  }, { writes: ['Position'] });
+
+  assert.throws(
+    () => dispatch(world, registry, { type: 'Check', entity }, undefined, undefined, undefined, true),
+    /wrote undeclared component "Health"/,
+  );
+});
+
+test('dev-mode reads/writes: declared access is allowed and devMode off is inert', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const entity = createEntity(world);
+  addComponent(world, entity, 'Position', { x: 0, y: 0 });
+
+  registerRule(registry, 'declared-read', 'Check', (action, ctx) => {
+    ctx.getComponent(action.entity, 'Position');
+  }, { reads: ['Position'] });
+
+  assert.doesNotThrow(
+    () => dispatch(world, registry, { type: 'Check', entity }, undefined, undefined, undefined, true),
+  );
+
+  registerRule(registry, 'undeclared-but-devmode-off', 'CheckOff', (action, ctx) => {
+    ctx.getComponent(action.entity, 'Health');
+  }, { reads: ['Position'] });
+
+  assert.doesNotThrow(
+    () => dispatch(world, registry, { type: 'CheckOff', entity }),
+  );
+});
+
+test('dev-mode reads/writes: a rule declaring neither reads nor writes is never wrapped', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const entity = createEntity(world);
+  addComponent(world, entity, 'Health', { current: 5 });
+  let seenHealth;
+
+  registerRule(registry, 'no-declaration', 'Check', (action, ctx) => {
+    seenHealth = ctx.getComponent(action.entity, 'Health');
+  });
+
+  assert.doesNotThrow(
+    () => dispatch(world, registry, { type: 'Check', entity }, undefined, undefined, undefined, true),
+  );
+  assert.deepEqual(seenHealth, { current: 5 });
+});

@@ -33,13 +33,14 @@ export function createApi({
   platform = noopPlatform,
   isWalkable,
   isOpaque,
+  devMode = false,
 } = {}) {
   const world = createWorld();
   const registry = createRegistry();
   const scheduler = createScheduler(roundBudget);
   const mapQuery = { isWalkable, isOpaque };
   const renderEvents = createRenderEventQueue();
-  const engine = createEngine(world, registry, scheduler, mapQuery, renderEvents);
+  const engine = createEngine(world, registry, scheduler, mapQuery, renderEvents, devMode);
   const rng = createRng(seed);
 
   return {
@@ -70,7 +71,7 @@ export function createApi({
     // trigger) couldn't reach ctx.enqueueRenderEvent/addActor. Surfaced by
     // registerScriptedEvent's timeUnits wait needing ctx.addActor to work
     // from an ordinary api.dispatch() call, not just from inside act().
-    dispatch: (action) => dispatch(world, registry, action, mapQuery, renderEvents, scheduler),
+    dispatch: (action) => dispatch(world, registry, action, mapQuery, renderEvents, scheduler, devMode),
 
     findPath: (from, to, opts) => findPath(from, to, { ...opts, isWalkable: mapQuery.isWalkable }),
     computeFov: (origin, radius, opts) => computeFov(origin, radius, { ...opts, isOpaque: mapQuery.isOpaque }),

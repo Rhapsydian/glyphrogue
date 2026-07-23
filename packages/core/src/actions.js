@@ -78,6 +78,35 @@ function resolvePriority(entry, action, ctx) {
   return typeof entry.priority === 'function' ? entry.priority(action, ctx) : entry.priority;
 }
 
+// editor.md's reads/writes enforcement: opt-in per rule (an entry
+// declaring neither reads nor writes is never wrapped), dev-mode only -
+// piggybacks on ordinary play-testing under the editor's harness rather
+// than static analysis or a synthetic dry-run, zero cost when devMode is
+// off. Wraps only getComponent/addComponent, since those are the two
+// operations reads/writes actually govern.
+function wrapCtxForRule(ctx, entry) {
+  if (!entry.reads && !entry.writes) return ctx;
+
+  const reads = entry.reads ?? [];
+  const writes = entry.writes ?? [];
+
+  return {
+    ...ctx,
+    getComponent: (entity, type) => {
+      if (!reads.includes(type)) {
+        throw new Error(`rule "${entry.id}" read undeclared component "${type}" (declare it in options.reads)`);
+      }
+      return ctx.getComponent(entity, type);
+    },
+    addComponent: (entity, type, data) => {
+      if (!writes.includes(type)) {
+        throw new Error(`rule "${entry.id}" wrote undeclared component "${type}" (declare it in options.writes)`);
+      }
+      return ctx.addComponent(entity, type, data);
+    },
+  };
+}
+
 // audio.md: "core's rule-resolution machinery pushes entries onto this
 // buffer regardless of consumer" - automatic on every resolved action, not
 // an opt-in step a consumer calls separately. One shared render-event
@@ -124,7 +153,7 @@ function createContext(world, mapQuery = {}, renderEvents, scheduler) {
   };
 }
 
-export function dispatch(world, registry, action, mapQuery, renderEvents, scheduler) {
+export function dispatch(world, registry, action, mapQuery, renderEvents, scheduler, devMode = false) {
   const resolved = [];
   const vetoed = [];
   const queue = [action];
@@ -139,7 +168,8 @@ export function dispatch(world, registry, action, mapQuery, renderEvents, schedu
 
     for (const entry of pipeline) {
       if (!matchesComponentFilter(world, current.entity, entry.components)) continue;
-      const result = entry.ruleFn(current, ctx);
+      const ruleCtx = devMode ? wrapCtxForRule(ctx, entry) : ctx;
+      const result = entry.ruleFn(current, ruleCtx);
       if (!result) continue;
       if (result.veto) {
         isVetoed = true;
@@ -170,7 +200,7 @@ export function dispatch(world, registry, action, mapQuery, renderEvents, schedu
 // types representing a mutually-exclusive choice (TakeTurn: an actor
 // can't both Flee and Guard the same turn), not the additive-reaction
 // shape most action types use.
-export function dispatchExclusive(world, registry, action, mapQuery, renderEvents, scheduler) {
+export function dispatchExclusive(world, registry, action, mapQuery, renderEvents, scheduler, devMode = false) {
   const ctx = createContext(world, mapQuery, renderEvents, scheduler);
   const pipeline = pipelineFor(registry, action.type);
 
@@ -179,7 +209,8 @@ export function dispatchExclusive(world, registry, action, mapQuery, renderEvent
 
   for (const entry of pipeline) {
     if (!matchesComponentFilter(world, action.entity, entry.components)) continue;
-    const result = entry.ruleFn(action, ctx);
+    const ruleCtx = devMode ? wrapCtxForRule(ctx, entry) : ctx;
+    const result = entry.ruleFn(action, ruleCtx);
     if (!result) continue;
 
     const priority = resolvePriority(entry, action, ctx);
@@ -194,7 +225,7 @@ export function dispatchExclusive(world, registry, action, mapQuery, renderEvent
   emitSounds(registry, action, ctx, renderEvents);
 
   for (const followOnAction of winnerResult?.followOn ?? []) {
-    const sub = dispatch(world, registry, followOnAction, mapQuery, renderEvents, scheduler);
+    const sub = dispatch(world, registry, followOnAction, mapQuery, renderEvents, scheduler, devMode);
     resolved.push(...sub.resolved);
     vetoed.push(...sub.vetoed);
   }
