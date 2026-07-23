@@ -14,7 +14,8 @@
   },
   "exports": {
     ".": "./dist/mount.js",
-    "./hotReload": "./dist/hotReload.js"
+    "./hotReload": "./dist/hotReload.js",
+    "./devServerPlugin": "./dist/devServerPlugin.js"
   },
   "files": [
     "dist"

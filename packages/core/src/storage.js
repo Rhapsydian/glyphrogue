@@ -33,34 +33,44 @@ export function createLocalStorageBackend(storageLike = globalThis.localStorage)
   };
 }
 
-// Electron's filesystem backend (packaging.md): atomic temp-file-then-
-// rename writes, so a crash mid-write never corrupts the existing save.
-// Pure node:fs/promises/node:path - Electron's main process would use this
-// same plain-Node code, no Electron dependency needed here.
+// Atomic temp-file-then-rename write of arbitrary text content to an
+// arbitrary path, so a crash mid-write never corrupts whatever was there
+// before. Shared by createFsStorage's own save() below and by
+// packages/editor's shared file-write API (editor.md) - the latter writes
+// caller-supplied file content to a caller-supplied project path, not a
+// `{baseDir}/{key}.json`-shaped save slot, so it needs this primitive
+// directly rather than createFsStorage's higher-level, JSON-slot-specific
+// interface.
 //
 // node:fs/promises and node:path are imported dynamically, inside the
-// functions that actually use them, rather than statically at module top
-// level. `storage.js` is reached by any browser build through `core`'s
-// index.js barrel (createMemoryStorage/createLocalStorageBackend are the
+// function itself, rather than statically at module top level.
+// `storage.js` is reached by any browser build through `core`'s index.js
+// barrel (createMemoryStorage/createLocalStorageBackend are the
 // browser-relevant exports here) - a static top-level import of a Node
 // builtin trips bundlers' browser-externalization the moment this module
-// is merely imported, before createFsStorage (Electron-only, per
-// packaging.md) is ever called.
+// is merely imported, before this (Electron/dev-server only, per
+// packaging.md/editor.md) is ever called.
+export async function writeFileAtomic(path, contents) {
+  const { mkdir, writeFile, rename } = await import('node:fs/promises');
+  const { dirname } = await import('node:path');
+
+  await mkdir(dirname(path), { recursive: true });
+  const tmpPath = `${path}.tmp`;
+  await writeFile(tmpPath, contents, 'utf8');
+  await rename(tmpPath, path);
+}
+
+// Electron's filesystem backend (packaging.md).
 export function createFsStorage(baseDir) {
   return {
     async save(key, data) {
-      const { mkdir, writeFile, rename } = await import('node:fs/promises');
       const { join } = await import('node:path');
 
-      await mkdir(baseDir, { recursive: true });
       // JSON.stringify runs before any filesystem write, so a value that
       // can't be serialized (e.g. a BigInt) throws here and never touches
       // disk - the existing save stays exactly as it was.
       const contents = JSON.stringify(data);
-      const path = join(baseDir, `${key}.json`);
-      const tmpPath = `${path}.tmp`;
-      await writeFile(tmpPath, contents, 'utf8');
-      await rename(tmpPath, path);
+      await writeFileAtomic(join(baseDir, `${key}.json`), contents);
     },
     async load(key) {
       const { readFile } = await import('node:fs/promises');

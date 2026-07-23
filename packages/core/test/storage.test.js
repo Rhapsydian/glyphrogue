@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createMemoryStorage, createLocalStorageBackend, createFsStorage } from '../src/storage.js';
+import { createMemoryStorage, createLocalStorageBackend, createFsStorage, writeFileAtomic } from '../src/storage.js';
 
 test('createMemoryStorage round-trips a save DTO', async () => {
   const storage = createMemoryStorage();
@@ -119,6 +119,36 @@ test('createFsStorage overwrite replaces the prior save with no leftover temp fi
     await storage.save('slot1', { a: 2 });
 
     assert.deepEqual(await storage.load('slot1'), { a: 2 });
+
+    const files = await readdir(dir);
+    assert.ok(!files.some((f) => f.endsWith('.tmp')), `expected no leftover temp file, found: ${files}`);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeFileAtomic writes arbitrary text content to an arbitrary path, creating parent directories', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'glyphrogue-write-'));
+  try {
+    const target = join(dir, 'nested', 'zone1.json');
+    await writeFileAtomic(target, '{"cells":[]}');
+
+    const { readFile } = await import('node:fs/promises');
+    assert.equal(await readFile(target, 'utf8'), '{"cells":[]}');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeFileAtomic overwrite leaves no leftover temp file', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'glyphrogue-write-'));
+  try {
+    const target = join(dir, 'file.txt');
+    await writeFileAtomic(target, 'first');
+    await writeFileAtomic(target, 'second');
+
+    const { readFile } = await import('node:fs/promises');
+    assert.equal(await readFile(target, 'utf8'), 'second');
 
     const files = await readdir(dir);
     assert.ok(!files.some((f) => f.endsWith('.tmp')), `expected no leftover temp file, found: ${files}`);
