@@ -82,9 +82,17 @@ management (folder-per-plugin convention, author-to-author import/export),
 pulled the `mods.js` → Plugin rename forward into roadmap item 1, and
 split plugin management out of "shared UI infrastructure" into its own
 roadmap item since it doesn't depend on either primitive there — see
-`docs/session-logs/session-27-2026-07-23.md`. The next `/dev-session` is
-still session 1 of that roadmap (the `core` mechanisms bundle, now
-including the pulled-forward Plugin rename).
+`docs/session-logs/session-27-2026-07-23.md`. Session 28 completed roadmap
+item 1 (the `core` mechanisms bundle plus the pulled-forward Plugin
+rename): `registerRule`'s `components` filter and `registerEntityType`
+rewiring, dev-mode-only `reads`/`writes` enforcement, `getComponentsForEntity`,
+generator `paramsDefaults` plus constant-extraction in `bsp.js`/
+`zoneComposition.js`/`waveFunctionCollapse.js`, and `mods.js` → `plugins.js`
+(`loadMods` → `loadPlugins`, the save DTO's slice key, `scripting-api.md`'s
+terminology per `editor.md`'s Plugin/Mod split) — see
+`docs/session-logs/session-28-2026-07-23.md`. `packages/core` test count:
+295 → 315 (343 total with `packages/input`'s 28). The next `/dev-session` is
+roadmap item 2, the editor harness foundation.
 
 ## Deferred / future items
 
@@ -420,23 +428,19 @@ Scoped in session 26's design survey (`docs/design/editor.md`) after the
 fixed commitment — each session's own kickoff should still confirm scope
 live against real code, same caveat every roadmap in this file carries.
 
-1. **`core` mechanisms bundle** — `registerRule`'s `components` filter +
-   `registerEntityType` rewiring, generator `paramsDefaults` + the four
-   first-party generators' constant-extraction fix (`layeredBiomeGenerator`'s
-   `seedCount` is a documented exception — its `biomes.length * 2` default
-   is dynamic, not a candidate for a static `paramsDefaults` entry), the
-   dev-mode reads/writes enforcing `ctx` wrapper, `getComponentsForEntity`.
-   **Also pulled forward from the deferred list**: the `mods.js` → Plugin
-   renaming pass (`loadMods` → a `loadPlugins`-equivalent, `mods.js` →
-   `plugins.js`, the save DTO's `mods:` slice key, `scripting-api.md`'s
-   terminology, `mods.test.js` → `plugins.test.js`, and `packages/cli`'s
-   scaffold content folder `src/mods/` → `src/plugins/` per
-   `build-pipeline.md` — plus adopting the plugin-management design's new
-   folder-per-plugin convention, `src/plugins/<pluginId>/`, in that same
-   scaffold) — done now rather than left open-ended, since it touches the
-   same files this session is already touching and doing it before rather
-   than after avoids a second churn pass. Pure `core` work, no UI,
-   independent of everything below — same posture as sessions 14-25.
+1. ~~**`core` mechanisms bundle**~~ — done (session 28), see
+   `docs/session-logs/session-28-2026-07-23.md`. `registerRule`'s
+   `components` filter + `registerEntityType` rewiring, generator
+   `paramsDefaults` + the four first-party generators' constant-extraction
+   fix (`layeredBiomeGenerator`'s `seedCount` stayed a documented
+   exception, its `biomes.length * 2` default is dynamic), the dev-mode
+   reads/writes enforcing `ctx` wrapper, `getComponentsForEntity`. Plus the
+   pulled-forward `mods.js` → Plugin renaming pass (`loadMods` →
+   `loadPlugins`, `mods.js` → `plugins.js`, the save DTO's `plugins:` slice
+   key, `scripting-api.md`'s terminology per a careful per-section pass,
+   `mods.test.js` → `plugins.test.js`). `packages/cli`'s half of the
+   rename turned out to be documentation-only (`build-pipeline.md`'s one
+   `src/mods/` mention) since no CLI scaffold exists on disk yet.
 2. **Editor harness foundation** — package scaffold, mount API,
    Svelte 5 (compiled-output-only build step), hot-reload snapshot/restore,
    dev fixture, the shared file-write API (Vite plugin), the touched-files

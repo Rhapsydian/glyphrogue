@@ -174,10 +174,25 @@ roadmap now scopes 9 implementation sessions, still starting with the
 `core`-only mechanisms session (now also including the pulled-forward
 rename).
 
+Session 28 completed roadmap item 1, the `core` mechanisms bundle:
+`registerRule`'s declarative `components` filter (`{ all?, any?, none? }`,
+enforced at dispatch time) with `registerEntityType` rewired onto it, an
+opt-in dev-mode `ctx` wrapper making `reads`/`writes` load-bearing,
+`getComponentsForEntity`, and `registerGenerator`'s `paramsDefaults` with
+constant-extraction across `bsp.js`/`zoneComposition.js`/
+`waveFunctionCollapse.js` (`layeredBiomeGenerator`'s dynamic `seedCount`
+stayed a documented exception). Also completed the pulled-forward
+`mods.js` → Plugin rename (`loadPlugins`, the save DTO's `plugins:` slice,
+a section-by-section `scripting-api.md` pass applying `editor.md`'s
+Plugin/Mod split) — see `docs/session-logs/session-28-2026-07-23.md`.
+`packages/core` test count: 295 → 315 (343 total with `packages/input`'s
+28). The next `/dev-session` is roadmap item 2, the editor harness
+foundation.
+
 See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor` implementation roadmap, 9 sessions scoped)
+- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor` implementation roadmap, 9 sessions scoped, 1 complete)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -193,7 +208,7 @@ packages/
             glyphMetrics.js, glyphRenderer.js, camera.js, renderEvents.js, visibility.js,
             memory.js, animation.js, renderLayers.js, palette.js, fontSources.js, tileset.js,
             pixelyphImport.js, screen.js, sound.js, audio.js, audioLoader.js, audioSettings.js,
-            definitions.js, scriptedEvents.js, mods.js, recordingApi.js
+            definitions.js, scriptedEvents.js, plugins.js, recordingApi.js
             under src/, tests under test/
   input/    physical input → input-action pipeline — implementation started (session 23): keymap.js,
             captureStack.js, inputPipeline.js, stateNotifier.js, keyboardSource.js, gamepadSource.js,
