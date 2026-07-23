@@ -21,7 +21,28 @@ import { mountEditor } from '@glyphrogue/editor';
 mountEditor(document.getElementById('editor-root'), api);
 ```
 
+Hot-reload state preservation and the shared file-write API are separate,
+opt-in pieces a consuming game's own dev bootstrap/vite.config.js wires up
+(see `../../docs/design/editor.md`'s "hot-reload dev harness" and "shared
+file-write API" sections):
+
+```js
+// dev bootstrap (alongside mountEditor above)
+import { snapshotWorld, restoreWorldFromSnapshot } from '@glyphrogue/editor/hotReload';
+
+// vite.config.js
+import { createFileWriteApi } from '@glyphrogue/editor/devServerPlugin';
+export default {
+  plugins: [createFileWriteApi({ projectRoot: __dirname })],
+};
+```
+
 ## Status
 
-Harness foundation in progress (design roadmap item 2). `mountEditor`
-currently mounts a placeholder shell — no tools are wired in yet.
+Harness foundation complete (design roadmap item 2, session 29): package
+scaffold + Svelte build step, a `dev/` fixture, hot-reload world
+snapshot/restore, the shared file-write API, and a touched-files log
+(`App.svelte`'s current panel — the harness's first real end-to-end
+feature). Individual tools (map editor, content browser, composition
+wizard, tileset/calibration editor, config UI, plugin management) are not
+yet started — see `../../BACKLOG.md`'s "packages/editor design roadmap".

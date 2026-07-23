@@ -186,13 +186,45 @@ stayed a documented exception). Also completed the pulled-forward
 a section-by-section `scripting-api.md` pass applying `editor.md`'s
 Plugin/Mod split) — see `docs/session-logs/session-28-2026-07-23.md`.
 `packages/core` test count: 295 → 315 (343 total with `packages/input`'s
-28). The next `/dev-session` is roadmap item 2, the editor harness
-foundation.
+28).
+
+Session 29 completed roadmap item 2, the editor harness foundation — the
+first real `packages/editor` implementation, run as five checkpoints, each
+committed and verified independently. `package.json` gained a real build
+step (Svelte 5 as a `devDependency`, compiled ahead of time, only `dist/`
+published, `@glyphrogue/core` a `peerDependency`); `mount.js`'s
+`mountEditor(container, api)` mounts a Svelte root (currently a placeholder
+shell for tools not yet built) into a container a consuming game provides,
+as a plain DOM sibling; a `dev/` fixture (`dev.html`/`main.js`/
+`vite.config.js`) boots a real `createApi()` instance for manual harness
+testing; `hotReload.js`'s `snapshotWorld`/`restoreWorldFromSnapshot` wire
+`import.meta.hot` to `save.js`/`storage.js`, deliberately kept
+hot-agnostic since Vite keeps only the *last* `hot.dispose()` registration
+per module — discovered when a second registration silently clobbered the
+first during manual verification; `devServerPlugin.js`'s
+`createFileWriteApi()` adds the shared file-write API (write/exists/
+touched-files dev-server middleware, a path-containment check, and a new
+exported `writeFileAtomic` primitive extracted from `storage.js`, since
+`createFsStorage`'s JSON-save-slot interface doesn't fit writing arbitrary
+content to an arbitrary path); and `App.svelte` now has a real, working
+touched-files panel deriving from live `git status` decorated with
+per-write provenance — the harness's first genuine end-to-end feature
+(mount → file-write API → touched-files log, all connected). Along the
+way, fixed three instances of the same bug class: Vite's build silently
+stubs any unlisted Node builtin as an empty, throwing-on-access object for
+"browser safety," which broke `storage.js` (reached via `core`'s barrel
+from any browser build) and `devServerPlugin.js` (Node-only code that
+still goes through the same build pipeline) until each was explicitly
+externalized — caught by manual browser verification and build-output
+inspection, not by the test suite. `packages/editor` test count: 0 → 15
+(360 total across all three packages) — see
+`docs/session-logs/session-29-2026-07-23.md`. The next `/dev-session` is
+roadmap item 3, plugin management.
 
 See:
 
 - [`DESIGN.md`](./DESIGN.md) — architecture decisions made so far
-- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor` implementation roadmap, 9 sessions scoped, 1 complete)
+- [`BACKLOG.md`](./BACKLOG.md) — what's next (`packages/editor` implementation roadmap, 9 sessions scoped, 2 complete)
 - [`docs/design/`](./docs/design/) — in-depth design docs, one per topic
 - [`docs/data-model.md`](./docs/data-model.md) — living reference for actual data shapes, kept current alongside implementation
 - [`docs/session-logs/`](./docs/session-logs/) — one entry per session, goal/decisions/work/deferred items
@@ -216,7 +248,11 @@ packages/
             under src/, tests under test/
   editor/   dev-time companion tools (map editor, tileset/calibration editor, content browser,
             composition wizard, config UI) — designed (session 26, refined session 27,
-            docs/design/editor.md), implementation not yet started, never ships in production
+            docs/design/editor.md); harness foundation implemented (session 29): mount.js,
+            hotReload.js, devServerPlugin.js under src/, tests under test/, dev/ fixture for
+            manual testing. Individual tools (map editor, content browser, etc.) not yet
+            started. Never ships in production; Svelte 5 compiled ahead of time, only
+            dist/ published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/  in-depth design docs, one per deep-dive planning session
 docs/session-logs/  one log per session

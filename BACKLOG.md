@@ -91,8 +91,25 @@ generator `paramsDefaults` plus constant-extraction in `bsp.js`/
 (`loadMods` → `loadPlugins`, the save DTO's slice key, `scripting-api.md`'s
 terminology per `editor.md`'s Plugin/Mod split) — see
 `docs/session-logs/session-28-2026-07-23.md`. `packages/core` test count:
-295 → 315 (343 total with `packages/input`'s 28). The next `/dev-session` is
-roadmap item 2, the editor harness foundation.
+295 → 315 (343 total with `packages/input`'s 28). Session 29 completed
+roadmap item 2, the editor harness foundation, run as five checkpoints:
+package scaffold + Svelte 5 build step (`mount.js`'s `mountEditor`), a
+`dev/` fixture for manual harness testing, `hotReload.js`'s
+`snapshotWorld`/`restoreWorldFromSnapshot` (deliberately hot-agnostic,
+since Vite keeps only the *last* `hot.dispose()` registration per module —
+a caller combining multiple teardown concerns has to register just one),
+`devServerPlugin.js`'s shared file-write API (write/exists/touched-files
+middleware, path containment, plus a new `writeFileAtomic` primitive
+extracted from `packages/core/src/storage.js`), and a real touched-files
+panel in `App.svelte` deriving from live `git status` decorated with
+per-write provenance — see
+`docs/session-logs/session-29-2026-07-23.md`. Also fixed, mid-session:
+`storage.js`'s top-level Node-builtin imports crashing any browser
+consumer of `@glyphrogue/core` (nothing had loaded it in a real browser
+before this session's dev fixture), and the same externalization issue in
+`devServerPlugin.js`'s own build step. `packages/editor` test count: 0 →
+15 (360 total). The next `/dev-session` is roadmap item 3, plugin
+management.
 
 ## Deferred / future items
 
@@ -441,17 +458,26 @@ live against real code, same caveat every roadmap in this file carries.
    `mods.test.js` → `plugins.test.js`). `packages/cli`'s half of the
    rename turned out to be documentation-only (`build-pipeline.md`'s one
    `src/mods/` mention) since no CLI scaffold exists on disk yet.
-2. **Editor harness foundation** — package scaffold, mount API,
-   Svelte 5 (compiled-output-only build step), hot-reload snapshot/restore,
-   dev fixture, the shared file-write API (Vite plugin), the touched-files
-   log. Everything else below mounts inside this.
+2. ~~**Editor harness foundation**~~ — done (session 29), see
+   `docs/session-logs/session-29-2026-07-23.md`. Package scaffold + Svelte
+   5 build step (`mount.js`'s `mountEditor(container, api)`, currently
+   mounting a placeholder-turned-touched-files-panel root), a `dev/`
+   fixture, `hotReload.js`'s hot-agnostic `snapshotWorld`/
+   `restoreWorldFromSnapshot` (a real downstream game's own dev bootstrap
+   combines this with any other `hot.dispose()` teardown into one call —
+   Vite only keeps the last registration per module), `devServerPlugin.js`'s
+   `createFileWriteApi()` (write/exists/touched-files middleware, path
+   containment, `writeFileAtomic` extracted from
+   `packages/core/src/storage.js`), and the touched-files log itself
+   (derived from live `git status --untracked-files=all` decorated with
+   per-write provenance). Everything below mounts inside this.
 3. **Plugin management** — the enable/disable list (derived discovery
    against `loadPlugins`'s array), the folder-per-plugin convention
    (`src/plugins/<pluginId>/`), and import/export. Split out from the
    "shared UI infrastructure" grouping below — it doesn't actually use
    either shared primitive there, its only real dependencies are the
-   `plugins.js` rename (item 1) and the file-write API (item 2), so
-   there's no reason to sequence it after the live-preview/form-primitive
+   `plugins.js` rename (item 1) and the file-write API (item 2, now done),
+   so there's no reason to sequence it after the live-preview/form-primitive
    work.
 4. **Shared UI infrastructure** — the live-preview rendering primitive and
    the narrow form primitive (map editor params + audio mixing). Map
