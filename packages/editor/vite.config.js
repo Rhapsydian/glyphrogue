@@ -12,9 +12,18 @@ export default defineConfig(({ command }) => ({
   plugins: [svelte({ compilerOptions: { css: 'injected' } })],
   build: command === 'build' ? {
     lib: {
-      entry: 'src/mount.js',
+      entry: {
+        mount: 'src/mount.js',
+        hotReload: 'src/hotReload.js',
+      },
       formats: ['es'],
-      fileName: 'mount',
+    },
+    rollupOptions: {
+      // @glyphrogue/core stays external (never bundled): it's a
+      // peerDependency precisely so a downstream game's own live api/world
+      // is the only instance in play (editor.md) - bundling hotReload.js's
+      // `serialize`/`deserialize` imports here would ship a second copy.
+      external: ['@glyphrogue/core'],
     },
   } : undefined,
 }));

@@ -13,7 +13,8 @@
     "vite": "^8.1.5"
   },
   "exports": {
-    ".": "./dist/mount.js"
+    ".": "./dist/mount.js",
+    "./hotReload": "./dist/hotReload.js"
   },
   "files": [
     "dist"
