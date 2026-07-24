@@ -1,12 +1,54 @@
 <script>
   import PluginList from './PluginList.svelte';
   import PluginServices from './PluginServices.svelte';
+  import LivePreview from './LivePreview.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
     buildServiceSwitchInstruction,
     checkPluginLoadErrors,
   } from './pluginCatalog.js';
+  import {
+    createGlyphMetrics,
+    createPalette,
+    createFontSourceRegistry,
+    registerFontSource,
+    createTileset,
+    registerSymbol,
+    resolveSymbol,
+  } from '@glyphrogue/core';
+
+  // Checkpoint-4 demo scaffolding (docs/design/editor.md: "Shared UI
+  // infrastructure") - throwaway verification fixtures for LivePreview
+  // exercising its three real consumer shapes (a 1x1 swatch, a single
+  // assembled tile, a small terrain grid standing in for a calibration
+  // grid / scratch zone) since no real consumer (map editor, tileset
+  // editor, config UI - roadmap items 5-9) exists yet to verify against.
+  // Expected to be superseded once those land.
+  const demoMetrics = createGlyphMetrics({ pixelsPerEm: 24 });
+  const demoPalette = createPalette({
+    wall: '#555555',
+    floor: '#222222',
+    player: '#6ab0ff',
+    accent: '#e0a030',
+  });
+  const demoFontSources = createFontSourceRegistry();
+  registerFontSource(demoFontSources, 'base', { unitsPerEm: 1000, ascender: 800, descender: -200, glyphs: {} });
+  const demoTileset = createTileset();
+  registerSymbol(demoTileset, 'player', { fontFace: 'base', codepoint: '40', foreground: { token: 'player' } });
+  const playerTile = resolveSymbol(demoTileset, demoFontSources, demoMetrics, 'player');
+
+  const swatchCommands = [{ col: 0, row: 0, text: ' ', color: 'transparent', background: { token: 'accent' } }];
+  const tileCommands = [{ col: 0, row: 0, ...playerTile, background: { token: 'floor' } }];
+
+  const miniZoneRows = ['######', '#....#', '#.@..#', '######'];
+  const miniZoneCommands = miniZoneRows.flatMap((line, row) =>
+    [...line].map((ch, col) => {
+      if (ch === '#') return { col, row, text: ' ', color: 'transparent', background: { token: 'wall' } };
+      if (ch === '@') return { col, row, ...playerTile, background: { token: 'floor' } };
+      return { col, row, text: ' ', color: 'transparent', background: { token: 'floor' } };
+    }),
+  );
 
   // `api` isn't needed by the touched-files log itself (purely
   // server-derived git+provenance state) but stays accepted here since
@@ -127,6 +169,24 @@
       </div>
     </div>
   {/if}
+
+  <div class="header">
+    <h2>Live preview primitive demo</h2>
+  </div>
+  <div class="preview-row">
+    <div class="preview-item">
+      <span class="preview-label">swatch</span>
+      <LivePreview commands={swatchCommands} cols={1} rows={1} metrics={demoMetrics} fontFamily="monospace" palette={demoPalette} />
+    </div>
+    <div class="preview-item">
+      <span class="preview-label">assembled tile</span>
+      <LivePreview commands={tileCommands} cols={1} rows={1} metrics={demoMetrics} fontFamily="monospace" palette={demoPalette} />
+    </div>
+    <div class="preview-item">
+      <span class="preview-label">mini zone</span>
+      <LivePreview commands={miniZoneCommands} cols={6} rows={4} metrics={demoMetrics} fontFamily="monospace" palette={demoPalette} />
+    </div>
+  </div>
 </div>
 
 <style>
@@ -209,5 +269,22 @@
   .instruction-actions {
     display: flex;
     gap: 0.5rem;
+  }
+
+  .preview-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .preview-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .preview-label {
+    color: #888;
+    font-size: 0.85rem;
   }
 </style>
