@@ -277,6 +277,23 @@ test('deriveCatalog threads an author candidate\'s components/actionType/depende
   assert.deepEqual(entry.dependencies, { core: '^0.1.0' });
 });
 
+test('deriveCatalog threads registeredId through, distinct from the plugin\'s own id when a custom plugin registers under a different one', async () => {
+  const fakePlugin = {
+    id: 'goblin-ai-pack',
+    version: '1.0.0',
+    dependencies: {},
+    register: (api) => api.registerRule('goblin-alarm-rule', 'TakeTurn', () => {}, { components: { all: ['Wanders'] } }),
+  };
+  const candidates = [{ id: 'goblin-ai-pack', url: '/dev/sandbox/src/plugins/goblin-ai-pack/index.js' }];
+
+  const { content } = await deriveCatalog(discoverResponse({ candidates }), {
+    importModule: async () => ({ default: fakePlugin }),
+  });
+
+  const entry = content.find((e) => e.id === 'goblin-ai-pack');
+  assert.equal(entry.registeredId, 'goblin-alarm-rule');
+});
+
 test('checkPluginLoadErrors surfaces a core-version-mismatch error', () => {
   const plugin = {
     id: 'goblin-ai',

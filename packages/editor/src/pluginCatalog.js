@@ -19,7 +19,14 @@ import * as core from '@glyphrogue/core';
 // consumer (the behavior wizard) can search a rule's declared filter
 // without re-deriving the manifest itself - previously discarded here,
 // same "kickoff research found a real gap" class of fix session 37 made
-// for recordingApi's own registerRule stub.
+// for recordingApi's own registerRule stub. registeredId is the actual id
+// passed to registerRule/registerGenerator/etc. - by convention this
+// project's first-party content always registers under the same id as the
+// plugin's own `id` (wandersPlugin's id 'wanders' registers rule 'wanders'
+// too), but that's a convention, not a guarantee a custom author plugin
+// has to follow, so callers that need to reference the registered thing
+// itself (the behavior wizard's widen-rule-types entries) must use this,
+// not `plugin.id`.
 function deriveManifestEntry(plugin) {
   const { manifest, api } = createRecordingApi();
   plugin.register(api);
@@ -28,6 +35,7 @@ function deriveManifestEntry(plugin) {
     kind: first?.kind === 'service' ? 'service' : 'content',
     components: first?.components,
     actionType: first?.actionType,
+    registeredId: first?.id,
   };
 }
 
@@ -70,7 +78,7 @@ export async function deriveCatalog(
     const exportName = exportNameFor(plugin);
     const alreadyImported = Boolean(exportName && bootstrap.coreImportNames.includes(exportName));
     const enabled = alreadyImported && bootstrap.loadPluginsArrayEntries.includes(exportName);
-    const { kind, components, actionType } = deriveManifestEntry(plugin);
+    const { kind, components, actionType, registeredId } = deriveManifestEntry(plugin);
     const entry = {
       id: plugin.id,
       version: plugin.version,
@@ -87,11 +95,13 @@ export async function deriveCatalog(
       suggestedImportName: exportName,
       // Threaded through for the behavior wizard: a rule's declared filter
       // (to search attach/widen candidates across *all* discovered
-      // plugins, not just already-enabled ones) and the plugin's own
-      // declared dependencies (to check "does anything depend on this
+      // plugins, not just already-enabled ones), the actual registered id
+      // (to reference the rule itself, not the plugin), and the plugin's
+      // own declared dependencies (to check "does anything depend on this
       // plugin" before allowing delete).
       components,
       actionType,
+      registeredId,
       dependencies: plugin.dependencies,
     };
 
@@ -107,7 +117,7 @@ export async function deriveCatalog(
 
     const authorImport = bootstrap.authorImports.find((imp) => imp.sourcePath.includes(`plugins/${candidate.id}/`));
     const enabled = Boolean(authorImport && bootstrap.loadPluginsArrayEntries.includes(authorImport.localName));
-    const { kind, components, actionType } = deriveManifestEntry(plugin);
+    const { kind, components, actionType, registeredId } = deriveManifestEntry(plugin);
     const entry = {
       id: plugin.id,
       version: plugin.version,
@@ -119,6 +129,7 @@ export async function deriveCatalog(
       suggestedImportName: authorImport?.localName ?? suggestedImportName(plugin.id),
       components,
       actionType,
+      registeredId,
       dependencies: plugin.dependencies,
     };
 

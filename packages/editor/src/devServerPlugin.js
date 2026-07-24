@@ -4,10 +4,11 @@
 // downstream game's vite.config.js alike (editor.md's shared file-write
 // API: a browser tab can't touch the filesystem directly, so every
 // write-capable tool in this doc routes through dev-server middleware).
-import { access, cp, readdir, readFile, stat } from 'node:fs/promises';
+import { access, cp, readdir, readFile, rm, stat } from 'node:fs/promises';
 import { basename, resolve, relative, sep, posix } from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import { pathToFileURL } from 'node:url';
 import { writeFileAtomic } from '@glyphrogue/core';
 
 const execAsync = promisify(exec);
@@ -372,6 +373,67 @@ export function createFileWriteApi({ projectRoot = process.cwd(), bootstrapPath 
           await cp(source, resolvedDestination, { recursive: true, errorOnExist: true });
 
           sendJson(res, 200, { ok: true, path: resolvedDestination });
+        } catch (error) {
+          sendJson(res, 400, { ok: false, error: error.message });
+        }
+      });
+
+      // Delete (behavior wizard, editor.md's "Composition wizard" -
+      // session 38): the first delete-capable endpoint in the project -
+      // every other write-capable tool here has stayed additive-only. Only
+      // ever offered for a composition plugin, and only when empty,
+      // disabled, and nothing else depends on it - the client's own UI
+      // already gates the button on the same three conditions
+      // (behaviorWizard.js's canDeleteComposition), but this re-checks
+      // them server-side against the real file/bootstrap state rather than
+      // trusting whatever the client last saw. Cache-busted dynamic
+      // imports (a `?t=` query param) since Node's ESM cache would
+      // otherwise keep serving a stale module for a file this same
+      // process already imported earlier in the session (e.g. right after
+      // an edit emptied it).
+      server.middlewares.use('/__glyphrogue_editor/plugins/delete', async (req, res) => {
+        if (req.method !== 'POST') {
+          sendJson(res, 405, { ok: false, error: 'expected POST' });
+          return;
+        }
+        try {
+          const { pluginId } = await readJsonBody(req);
+          if (!isValidPluginId(pluginId)) {
+            throw new Error(`"${pluginId}" isn't a valid plugin id`);
+          }
+
+          const pluginDir = resolveContainedPath(projectRoot, `src/plugins/${pluginId}`);
+          const entryPath = resolve(pluginDir, 'index.js');
+          if (!(await fileExists(entryPath))) {
+            throw new Error(`no plugin folder "${pluginId}" found in src/plugins/`);
+          }
+
+          const target = await import(`${pathToFileURL(entryPath).href}?t=${Date.now()}`);
+          if (!Array.isArray(target.ruleOverrides)) {
+            throw new Error(`"${pluginId}" isn't a behavior-wizard composition plugin (no ruleOverrides export)`);
+          }
+          if (target.ruleOverrides.length > 0) {
+            throw new Error(`cannot delete "${pluginId}": composition is not empty`);
+          }
+
+          const bootstrap = parseBootstrapSource(await readBootstrapSource(resolvedBootstrapPath));
+          const authorImport = bootstrap.authorImports.find((imp) => imp.sourcePath.includes(`plugins/${pluginId}/`));
+          const enabled = Boolean(authorImport && bootstrap.loadPluginsArrayEntries.includes(authorImport.localName));
+          if (enabled) {
+            throw new Error(`cannot delete "${pluginId}": still enabled in the bootstrap`);
+          }
+
+          const otherIds = (await discoverAuthorPluginFolders(projectRoot)).filter((id) => id !== pluginId);
+          for (const otherId of otherIds) {
+            const otherPath = resolve(projectRoot, 'src/plugins', otherId, 'index.js');
+            const otherModule = await import(`${pathToFileURL(otherPath).href}?t=${Date.now()}`);
+            if (Object.keys(otherModule.default?.dependencies ?? {}).includes(pluginId)) {
+              throw new Error(`cannot delete "${pluginId}": "${otherId}" depends on it`);
+            }
+          }
+
+          await rm(pluginDir, { recursive: true, force: true });
+          sendJson(res, 200, { ok: true });
         } catch (error) {
           sendJson(res, 400, { ok: false, error: error.message });
         }

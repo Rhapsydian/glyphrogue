@@ -7,6 +7,7 @@ import { createApi } from '@glyphrogue/core';
 import {
   isValidExportName,
   pluginFilePath,
+  discoverCompositions,
   attachableBehaviors,
   widenableRules,
   canDeleteComposition,
@@ -25,6 +26,34 @@ test('isValidExportName is re-exported from mapEditorExport.js, not duplicated',
 
 test('pluginFilePath matches the folder-per-plugin convention', () => {
   assert.equal(pluginFilePath('guard-patrol'), 'src/plugins/guard-patrol/index.js');
+});
+
+test('discoverCompositions finds candidates carrying a ruleOverrides export and computes their enabled state', async () => {
+  const entries = [{ kind: 'attach-component', entityId: 'guard', component: 'Wanders', data: {} }];
+  const candidates = [
+    { id: 'guard-patrol', url: '/src/plugins/guard-patrol/index.js' },
+    { id: 'goblin-ai', url: '/src/plugins/goblin-ai/index.js' },
+  ];
+  const bootstrap = {
+    coreImportNames: [],
+    authorImports: [{ localName: 'guardPatrolPlugin', sourcePath: './plugins/guard-patrol/index.js' }],
+    loadPluginsArrayEntries: ['guardPatrolPlugin'],
+  };
+
+  const compositions = await discoverCompositions(
+    { candidates, bootstrap },
+    {
+      importModule: async (url) =>
+        url.includes('guard-patrol')
+          ? { default: { id: 'guard-patrol' }, ruleOverrides: entries }
+          : { default: { id: 'goblin-ai' }, register: () => {} },
+    },
+  );
+
+  assert.equal(compositions.length, 1);
+  assert.equal(compositions[0].id, 'guard-patrol');
+  assert.deepEqual(compositions[0].entries, entries);
+  assert.equal(compositions[0].enabled, true);
 });
 
 test('attachableBehaviors returns a global marker rule the entity doesn\'t yet match, with the missing component named', () => {

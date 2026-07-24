@@ -16,6 +16,47 @@ export function pluginFilePath(id) {
   return `src/plugins/${id}/index.js`;
 }
 
+// Existing composition plugins - reuses the same /plugins/discover
+// candidates+bootstrap response pluginCatalog.js's deriveCatalog already
+// fetches (so App.svelte can derive both from one round trip), but scans
+// for a `ruleOverrides` array export instead of classifying kind - a
+// composition plugin is identified structurally by that export, not by
+// anything pluginCatalog.js's own Content/Service classification tracks.
+// `enabled` is computed the same way deriveCatalog does for an author
+// candidate (bootstrap import + loadPlugins-array membership).
+//
+// Cache-busted (`?t=`) unlike deriveCatalog's own default importModule -
+// composition plugins are the first candidates a session can realistically
+// rewrite more than once (save -> edit -> save again), and the browser's
+// native ES module cache serves the first-loaded module for a URL forever
+// otherwise, regardless of Vite's own file-watching, since a fully dynamic
+// runtime import() isn't one of Vite's statically-tracked/HMR-invalidated
+// imports. Found live: a second save's emptied entries didn't show up
+// until this fix.
+export async function discoverCompositions(
+  { candidates, bootstrap },
+  { importModule = (url) => import(/* @vite-ignore */ `${url}?t=${Date.now()}`) } = {},
+) {
+  const compositions = [];
+
+  for (const candidate of candidates) {
+    const module = await importModule(candidate.url);
+    if (!Array.isArray(module.ruleOverrides)) continue;
+
+    const authorImport = bootstrap.authorImports.find((imp) => imp.sourcePath.includes(`plugins/${candidate.id}/`));
+    const enabled = Boolean(authorImport && bootstrap.loadPluginsArrayEntries.includes(authorImport.localName));
+
+    compositions.push({
+      id: module.default?.id ?? candidate.id,
+      entries: module.ruleOverrides,
+      enabled,
+      importName: authorImport?.localName,
+    });
+  }
+
+  return compositions;
+}
+
 // pluginCatalog.js's catalog `content` array (extended in checkpoint 1 to
 // carry components/actionType/dependencies for every discovered candidate,
 // enabled or not) is the search space for both matchers below - a rule is

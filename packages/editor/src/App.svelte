@@ -4,12 +4,14 @@
   import MapEditor from './MapEditor.svelte';
   import CompositionTool from './CompositionTool.svelte';
   import ContentBrowser from './ContentBrowser.svelte';
+  import BehaviorWizard from './BehaviorWizard.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
     buildServiceSwitchInstruction,
     checkPluginLoadErrors,
   } from './pluginCatalog.js';
+  import { discoverCompositions } from './behaviorWizard.js';
   import { createGlyphMetrics, createPalette, createFontSourceRegistry, registerFontSource } from '@glyphrogue/core';
 
   // Shared preview config (docs/design/editor.md: "Shared live-preview
@@ -57,6 +59,7 @@
   let instruction = $state(null);
   let loadError = $state(null);
   let enabledPlugins = $state([]);
+  let compositions = $state([]);
 
   async function refreshPlugins() {
     pluginLoading = true;
@@ -67,6 +70,9 @@
       pluginContent = catalog.content;
       pluginServices = catalog.services;
       enabledPlugins = catalog.enabledPlugins;
+      // Reuses the same discovery response the catalog above was just
+      // derived from - one /plugins/discover round trip covers both.
+      compositions = await discoverCompositions(discovery);
       pluginError = null;
       // Dry-run only, against a fake api - never mutates anything (editor.md:
       // dependency-cycle/version-mismatch errors surface here instead of only
@@ -114,6 +120,21 @@
       return await res.json();
     } catch (e) {
       return { exists: false, error: e.message };
+    }
+  }
+
+  // The behavior wizard's delete flow (editor.md's "Composition wizard") -
+  // same controlled-component posture as writeFile/checkExists above.
+  async function deletePlugin(pluginId) {
+    try {
+      const res = await fetch('/__glyphrogue_editor/plugins/delete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pluginId }),
+      });
+      return await res.json();
+    } catch (e) {
+      return { ok: false, error: e.message };
     }
   }
 
@@ -206,6 +227,19 @@
     <h2>Content browser</h2>
   </div>
   <ContentBrowser {api} {enabledPlugins} />
+
+  <div class="header">
+    <h2>Behavior wizard</h2>
+  </div>
+  <BehaviorWizard
+    {pluginContent}
+    {enabledPlugins}
+    {compositions}
+    onWriteFile={writeFile}
+    onCheckExists={checkExists}
+    onDeletePlugin={deletePlugin}
+    onRefresh={refreshPlugins}
+  />
 </div>
 
 <style>
