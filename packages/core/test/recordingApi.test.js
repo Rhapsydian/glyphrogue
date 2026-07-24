@@ -11,7 +11,11 @@ test('a plugin\'s register(api) run against the recording api produces a manifes
       components: { Health: {} },
       rules: [{ action: 'Death', handler: () => {} }],
     });
-    recordingApi.registerRule('standalone-rule', 'Attack', () => {});
+    recordingApi.registerRule('standalone-rule', 'Attack', () => {}, {
+      components: { all: ['Wanders'], none: ['Dead'] },
+      reads: ['Position'],
+      writes: ['Position'],
+    });
     recordingApi.registerGenerator('cave', () => {});
     recordingApi.registerScreen('inventory', {});
     recordingApi.registerSound('hit', { trigger: 'Attack' });
@@ -27,7 +31,14 @@ test('a plugin\'s register(api) run against the recording api produces a manifes
   assert.deepEqual(manifest, [
     { kind: 'entity', id: 'torch', components: ['Flammable'] },
     { kind: 'entityType', id: 'goblin', components: ['Health'], rules: ['Death'] },
-    { kind: 'rule', id: 'standalone-rule', actionType: 'Attack' },
+    {
+      kind: 'rule',
+      id: 'standalone-rule',
+      actionType: 'Attack',
+      components: { all: ['Wanders'], none: ['Dead'] },
+      reads: ['Position'],
+      writes: ['Position'],
+    },
     { kind: 'generator', id: 'cave' },
     { kind: 'screen', id: 'inventory' },
     { kind: 'sound', id: 'hit', trigger: 'Attack' },

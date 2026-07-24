@@ -31,8 +31,9 @@ export function createRecordingApi() {
           rules: (def.rules ?? []).map((rule) => rule.action),
         });
       },
-      registerRule: (id, actionType) => {
-        record('rule', id, { actionType });
+      registerRule: (id, actionType, ruleFn, options = {}) => {
+        const { components, reads, writes } = options;
+        record('rule', id, { actionType, components, reads, writes });
       },
       registerGenerator: (id) => {
         record('generator', id);
