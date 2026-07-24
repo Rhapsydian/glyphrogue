@@ -2,6 +2,7 @@
   import PluginList from './PluginList.svelte';
   import PluginServices from './PluginServices.svelte';
   import MapEditor from './MapEditor.svelte';
+  import CompositionTool from './CompositionTool.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
@@ -100,6 +101,19 @@
     }
   }
 
+  // The generator composition tool's overwrite-confirmation gate
+  // (editor.md: "loud, never silent") - devServerPlugin.js's /exists
+  // middleware has been there since session 29, just never had a client
+  // caller until this tool.
+  async function checkExists(path) {
+    try {
+      const res = await fetch(`/__glyphrogue_editor/exists?path=${encodeURIComponent(path)}`);
+      return await res.json();
+    } catch (e) {
+      return { exists: false, error: e.message };
+    }
+  }
+
   $effect(() => {
     refresh();
     refreshPlugins();
@@ -171,6 +185,18 @@
     palette={previewPalette}
     fontSources={previewFontSources}
     onExport={writeFile}
+  />
+
+  <div class="header">
+    <h2>Generator composition</h2>
+  </div>
+  <CompositionTool
+    metrics={previewMetrics}
+    fontFamily="monospace"
+    palette={previewPalette}
+    fontSources={previewFontSources}
+    onExport={writeFile}
+    onCheckExists={checkExists}
   />
 </div>
 
