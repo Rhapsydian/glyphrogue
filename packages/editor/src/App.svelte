@@ -1,67 +1,28 @@
 <script>
   import PluginList from './PluginList.svelte';
   import PluginServices from './PluginServices.svelte';
-  import LivePreview from './LivePreview.svelte';
-  import NarrowForm from './NarrowForm.svelte';
+  import MapEditor from './MapEditor.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
     buildServiceSwitchInstruction,
     checkPluginLoadErrors,
   } from './pluginCatalog.js';
-  import {
-    createGlyphMetrics,
-    createPalette,
-    createFontSourceRegistry,
-    registerFontSource,
-    createTileset,
-    registerSymbol,
-    resolveSymbol,
-    get as getRegistryEntry,
-  } from '@glyphrogue/core';
+  import { createGlyphMetrics, createPalette, createFontSourceRegistry, registerFontSource } from '@glyphrogue/core';
 
-  // Checkpoint-4 demo scaffolding (docs/design/editor.md: "Shared UI
-  // infrastructure") - throwaway verification fixtures for LivePreview
-  // exercising its three real consumer shapes (a 1x1 swatch, a single
-  // assembled tile, a small terrain grid standing in for a calibration
-  // grid / scratch zone) since no real consumer (map editor, tileset
-  // editor, config UI - roadmap items 5-9) exists yet to verify against.
-  // Expected to be superseded once those land.
-  const demoMetrics = createGlyphMetrics({ pixelsPerEm: 24 });
-  const demoPalette = createPalette({
+  // Shared preview config (docs/design/editor.md: "Shared live-preview
+  // rendering primitive") - real config for the map editor now, not
+  // throwaway scaffolding. wall/floor/player/accent are the tokens
+  // zoneRender.js's default tileset resolves against.
+  const previewMetrics = createGlyphMetrics({ pixelsPerEm: 24 });
+  const previewPalette = createPalette({
     wall: '#555555',
     floor: '#222222',
     player: '#6ab0ff',
     accent: '#e0a030',
   });
-  const demoFontSources = createFontSourceRegistry();
-  registerFontSource(demoFontSources, 'base', { unitsPerEm: 1000, ascender: 800, descender: -200, glyphs: {} });
-  const demoTileset = createTileset();
-  registerSymbol(demoTileset, 'player', { fontFace: 'base', codepoint: '40', foreground: { token: 'player' } });
-  const playerTile = resolveSymbol(demoTileset, demoFontSources, demoMetrics, 'player');
-
-  const swatchCommands = [{ col: 0, row: 0, text: ' ', color: 'transparent', background: { token: 'accent' } }];
-  const tileCommands = [{ col: 0, row: 0, ...playerTile, background: { token: 'floor' } }];
-
-  const miniZoneRows = ['######', '#....#', '#.@..#', '######'];
-  const miniZoneCommands = miniZoneRows.flatMap((line, row) =>
-    [...line].map((ch, col) => {
-      if (ch === '#') return { col, row, text: ' ', color: 'transparent', background: { token: 'wall' } };
-      if (ch === '@') return { col, row, ...playerTile, background: { token: 'floor' } };
-      return { col, row, text: ' ', color: 'transparent', background: { token: 'floor' } };
-    }),
-  );
-
-  // Checkpoint-4 demo scaffolding, continued - NarrowForm's two real
-  // consumers: generator paramsDefaults (derived live from the registry,
-  // not hand-copied, per the "derive-don't-hand-maintain" posture) and
-  // audio mixing's flat { master, music, sfx } shape (audioSettings.js;
-  // no persisted settings source exists yet, so these are plain literal
-  // defaults, same as any game author would write directly).
-  const bspDefaults = getRegistryEntry(api.registry, 'bsp')?.paramsDefaults ?? {};
-  const audioDefaults = { master: 1, music: 0.7, sfx: 0.7 };
-  let bspValues = $state({ ...bspDefaults });
-  let audioValues = $state({ ...audioDefaults });
+  const previewFontSources = createFontSourceRegistry();
+  registerFontSource(previewFontSources, 'base', { unitsPerEm: 1000, ascender: 800, descender: -200, glyphs: {} });
 
   // `api` isn't needed by the touched-files log itself (purely
   // server-derived git+provenance state) but stays accepted here since
@@ -120,6 +81,23 @@
 
   function switchService(currentEntry, nextEntry) {
     instruction = buildServiceSwitchInstruction(currentEntry, nextEntry);
+  }
+
+  // Centralizes the file-write API's fetch call in App.svelte, same
+  // convention refresh()/refreshPlugins() already follow - MapEditor (and
+  // any later tool) stays a controlled component reporting writes upward
+  // via this callback rather than calling fetch itself.
+  async function writeFile(path, content, meta) {
+    try {
+      const res = await fetch('/__glyphrogue_editor/write', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ path, content, ...meta }),
+      });
+      return await res.json();
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
   }
 
   $effect(() => {
@@ -184,44 +162,16 @@
   {/if}
 
   <div class="header">
-    <h2>Live preview primitive demo</h2>
+    <h2>Map editor</h2>
   </div>
-  <div class="preview-row">
-    <div class="preview-item">
-      <span class="preview-label">swatch</span>
-      <LivePreview commands={swatchCommands} cols={1} rows={1} metrics={demoMetrics} fontFamily="monospace" palette={demoPalette} />
-    </div>
-    <div class="preview-item">
-      <span class="preview-label">assembled tile</span>
-      <LivePreview commands={tileCommands} cols={1} rows={1} metrics={demoMetrics} fontFamily="monospace" palette={demoPalette} />
-    </div>
-    <div class="preview-item">
-      <span class="preview-label">mini zone</span>
-      <LivePreview commands={miniZoneCommands} cols={6} rows={4} metrics={demoMetrics} fontFamily="monospace" palette={demoPalette} />
-    </div>
-  </div>
-
-  <div class="header">
-    <h2>Narrow form primitive demo</h2>
-  </div>
-  <div class="form-row">
-    <div class="form-item">
-      <h3>BSP generator params</h3>
-      <NarrowForm
-        defaults={bspDefaults}
-        values={bspValues}
-        onChange={(key, value) => (bspValues = { ...bspValues, [key]: value })}
-      />
-    </div>
-    <div class="form-item">
-      <h3>Audio mix</h3>
-      <NarrowForm
-        defaults={audioDefaults}
-        values={audioValues}
-        onChange={(key, value) => (audioValues = { ...audioValues, [key]: value })}
-      />
-    </div>
-  </div>
+  <MapEditor
+    {api}
+    metrics={previewMetrics}
+    fontFamily="monospace"
+    palette={previewPalette}
+    fontSources={previewFontSources}
+    onExport={writeFile}
+  />
 </div>
 
 <style>
@@ -306,31 +256,4 @@
     gap: 0.5rem;
   }
 
-  .preview-row {
-    display: flex;
-    gap: 1rem;
-    margin-top: 0.5rem;
-  }
-
-  .preview-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .preview-label {
-    color: #888;
-    font-size: 0.85rem;
-  }
-
-  .form-row {
-    display: flex;
-    gap: 2rem;
-    margin-top: 0.5rem;
-  }
-
-  .form-item h3 {
-    margin: 0 0 0.35rem;
-    font-size: 0.9rem;
-  }
 </style>
