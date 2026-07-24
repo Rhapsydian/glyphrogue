@@ -6,7 +6,7 @@ function plugin(id, register) {
   return { id, version: '1.0.0', dependencies: {}, register };
 }
 
-test('deriveManifest runs each enabled plugin\'s register(api) against a fresh recording api', () => {
+test('deriveManifest runs each enabled plugin\'s register(api) against a fresh recording api, then appends a plugin entry per plugin', () => {
   const plugins = [
     plugin('wanders', (api) =>
       api.registerRule('wanders', 'TakeTurn', () => {}, { components: { all: ['Wanders'] } }),
@@ -19,8 +19,11 @@ test('deriveManifest runs each enabled plugin\'s register(api) against a fresh r
   assert.deepEqual(manifest.map((entry) => [entry.kind, entry.id]), [
     ['rule', 'wanders'],
     ['generator', 'bsp'],
+    ['plugin', 'wanders'],
+    ['plugin', 'bsp'],
   ]);
   assert.deepEqual(manifest[0].components, { all: ['Wanders'] });
+  assert.equal(manifest[2].version, '1.0.0');
 });
 
 test('componentIndex maps a component name to every rule referencing it, across all/any/none', () => {

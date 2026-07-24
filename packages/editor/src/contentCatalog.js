@@ -7,9 +7,21 @@ import { createRecordingApi, loadPlugins } from '@glyphrogue/core';
 // already-computed enabledPlugins array pluginCatalog.js's deriveCatalog
 // produces, rather than re-deriving "what's enabled" from bootstrap
 // discovery a second time.
+// Plugins themselves are browsable too (editor.md's kind list ends "...
+// scripted events, plugins)"), but registerRule/registerGenerator/etc.
+// never say which plugin they came from - loadPlugins only resolves
+// dependency order and calls register(api), it doesn't tag entries by
+// origin. A synthetic 'plugin' entry per enabled plugin, appended after
+// everything register() produced, is enough for the browser to list and
+// search plugins by id/version without needing per-entry provenance.
 export function deriveManifest(enabledPlugins) {
   const { manifest, api } = createRecordingApi();
   loadPlugins(api, enabledPlugins);
+
+  for (const plugin of enabledPlugins) {
+    manifest.push({ kind: 'plugin', id: plugin.id, version: plugin.version });
+  }
+
   return manifest;
 }
 

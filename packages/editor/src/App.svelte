@@ -3,6 +3,7 @@
   import PluginServices from './PluginServices.svelte';
   import MapEditor from './MapEditor.svelte';
   import CompositionTool from './CompositionTool.svelte';
+  import ContentBrowser from './ContentBrowser.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
@@ -55,6 +56,7 @@
   let pluginLoading = $state(false);
   let instruction = $state(null);
   let loadError = $state(null);
+  let enabledPlugins = $state([]);
 
   async function refreshPlugins() {
     pluginLoading = true;
@@ -64,6 +66,7 @@
       const catalog = await deriveCatalog(discovery);
       pluginContent = catalog.content;
       pluginServices = catalog.services;
+      enabledPlugins = catalog.enabledPlugins;
       pluginError = null;
       // Dry-run only, against a fake api - never mutates anything (editor.md:
       // dependency-cycle/version-mismatch errors surface here instead of only
@@ -198,6 +201,11 @@
     onExport={writeFile}
     onCheckExists={checkExists}
   />
+
+  <div class="header">
+    <h2>Content browser</h2>
+  </div>
+  <ContentBrowser {api} {enabledPlugins} />
 </div>
 
 <style>
