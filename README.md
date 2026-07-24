@@ -14,11 +14,12 @@ implementation is complete (sessions 14–25). `packages/input` (physical
 input → input-action pipeline) is underway (session 23). `packages/editor`
 (dev-time companion tooling, never ships in production) is fully designed
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
-foundation (session 29), plugin management (session 32), and shared UI
-infrastructure (session 33) implemented; the remaining individual tools
-(map editor, content browser, etc.) haven't started. `packages/cli`
-(`create-glyphrogue-game` scaffolding) hasn't started. 419 `node --test`
-cases pass across the three implemented packages.
+foundation (session 29), plugin management (session 32), shared UI
+infrastructure (session 33), and the map editor's standalone-authoring
+scope (session 34) implemented; in-context editing/override export and the
+remaining individual tools (content browser, etc.) haven't started.
+`packages/cli` (`create-glyphrogue-game` scaffolding) hasn't started. 438
+`node --test` cases pass across the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
@@ -38,10 +39,19 @@ then built the two shared primitives every remaining tool depends on:
 `LivePreview.svelte`, a thin wrapper around core's existing `paintLayer`
 (needed no new core code at all), and `NarrowForm.svelte` + `narrowForm.js`,
 scoped to exactly the flat `paramsDefaults`/audio-mixing shape per
-`editor.md`'s own narrow-scoping decision. Both are exercised by dev-fixture
-demo panels in `App.svelte` since no real consumer tool exists yet. See
-`BACKLOG.md`'s "packages/editor design roadmap" item 4. The next
-`/dev-session` is item 5, the map editor.
+`editor.md`'s own narrow-scoping decision. Session 34 then built the map
+editor's standalone-authoring scope on top of those primitives: generate/
+tune a scratch zone (`generatorCatalog.js`, `zoneRender.js`), pin/lock a
+region including pin + generator-switch composition
+(`pinRegion.js`), and export a template fragment or seed+params preset
+(`mapEditorExport.js`) — all in `MapEditor.svelte`, replacing the prior
+session's throwaway demo panels in `App.svelte`. In-context editing and
+override export stay deferred (no "current zone" concept exists in
+`packages/core` yet); a real generator-composition codegen tool was scoped
+as a new, separate roadmap item rather than built ad hoc. See
+`BACKLOG.md`'s "packages/editor design roadmap" item 5. The next
+`/dev-session` is item 6 (generator composition tool) or item 7 (content
+browser) — to be confirmed at kickoff.
 
 ## See also
 
@@ -73,15 +83,18 @@ packages/
             outside core and dependency-free — under src/, tests under test/
   editor/   dev-time companion tools — designed in full (docs/design/editor.md);
             harness foundation (session 29), plugin management (session 32),
-            and shared UI infrastructure (session 33) implemented: mount.js,
+            shared UI infrastructure (session 33), and the map editor's
+            standalone-authoring scope (session 34) implemented: mount.js,
             hotReload.js, devServerPlugin.js, pluginCatalog.js, narrowForm.js,
-            App.svelte, PluginList.svelte, PluginServices.svelte,
-            LivePreview.svelte, NarrowForm.svelte under src/, tests under
-            test/, dev/ fixture (including dev/sandbox/bootstrap.js, a
-            stand-in game bootstrap) for manual testing. Remaining individual
-            tools (map editor, content browser, etc.) not yet started. Never
-            ships in production; Svelte 5 compiled ahead of time, only dist/
-            published
+            generatorCatalog.js, zoneRender.js, pinRegion.js,
+            mapEditorExport.js, App.svelte, PluginList.svelte,
+            PluginServices.svelte, LivePreview.svelte, NarrowForm.svelte,
+            MapEditor.svelte under src/, tests under test/, dev/ fixture
+            (including dev/sandbox/bootstrap.js, a stand-in game bootstrap)
+            for manual testing. Map editor in-context editing/override
+            export and remaining individual tools (content browser, etc.)
+            not yet started. Never ships in production; Svelte 5 compiled
+            ahead of time, only dist/ published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference

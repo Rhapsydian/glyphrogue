@@ -138,8 +138,19 @@ session-32-2026-07-23.md`. Test count 382 → 415 (`packages/core` 339 →
 design roadmap item 4 (shared UI infrastructure) — see that roadmap
 section below for the full breakdown, and `docs/session-logs/
 session-33-2026-07-24.md`. Test count 415 → 419 (`packages/editor` 46 →
-50). The next `/dev-session` is now `packages/editor` design roadmap item
-5, the map editor.
+50). Session 34 completed `packages/editor` design roadmap item 5's
+standalone-authoring scope (map editor generation, pin/lock, template/
+preset export) — kickoff narrowed scope after finding `packages/core` has
+no "current zone" concept for in-context editing to build against, and a
+mid-session discussion of generator composition split into a kept-in-scope
+free affordance (pin/lock + generator-switch) and a deferred new roadmap
+item (6, generator composition tool — see that section below). See
+`docs/session-logs/session-34-2026-07-24.md`. Test count 419 → 438
+(`packages/editor` 50 → 69). The next `/dev-session` is either `packages/
+editor` design roadmap item 6 (generator composition tool, freshest
+context, needs its own design pass first) or item 7 (content browser,
+plain next-in-sequence, no dependency on item 6) — worth confirming with
+the user at kickoff rather than assuming either.
 
 ## Deferred / future items
 
@@ -585,9 +596,17 @@ live against real code, same caveat every roadmap in this file carries.
    real consumer tool exists yet); BSP-params demo derives its defaults
    live from the registry rather than hand-copying them.
    `packages/editor` test count: 46 → 50. 419 total.
-5. **Map editor** — most prior art, most fully specified tool in
-   `editor.md`; likely wants the `checkpoint-plan` treatment given its
-   scope (in-context/standalone flows, pin/lock, panel layout).
+5. ~~**Map editor**~~ — standalone-authoring scope done (session 34), see
+   `docs/session-logs/session-34-2026-07-24.md`. `generatorCatalog.js`,
+   `zoneRender.js`, `pinRegion.js`, `mapEditorExport.js`, `MapEditor.svelte`
+   — generate/tune a scratch zone, pin/lock a region (including pin +
+   generator-switch, a free interactive composition affordance), export a
+   template fragment or seed+params preset via the shared file-write API.
+   **In-context editing and override export remain undone** — deferred at
+   kickoff since `packages/core` has no "current zone" concept to build the
+   `currentZoneId` accessor against yet; needs a later session once there's
+   a clearer real-game harness to design that against.
+   `packages/editor` test count: 50 → 69.
 6. **Generator composition tool** — new item, added during session 34's
    kickoff discussion, not yet in `editor.md`. Distinct from the map
    editor's pin/lock (hand-authoring a specific static map with generator
