@@ -588,16 +588,44 @@ live against real code, same caveat every roadmap in this file carries.
 5. **Map editor** — most prior art, most fully specified tool in
    `editor.md`; likely wants the `checkpoint-plan` treatment given its
    scope (in-context/standalone flows, pin/lock, panel layout).
-6. **Content browser** — data model, filtering shape, and
+6. **Generator composition tool** — new item, added during session 34's
+   kickoff discussion, not yet in `editor.md`. Distinct from the map
+   editor's pin/lock (hand-authoring a specific static map with generator
+   help, already in item 5's scope): lets an author assemble multiple
+   generators against different regions of a zone, then **emits real JS
+   source** — a new `generatorFn` that calls the underlying region-scoped
+   primitives (`carveBsp`, `carveCellularAutomata`, `collapseWfc`,
+   `partitionBiomes`, `connectCorridor` — currently internal to
+   `packages/core`, not on `@glyphrogue/core`'s public `index.js`; exposing
+   them is a small prerequisite) in the recorded sequence, using its own
+   single `ctx.rng` at real generation time — a reusable procedural
+   composition, re-seeded fresh every generation, not a frozen captured
+   layout (which the map editor's template export already covers).
+   Session 19 originally parked "a worked example of composing multiple
+   algorithms into one zone" as a deferred item; this is that need,
+   scoped as an editor-driven codegen tool rather than a hand-written
+   example. Genuinely open questions with no design-doc grounding yet: how
+   multi-region/generator/param selection gets recorded as the author
+   works (new UI beyond pin/lock's single-region model), how inter-region
+   connection points get chosen (manual vs. auto via `connectCorridor`
+   between each primitive's returned room-centers/entry points), and the
+   emitted file's shape/location/naming convention. Mirrors the
+   Composition wizard's (item 8 below) philosophy of emitting reviewable
+   scaffold code the tool never owns silently, but is otherwise unrelated
+   to that item's actual scope (entity behavior attachment, not map
+   generation). Needs its own live-decisions design pass before
+   implementation, per `.claude/dev-session.md`'s convention for open
+   design questions — not a grounded judgment call to make while coding.
+7. **Content browser** — data model, filtering shape, and
    cross-navigation settled in `editor.md`; unlocks the composition
    wizard. Exact panel/detail-pane visual layout is the one piece still
    left to implementation time.
-7. **Composition wizard** — depends on the content browser existing.
-8. **Tileset/font-calibration editor** — two-tab layout, reference-change
+8. **Composition wizard** — depends on the content browser existing.
+9. **Tileset/font-calibration editor** — two-tab layout, reference-change
    confirmation, and the glyph-picker shape are all settled in
    `editor.md`; depends on the live-preview primitive.
-9. **Config UI** — depends on both shared primitives, the file-write API,
-   and the capture stack.
+10. **Config UI** — depends on both shared primitives, the file-write API,
+    and the capture stack.
 
 `packages/cli` remains later, separately-scoped work — this roadmap covers
 `packages/editor` only, same relationship the `packages/core`
