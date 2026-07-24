@@ -16,10 +16,11 @@ input → input-action pipeline) is underway (session 23). `packages/editor`
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
 foundation (session 29), plugin management (session 32), shared UI
 infrastructure (session 33), the map editor's standalone-authoring scope
-(session 34), and the generator composition tool (session 36) implemented;
-in-context editing/override export and the remaining individual tools
-(content browser, etc.) haven't started. `packages/cli`
-(`create-glyphrogue-game` scaffolding) hasn't started. 458 `node --test`
+(session 34), the generator composition tool (session 36), and the content
+browser (session 37) implemented; in-context editing/override export and
+the remaining individual tools (composition wizard, tileset/font-
+calibration editor, config UI) haven't started. `packages/cli`
+(`create-glyphrogue-game` scaffolding) hasn't started. 466 `node --test`
 cases pass across the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
@@ -69,8 +70,17 @@ composition, and codegen emitting a real `generatorFn(ctx)` matching every
 actual generator's signature, correcting the design doc's stale
 `(zone, rng, options)` prose), and `CompositionTool.svelte`. Two more small
 core exports (`createZone`, `nearestOpenCell`) were needed beyond session
-35's five. See `docs/session-logs/session-36-2026-07-24.md`. The next
-`/dev-session` is item 7 (content browser), plain next-in-sequence.
+35's five. See `docs/session-logs/session-36-2026-07-24.md`. Session 37
+implemented item 7 (content browser): `contentCatalog.js` (manifest
+derivation via `recordingApi` — a small `registerRule` gap fixed along
+the way, since the stub was silently dropping the `components` filter
+every rule registers with — plus the two static cross-reference indexes
+`editor.md` describes, component → rules and entity type → rules) and
+`ContentBrowser.svelte` (a registry view over that manifest and a live
+view over the running world's actual entities, with a "show live
+instances" cross-navigation jump between them). See
+`docs/session-logs/session-37-2026-07-24.md`. The next `/dev-session` is
+item 8 (composition wizard), now unblocked.
 
 ## See also
 
@@ -103,19 +113,21 @@ packages/
   editor/   dev-time companion tools — designed in full (docs/design/editor.md);
             harness foundation (session 29), plugin management (session 32),
             shared UI infrastructure (session 33), the map editor's
-            standalone-authoring scope (session 34), and the generator
-            composition tool (session 36) implemented: mount.js,
-            hotReload.js, devServerPlugin.js, pluginCatalog.js, narrowForm.js,
+            standalone-authoring scope (session 34), the generator
+            composition tool (session 36), and the content browser
+            (session 37) implemented: mount.js, hotReload.js,
+            devServerPlugin.js, pluginCatalog.js, narrowForm.js,
             generatorCatalog.js, zoneRender.js, pinRegion.js,
             mapEditorExport.js, compositionGenerators.js, compositionSteps.js,
-            App.svelte, PluginList.svelte, PluginServices.svelte,
-            LivePreview.svelte, NarrowForm.svelte, MapEditor.svelte,
-            CompositionTool.svelte under src/, tests under test/, dev/ fixture
-            (including dev/sandbox/bootstrap.js, a stand-in game bootstrap)
-            for manual testing. Map editor in-context editing/override
-            export and remaining individual tools (content browser, etc.)
-            not yet started. Never ships in production; Svelte 5 compiled
-            ahead of time, only dist/ published
+            contentCatalog.js, App.svelte, PluginList.svelte,
+            PluginServices.svelte, LivePreview.svelte, NarrowForm.svelte,
+            MapEditor.svelte, CompositionTool.svelte, ContentBrowser.svelte
+            under src/, tests under test/, dev/ fixture (including
+            dev/sandbox/bootstrap.js, a stand-in game bootstrap) for manual
+            testing. Map editor in-context editing/override export and
+            remaining individual tools (composition wizard, tileset/font-
+            calibration editor, config UI) not yet started. Never ships in
+            production; Svelte 5 compiled ahead of time, only dist/ published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference

@@ -182,9 +182,25 @@ wiring, verified live in the browser (all four generator types compose
 without error, auto-connect visibly bridges regions, and the full
 write/exists-check/overwrite-confirm flow round-trips to a real working
 generated file). See `docs/session-logs/session-36-2026-07-24.md`. Test
-count 438 → 458 (`packages/editor` 69 → 89). The next `/dev-session` is
-item 7 (content browser), plain next-in-sequence, no dependency choice to
-make this time.
+count 438 → 458 (`packages/editor` 69 → 89). Session 37 implemented item 7
+(content browser), plain next-in-sequence: kickoff research found
+`recordingApi.js`'s `registerRule` stub was silently dropping the
+`components` filter every rule registers with, so no manifest `rule` entry
+ever carried the data the browser's "component → rules" cross-reference
+needs — fixed as the one required core-level prerequisite (no other call
+site anywhere relied on the missing data, confirmed by grep). Built
+`contentCatalog.js` (`deriveManifest`, `componentIndex`,
+`entityTypeRuleIndex`, `filterManifest`) and `ContentBrowser.svelte` (a
+registry view over the manifest and a live view over the running world,
+plus the entity-type → "show live instances" cross-navigation jump).
+Browser verification caught a real bug before commit: the cross-nav jump
+initially pre-filtered the live view by only the entity type's *first*
+declared component instead of all of them — fixed by adding a dedicated
+AND-all `requiredComponents` filter, distinct from the live view's manual
+single-component dropdown. See
+`docs/session-logs/session-37-2026-07-24.md`. Test count 458 → 466
+(`packages/editor` 89 → 97). The next `/dev-session` is item 8
+(composition wizard), now unblocked.
 
 ## Deferred / future items
 
@@ -673,11 +689,21 @@ live against real code, same caveat every roadmap in this file carries.
    clearly-marked placeholder `tiles`/`biomes` fixture since no UI can
    author that data yet.
    `packages/editor` test count: 69 → 89.
-7. **Content browser** — data model, filtering shape, and
-   cross-navigation settled in `editor.md`; unlocks the composition
-   wizard. Exact panel/detail-pane visual layout is the one piece still
-   left to implementation time.
-8. **Composition wizard** — depends on the content browser existing.
+7. ~~**Content browser**~~ — done (session 37), see
+   `docs/session-logs/session-37-2026-07-24.md`. `contentCatalog.js`
+   (`deriveManifest` re-runs `loadPlugins` against a fresh `recordingApi`,
+   reusing `pluginCatalog.js`'s already-computed `enabledPlugins`;
+   `componentIndex`/`entityTypeRuleIndex`, the two static cross-reference
+   indexes `editor.md` describes; `filterManifest`, one function backing
+   kind/search/cross-reference list filtering) and `ContentBrowser.svelte`
+   (registry view over the manifest, live view over `api.query([])`/
+   `getComponentsForEntity`, and the entity-type → "show live instances"
+   cross-navigation jump). A real gap in `recordingApi.js`'s `registerRule`
+   stub (silently dropping the `components` filter every rule registers
+   with) was fixed as this session's one required core-level prerequisite.
+   `packages/editor` test count: 89 → 97.
+8. **Composition wizard** — depends on the content browser existing, now
+   unblocked.
 9. **Tileset/font-calibration editor** — two-tab layout, reference-change
    confirmation, and the glyph-picker shape are all settled in
    `editor.md`; depends on the live-preview primitive.
