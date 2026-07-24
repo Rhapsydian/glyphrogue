@@ -162,3 +162,13 @@ export { carveBsp } from './bsp.js';
 export { carveCellularAutomata, connectCorridor, createZone, nearestOpenCell } from './zoneComposition.js';
 export { collapseWfc } from './waveFunctionCollapse.js';
 export { partitionBiomes } from './layeredBiome.js';
+
+// Runtime support for the editor's behavior wizard (docs/design/editor.md's
+// "Composition wizard") - a generated composition plugin's register(api)
+// imports applyRuleOverride from here to apply its ruleOverrides array.
+export {
+  isEntityTypePinned,
+  entityTypesOfFilter,
+  widenEntityTypeFilter,
+  applyRuleOverride,
+} from './ruleOverrides.js';
