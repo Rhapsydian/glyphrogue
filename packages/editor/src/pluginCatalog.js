@@ -15,11 +15,20 @@ import * as core from '@glyphrogue/core';
 // registerGenerator call each); a Service plugin's one registerService
 // call is the same shape. Manifest's first entry is enough to classify -
 // revisit if a future plugin ever registers more than one kind at once.
+// components/actionType are threaded through too (not just kind) so a
+// consumer (the behavior wizard) can search a rule's declared filter
+// without re-deriving the manifest itself - previously discarded here,
+// same "kickoff research found a real gap" class of fix session 37 made
+// for recordingApi's own registerRule stub.
 function deriveManifestEntry(plugin) {
   const { manifest, api } = createRecordingApi();
   plugin.register(api);
   const [first] = manifest;
-  return { kind: first?.kind === 'service' ? 'service' : 'content' };
+  return {
+    kind: first?.kind === 'service' ? 'service' : 'content',
+    components: first?.components,
+    actionType: first?.actionType,
+  };
 }
 
 // The imported identifier a bootstrap file uses for a core-bundled plugin
@@ -61,7 +70,7 @@ export async function deriveCatalog(
     const exportName = exportNameFor(plugin);
     const alreadyImported = Boolean(exportName && bootstrap.coreImportNames.includes(exportName));
     const enabled = alreadyImported && bootstrap.loadPluginsArrayEntries.includes(exportName);
-    const { kind } = deriveManifestEntry(plugin);
+    const { kind, components, actionType } = deriveManifestEntry(plugin);
     const entry = {
       id: plugin.id,
       version: plugin.version,
@@ -76,6 +85,14 @@ export async function deriveCatalog(
       // (unlike author ones) have one true correct answer.
       importName: alreadyImported ? exportName : undefined,
       suggestedImportName: exportName,
+      // Threaded through for the behavior wizard: a rule's declared filter
+      // (to search attach/widen candidates across *all* discovered
+      // plugins, not just already-enabled ones) and the plugin's own
+      // declared dependencies (to check "does anything depend on this
+      // plugin" before allowing delete).
+      components,
+      actionType,
+      dependencies: plugin.dependencies,
     };
 
     if (enabled) enabledPlugins.push(plugin);
@@ -90,7 +107,7 @@ export async function deriveCatalog(
 
     const authorImport = bootstrap.authorImports.find((imp) => imp.sourcePath.includes(`plugins/${candidate.id}/`));
     const enabled = Boolean(authorImport && bootstrap.loadPluginsArrayEntries.includes(authorImport.localName));
-    const { kind } = deriveManifestEntry(plugin);
+    const { kind, components, actionType } = deriveManifestEntry(plugin);
     const entry = {
       id: plugin.id,
       version: plugin.version,
@@ -100,6 +117,9 @@ export async function deriveCatalog(
       url: candidate.url,
       importName: authorImport?.localName,
       suggestedImportName: authorImport?.localName ?? suggestedImportName(plugin.id),
+      components,
+      actionType,
+      dependencies: plugin.dependencies,
     };
 
     if (enabled) enabledPlugins.push(plugin);

@@ -205,3 +205,40 @@ test('api.registerService merges a Service plugin\'s implementation flat onto ap
 
   assert.equal(api.bar(), 42);
 });
+
+test('api.getRule reads back a registered rule\'s full definition', () => {
+  const api = createApi();
+  const ruleFn = () => {};
+  api.registerRule('wanders', 'TakeTurn', ruleFn, { components: { all: ['Wanders'] }, priority: 5 });
+
+  const rule = api.getRule('wanders');
+
+  assert.equal(rule.actionType, 'TakeTurn');
+  assert.equal(rule.ruleFn, ruleFn);
+  assert.equal(rule.priority, 5);
+  assert.deepEqual(rule.components, { all: ['Wanders'] });
+});
+
+test('api.getRule + options.override lets a later registration widen just the components filter', () => {
+  const api = createApi();
+  const acted = [];
+  const ruleFn = (action) => { acted.push(action.entity); };
+  api.registerRule('alarm', 'TakeTurn', ruleFn, {
+    components: { all: [{ component: 'EntityType', equals: { type: 'guard' } }] },
+  });
+
+  const existing = api.getRule('alarm');
+  api.registerRule('alarm', existing.actionType, existing.ruleFn, {
+    ...existing,
+    components: { all: [{ component: 'EntityType', in: { type: ['guard', 'sentry'] } }] },
+    override: 'alarm',
+  });
+
+  const sentry = api.createEntity();
+  api.addComponent(sentry, 'EntityType', { type: 'sentry' });
+  api.addActor(sentry, 100);
+
+  api.act();
+
+  assert.deepEqual(acted, [sentry]);
+});

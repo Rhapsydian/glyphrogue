@@ -22,8 +22,8 @@ export function createRecordingApi() {
   return {
     manifest,
     api: {
-      registerEntity: (id, def = {}) => {
-        record('entity', id, { components: Object.keys(def.components ?? {}) });
+      registerEntity: (id, def = {}, options = {}) => {
+        record('entity', id, { components: Object.keys(def.components ?? {}), override: options.override });
       },
       registerEntityType: (id, def = {}) => {
         record('entityType', id, {
@@ -32,9 +32,18 @@ export function createRecordingApi() {
         });
       },
       registerRule: (id, actionType, ruleFn, options = {}) => {
-        const { components, reads, writes } = options;
-        record('rule', id, { actionType, components, reads, writes });
+        const { components, reads, writes, override } = options;
+        record('rule', id, { actionType, components, reads, writes, override });
       },
+      // Harmless stand-ins for api.js's read-back accessors - a compose
+      // plugin's register(api) (packages/editor's behavior wizard) calls
+      // these before deciding what to (re-)register, and recordingApi never
+      // tracks real definition data to answer them correctly. Good enough
+      // for dry-run purposes (pluginCatalog.js's kind-derivation/load-error
+      // checking only needs register() to run to completion without
+      // throwing, not for its computed override values to be meaningful).
+      getEntityDefinition: () => ({ components: {} }),
+      getRule: () => ({ actionType: undefined, ruleFn: () => {}, priority: 0, components: undefined, reads: undefined, writes: undefined }),
       registerGenerator: (id) => {
         record('generator', id);
       },

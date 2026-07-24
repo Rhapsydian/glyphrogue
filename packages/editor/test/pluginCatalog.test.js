@@ -245,6 +245,38 @@ test('checkPluginLoadErrors surfaces a missing-dependency error from a dry run, 
   assert.match(checkPluginLoadErrors([plugin]), /"goblin-ai" depends on "some-other-plugin", which is not registered/);
 });
 
+test('deriveCatalog threads a core rule plugin\'s components/actionType/dependencies through, not just kind', async () => {
+  const { content } = await deriveCatalog(discoverResponse());
+  const wanders = content.find((entry) => entry.id === 'wanders');
+
+  assert.equal(wanders.actionType, 'TakeTurn');
+  assert.deepEqual(wanders.components, { all: ['Wanders'] });
+  assert.deepEqual(wanders.dependencies, { core: '^0.1.0' });
+});
+
+test('deriveCatalog threads an author candidate\'s components/actionType/dependencies through too, even when disabled', async () => {
+  const fakePlugin = {
+    id: 'goblin-alarm',
+    version: '1.0.0',
+    dependencies: { core: '^0.1.0' },
+    register: (api) =>
+      api.registerRule('goblin-alarm', 'TakeTurn', () => {}, {
+        components: { all: [{ component: 'EntityType', equals: { type: 'goblin' } }] },
+      }),
+  };
+  const candidates = [{ id: 'goblin-alarm', url: '/dev/sandbox/src/plugins/goblin-alarm/index.js' }];
+
+  const { content } = await deriveCatalog(discoverResponse({ candidates }), {
+    importModule: async () => ({ default: fakePlugin }),
+  });
+
+  const entry = content.find((e) => e.id === 'goblin-alarm');
+  assert.equal(entry.enabled, false);
+  assert.equal(entry.actionType, 'TakeTurn');
+  assert.deepEqual(entry.components, { all: [{ component: 'EntityType', equals: { type: 'goblin' } }] });
+  assert.deepEqual(entry.dependencies, { core: '^0.1.0' });
+});
+
 test('checkPluginLoadErrors surfaces a core-version-mismatch error', () => {
   const plugin = {
     id: 'goblin-ai',

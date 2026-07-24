@@ -29,7 +29,7 @@ test('a plugin\'s register(api) run against the recording api produces a manifes
   register(api);
 
   assert.deepEqual(manifest, [
-    { kind: 'entity', id: 'torch', components: ['Flammable'] },
+    { kind: 'entity', id: 'torch', components: ['Flammable'], override: undefined },
     { kind: 'entityType', id: 'goblin', components: ['Health'], rules: ['Death'] },
     {
       kind: 'rule',
@@ -38,6 +38,7 @@ test('a plugin\'s register(api) run against the recording api produces a manifes
       components: { all: ['Wanders'], none: ['Dead'] },
       reads: ['Position'],
       writes: ['Position'],
+      override: undefined,
     },
     { kind: 'generator', id: 'cave' },
     { kind: 'screen', id: 'inventory' },
@@ -65,4 +66,25 @@ test('each createRecordingApi() call gets an independent manifest', () => {
 
   assert.equal(first.manifest.length, 1);
   assert.equal(second.manifest.length, 0);
+});
+
+test('registerEntity/registerRule capture options.override when passed', () => {
+  const { api, manifest } = createRecordingApi();
+
+  api.registerEntity('guard', { components: { Wanders: {} } }, { override: 'guard' });
+  api.registerRule('alarm', 'TakeTurn', () => {}, { override: 'alarm' });
+
+  assert.equal(manifest[0].override, 'guard');
+  assert.equal(manifest[1].override, 'alarm');
+});
+
+test('getEntityDefinition/getRule stubs return harmless defaults without throwing', () => {
+  const { api } = createRecordingApi();
+
+  assert.doesNotThrow(() => {
+    const def = api.getEntityDefinition('guard');
+    const rule = api.getRule('alarm');
+    api.registerEntity('guard', { components: { ...def.components, Wanders: {} } }, { override: 'guard' });
+    api.registerRule('alarm', rule.actionType, rule.ruleFn, { ...rule, override: 'alarm' });
+  });
 });

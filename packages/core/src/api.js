@@ -66,6 +66,13 @@ export function createApi({
     getComponentsForEntity: (entity) => getComponentsForEntity(world, entity),
 
     registerRule: (id, actionType, ruleFn, options) => registerRule(registry, id, actionType, ruleFn, options),
+    // Read-back counterpart to registerRule, same shape as
+    // getEntityDefinition/getScreen/getScriptedEvent below - lets a plugin
+    // loaded later (e.g. the editor's behavior-composition wizard) read an
+    // already-registered rule's actionType/ruleFn/priority/reads/writes back
+    // before re-registering it with options.override to change just one
+    // field, without needing to know or reconstruct the original handler.
+    getRule: (id) => get(registry, id),
     // Threads renderEvents/scheduler through the same as act()/
     // resolvePlayerAction - previously omitted here, which meant a rule
     // dispatched directly via api.dispatch (e.g. a scripted event's
