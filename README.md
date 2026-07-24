@@ -49,9 +49,19 @@ session's throwaway demo panels in `App.svelte`. In-context editing and
 override export stay deferred (no "current zone" concept exists in
 `packages/core` yet); a real generator-composition codegen tool was scoped
 as a new, separate roadmap item rather than built ad hoc. See
-`BACKLOG.md`'s "packages/editor design roadmap" item 5. The next
-`/dev-session` is item 6 (generator composition tool) or item 7 (content
-browser) — to be confirmed at kickoff.
+`BACKLOG.md`'s "packages/editor design roadmap" item 5. Session 35 was a
+doc-only design pass resolving that item (6, generator composition tool):
+an ordered step-list authoring model, auto-connect-in-sequence via each
+generator primitive's existing `entryPoint`, and an emitted
+`src/generators/composed/<name>.js` module (overwrite allowed but gated on
+an explicit confirmation, never silent) — see `docs/design/editor.md`'s
+"Generator composition tool" section. It also exported the five
+region-scoped composition primitives (`carveBsp`, `carveCellularAutomata`,
+`collapseWfc`, `partitionBiomes`, `connectCorridor`) from
+`@glyphrogue/core`'s public `index.js`, previously internal-only — the
+tool's one code prerequisite. Item 6 is now design-complete and ready for
+implementation. The next `/dev-session` is either item 6's implementation
+or item 7 (content browser) — to be confirmed at kickoff.
 
 ## See also
 
