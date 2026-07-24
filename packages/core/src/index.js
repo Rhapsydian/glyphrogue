@@ -151,3 +151,11 @@ export { playSound, playMusic } from './audio.js';
 export { createAudioLoader, loadBuffer, getBuffer } from './audioLoader.js';
 
 export { saveMixSettings, loadMixSettings } from './audioSettings.js';
+
+// Region-scoped composition primitives, for authoring tools (e.g. the
+// generator composition tool - docs/design/editor.md) that call several
+// of these directly against different regions of the same zone.
+export { carveBsp } from './bsp.js';
+export { carveCellularAutomata, connectCorridor } from './zoneComposition.js';
+export { collapseWfc } from './waveFunctionCollapse.js';
+export { partitionBiomes } from './layeredBiome.js';
