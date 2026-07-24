@@ -21,8 +21,11 @@ export default defineConfig(({ command }) => ({
     // verification (checkpoint 4/5) - a real downstream game registers
     // this same plugin from '@glyphrogue/editor/devServerPlugin' in its
     // own vite.config.js, pointed at its actual project root instead of
-    // this scratch sandbox.
-    createFileWriteApi({ projectRoot: resolve(packageDir, 'dev/sandbox') }),
+    // this scratch sandbox. `bootstrapPath` points plugin management's
+    // discovery at dev/sandbox/bootstrap.js, a stand-in for a real game's
+    // own hand-authored bootstrap file (dev/main.js can't double as this -
+    // it mounts the editor itself).
+    createFileWriteApi({ projectRoot: resolve(packageDir, 'dev/sandbox'), bootstrapPath: 'bootstrap.js' }),
   ],
   build: command === 'build' ? {
     lib: {
