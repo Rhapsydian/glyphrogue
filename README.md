@@ -14,11 +14,11 @@ implementation is complete (sessions 14–25). `packages/input` (physical
 input → input-action pipeline) is underway (session 23). `packages/editor`
 (dev-time companion tooling, never ships in production) is fully designed
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
-foundation (session 29) and plugin management (session 32) implemented; the
-remaining individual tools (map editor, content browser, etc.) haven't
-started. `packages/cli` (`create-glyphrogue-game` scaffolding) hasn't
-started. 415 `node --test` cases pass across the three implemented
-packages.
+foundation (session 29), plugin management (session 32), and shared UI
+infrastructure (session 33) implemented; the remaining individual tools
+(map editor, content browser, etc.) haven't started. `packages/cli`
+(`create-glyphrogue-game` scaffolding) hasn't started. 419 `node --test`
+cases pass across the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
@@ -33,9 +33,15 @@ import/export, and dependency/version error surfacing — all discovery runs
 through `pluginCatalog.js`'s `deriveCatalog` (dynamic import + `recordingApi`
 is the only way to observe a candidate's Content-vs-Service kind) and every
 enable/disable/switch surfaces a copy-ready bootstrap-edit instruction rather
-than writing the author's hand-authored bootstrap file directly. See
-`BACKLOG.md`'s "packages/editor design roadmap" item 3. The next
-`/dev-session` is item 4, shared UI infrastructure.
+than writing the author's hand-authored bootstrap file directly. Session 33
+then built the two shared primitives every remaining tool depends on:
+`LivePreview.svelte`, a thin wrapper around core's existing `paintLayer`
+(needed no new core code at all), and `NarrowForm.svelte` + `narrowForm.js`,
+scoped to exactly the flat `paramsDefaults`/audio-mixing shape per
+`editor.md`'s own narrow-scoping decision. Both are exercised by dev-fixture
+demo panels in `App.svelte` since no real consumer tool exists yet. See
+`BACKLOG.md`'s "packages/editor design roadmap" item 4. The next
+`/dev-session` is item 5, the map editor.
 
 ## See also
 
@@ -66,14 +72,16 @@ packages/
             keyboardSource.js, gamepadSource.js, keybindingStorage.js — kept
             outside core and dependency-free — under src/, tests under test/
   editor/   dev-time companion tools — designed in full (docs/design/editor.md);
-            harness foundation (session 29) and plugin management (session 32)
-            implemented: mount.js, hotReload.js, devServerPlugin.js,
-            pluginCatalog.js, App.svelte, PluginList.svelte,
-            PluginServices.svelte under src/, tests under test/, dev/ fixture
-            (including dev/sandbox/bootstrap.js, a stand-in game bootstrap)
-            for manual testing. Remaining individual tools not yet started.
-            Never ships in production; Svelte 5 compiled ahead of time, only
-            dist/ published
+            harness foundation (session 29), plugin management (session 32),
+            and shared UI infrastructure (session 33) implemented: mount.js,
+            hotReload.js, devServerPlugin.js, pluginCatalog.js, narrowForm.js,
+            App.svelte, PluginList.svelte, PluginServices.svelte,
+            LivePreview.svelte, NarrowForm.svelte under src/, tests under
+            test/, dev/ fixture (including dev/sandbox/bootstrap.js, a
+            stand-in game bootstrap) for manual testing. Remaining individual
+            tools (map editor, content browser, etc.) not yet started. Never
+            ships in production; Svelte 5 compiled ahead of time, only dist/
+            published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference

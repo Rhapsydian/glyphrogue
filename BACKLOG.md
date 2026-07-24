@@ -134,9 +134,12 @@ dev/main.js`. Test count 360 → 382. Session 32 then completed `packages/
 editor` design roadmap item 3 (plugin management), see that roadmap
 section below for the full breakdown — `docs/session-logs/
 session-32-2026-07-23.md`. Test count 382 → 415 (`packages/core` 339 →
-341, `packages/editor` 15 → 46). The next `/dev-session` is now
-`packages/editor` design roadmap item 4, shared UI infrastructure — see
-that roadmap section below.
+341, `packages/editor` 15 → 46). Session 33 completed `packages/editor`
+design roadmap item 4 (shared UI infrastructure) — see that roadmap
+section below for the full breakdown, and `docs/session-logs/
+session-33-2026-07-24.md`. Test count 415 → 419 (`packages/editor` 46 →
+50). The next `/dev-session` is now `packages/editor` design roadmap item
+5, the map editor.
 
 ## Deferred / future items
 
@@ -570,10 +573,18 @@ live against real code, same caveat every roadmap in this file carries.
    against a new `dev/sandbox/bootstrap.js` + `dev/sandbox/src/plugins/
    sample-plugin/` fixture (`dev/main.js` couldn't double as the scanned
    bootstrap — it mounts the editor itself).
-4. **Shared UI infrastructure** — the live-preview rendering primitive and
-   the narrow form primitive (map editor params + audio mixing). Map
-   editor, tileset/calibration editor, and config UI below each depend on
-   at least one of these.
+4. ~~**Shared UI infrastructure**~~ — done (session 33), see
+   `docs/session-logs/session-33-2026-07-24.md`. `LivePreview.svelte`, a
+   thin wrapper around core's existing `paintLayer` (needed no new core
+   code — the command shape was already generic enough for a swatch,
+   assembled tile, and small terrain grid alike), and `narrowForm.js` +
+   `NarrowForm.svelte`, scoped to exactly the flat `paramsDefaults`/
+   audio-mixing shape (`typeof`-inferred number/boolean/string controls,
+   no min/max/enum metadata layer — a live design fork resolved with the
+   user). Both verified via dev-fixture demo panels in `App.svelte` (no
+   real consumer tool exists yet); BSP-params demo derives its defaults
+   live from the registry rather than hand-copying them.
+   `packages/editor` test count: 46 → 50. 419 total.
 5. **Map editor** — most prior art, most fully specified tool in
    `editor.md`; likely wants the `checkpoint-plan` treatment given its
    scope (in-context/standalone flows, pin/lock, panel layout).
