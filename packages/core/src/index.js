@@ -155,7 +155,10 @@ export { saveMixSettings, loadMixSettings } from './audioSettings.js';
 // Region-scoped composition primitives, for authoring tools (e.g. the
 // generator composition tool - docs/design/editor.md) that call several
 // of these directly against different regions of the same zone.
+// createZone/nearestOpenCell round out the surface those tools need to
+// build a zone from scratch and derive an entry point for the one
+// primitive (carveCellularAutomata) that doesn't return one itself.
 export { carveBsp } from './bsp.js';
-export { carveCellularAutomata, connectCorridor } from './zoneComposition.js';
+export { carveCellularAutomata, connectCorridor, createZone, nearestOpenCell } from './zoneComposition.js';
 export { collapseWfc } from './waveFunctionCollapse.js';
 export { partitionBiomes } from './layeredBiome.js';
