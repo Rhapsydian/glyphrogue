@@ -142,6 +142,8 @@ export {
 
 export { memoryPlugin, audioLoaderPlugin } from './servicePlugins.js';
 
+export { CORE_PLUGINS } from './corePlugins.js';
+
 export { createRecordingApi } from './recordingApi.js';
 
 export { playSound, playMusic } from './audio.js';
