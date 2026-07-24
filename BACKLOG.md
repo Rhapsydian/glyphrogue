@@ -130,9 +130,13 @@ recording support, the four generators and four behaviors wrapped as
 Content plugins (the latter migrating from hand-rolled guards to
 `registerRule`'s `components` filter), `memory`/`audioLoader` wrapped as
 Service plugins, and a real `loadPlugins` bootstrap in `packages/editor/
-dev/main.js`. Test count 360 → 382. The next `/dev-session` is now
-`packages/editor` design roadmap item 3, plugin management — no longer
-blocked, see that roadmap section below.
+dev/main.js`. Test count 360 → 382. Session 32 then completed `packages/
+editor` design roadmap item 3 (plugin management), see that roadmap
+section below for the full breakdown — `docs/session-logs/
+session-32-2026-07-23.md`. Test count 382 → 415 (`packages/core` 339 →
+341, `packages/editor` 15 → 46). The next `/dev-session` is now
+`packages/editor` design roadmap item 4, shared UI infrastructure — see
+that roadmap section below.
 
 ## Deferred / future items
 
@@ -546,20 +550,26 @@ live against real code, same caveat every roadmap in this file carries.
    `packages/core/src/storage.js`), and the touched-files log itself
    (derived from live `git status --untracked-files=all` decorated with
    per-write provenance). Everything below mounts inside this.
-3. **Plugin management** — the enable/disable list (derived discovery
-   against `loadPlugins`'s array, now spanning two sources: core-bundled
-   Content plugins from `@glyphrogue/core` and author-authored ones in
-   `src/plugins/`), the folder-per-plugin convention (`src/plugins/
-   <pluginId>/`) and import/export for author-authored plugins, and a
-   separate Services section (per-slot selector, not a toggle list) for
-   Service plugins — see `docs/design/editor.md`'s "Plugin management" and
-   `scripting-api.md`'s "Plugin kinds: Content vs. Service". Split out from
-   the "shared UI infrastructure" grouping below — it doesn't actually use
-   either shared primitive there. Its dependencies were the `plugins.js`
-   rename (item 1), the file-write API (item 2), and the "packages/core
-   plugin reconciliation roadmap" above — all three now done (session 31
-   finished the reconciliation roadmap), so this is the next
-   `/dev-session`, no longer blocked.
+3. ~~**Plugin management**~~ — done (session 32), see
+   `docs/session-logs/session-32-2026-07-23.md`. `packages/core/src/
+   corePlugins.js`'s `CORE_PLUGINS` aggregate export; `devServerPlugin.js`'s
+   `/plugins/discover` (`bootstrapPath` option, `src/plugins/` directory
+   scan, `parseBootstrapSource`'s lightweight import/loadPlugins-array text
+   scan) and `/plugins/import`+`/plugins/export` (plain recursive folder
+   copy, `isValidPluginId` path-traversal guard); `packages/editor/src/
+   pluginCatalog.js`'s browser-safe `deriveCatalog` (dynamic import +
+   `recordingApi` is the only way to observe a candidate's Content-vs-
+   Service kind, since no plugin object carries a static `kind` field),
+   `buildToggleInstruction`/`buildServiceSwitchInstruction` (toggling never
+   writes the bootstrap file directly, only surfaces a copy-ready
+   instruction, per `editor.md`), and `checkPluginLoadErrors` (a
+   `loadPlugins` dry run against `recordingApi`, surfacing dependency-cycle/
+   version-mismatch errors as UI feedback instead of a console throw).
+   `PluginList.svelte`/`PluginServices.svelte`, mounted in `App.svelte`.
+   `packages/editor` test count: 15 → 46. Verified end-to-end in-browser
+   against a new `dev/sandbox/bootstrap.js` + `dev/sandbox/src/plugins/
+   sample-plugin/` fixture (`dev/main.js` couldn't double as the scanned
+   bootstrap — it mounts the editor itself).
 4. **Shared UI infrastructure** — the live-preview rendering primitive and
    the narrow form primitive (map editor params + audio mixing). Map
    editor, tileset/calibration editor, and config UI below each depend on

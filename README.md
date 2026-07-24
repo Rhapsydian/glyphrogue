@@ -14,10 +14,11 @@ implementation is complete (sessions 14–25). `packages/input` (physical
 input → input-action pipeline) is underway (session 23). `packages/editor`
 (dev-time companion tooling, never ships in production) is fully designed
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
-foundation implemented (session 29); the individual tools (map editor,
-content browser, etc.) haven't started. `packages/cli`
-(`create-glyphrogue-game` scaffolding) hasn't started. 382 `node --test`
-cases pass across the three implemented packages.
+foundation (session 29) and plugin management (session 32) implemented; the
+remaining individual tools (map editor, content browser, etc.) haven't
+started. `packages/cli` (`create-glyphrogue-game` scaffolding) hasn't
+started. 415 `node --test` cases pass across the three implemented
+packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
@@ -25,10 +26,16 @@ session 31 implemented that reconciliation in full — the four built-in
 generators and four AI behaviors now ship as Content plugins
 (`generatorPlugins.js`, `behaviorPlugins.js`), `memory`/`audioLoader` ship
 as Service plugins (`servicePlugins.js`) via the new `api.registerService`,
-and the editor's `dev/` fixture bootstraps all ten via `loadPlugins`. See
-`BACKLOG.md`'s "packages/core plugin reconciliation roadmap." This
-unblocks `packages/editor` design roadmap item 3 (plugin management), the
-next `/dev-session`.
+and the editor's `dev/` fixture bootstraps all ten via `loadPlugins`. Session
+32 then built plugin management on top of that: a combined core-bundled +
+author-authored Content list, a per-slot Services selector, folder-per-plugin
+import/export, and dependency/version error surfacing — all discovery runs
+through `pluginCatalog.js`'s `deriveCatalog` (dynamic import + `recordingApi`
+is the only way to observe a candidate's Content-vs-Service kind) and every
+enable/disable/switch surfaces a copy-ready bootstrap-edit instruction rather
+than writing the author's hand-authored bootstrap file directly. See
+`BACKLOG.md`'s "packages/editor design roadmap" item 3. The next
+`/dev-session` is item 4, shared UI infrastructure.
 
 ## See also
 
@@ -53,16 +60,20 @@ packages/
             pixelyphImport.js, screen.js, sound.js, audio.js, audioLoader.js,
             audioSettings.js, definitions.js, scriptedEvents.js, plugins.js,
             recordingApi.js, generatorPlugins.js, behaviorPlugins.js,
-            servicePlugins.js — under src/, tests under test/
+            servicePlugins.js, corePlugins.js — under src/, tests under test/
   input/    physical input → input-action pipeline — underway (session 23).
             keymap.js, captureStack.js, inputPipeline.js, stateNotifier.js,
             keyboardSource.js, gamepadSource.js, keybindingStorage.js — kept
             outside core and dependency-free — under src/, tests under test/
   editor/   dev-time companion tools — designed in full (docs/design/editor.md);
-            harness foundation implemented (session 29): mount.js, hotReload.js,
-            devServerPlugin.js under src/, tests under test/, dev/ fixture for
-            manual testing. Individual tools not yet started. Never ships in
-            production; Svelte 5 compiled ahead of time, only dist/ published
+            harness foundation (session 29) and plugin management (session 32)
+            implemented: mount.js, hotReload.js, devServerPlugin.js,
+            pluginCatalog.js, App.svelte, PluginList.svelte,
+            PluginServices.svelte under src/, tests under test/, dev/ fixture
+            (including dev/sandbox/bootstrap.js, a stand-in game bootstrap)
+            for manual testing. Remaining individual tools not yet started.
+            Never ships in production; Svelte 5 compiled ahead of time, only
+            dist/ published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference
