@@ -146,11 +146,27 @@ mid-session discussion of generator composition split into a kept-in-scope
 free affordance (pin/lock + generator-switch) and a deferred new roadmap
 item (6, generator composition tool — see that section below). See
 `docs/session-logs/session-34-2026-07-24.md`. Test count 419 → 438
-(`packages/editor` 50 → 69). The next `/dev-session` is either `packages/
-editor` design roadmap item 6 (generator composition tool, freshest
-context, needs its own design pass first) or item 7 (content browser,
-plain next-in-sequence, no dependency on item 6) — worth confirming with
-the user at kickoff rather than assuming either.
+(`packages/editor` 50 → 69). Session 35 was a doc-only design pass
+resolving item 6's three open questions live in conversation (per
+`.claude/dev-session.md`'s convention), landing in `docs/design/editor.md`:
+an ordered step-list authoring model (`{ region, generatorId, params }`,
+reusing pin/lock + generator catalog + narrow-form rather than new UI),
+auto-connect-in-sequence via each primitive's `entryPoint`/`connectCorridor`
+(3 of 4 primitives already return one; `carveCellularAutomata` derives its
+via the existing `nearestOpenCell` fallback, same as its generator wrapper
+already does), and an emitted `src/generators/composed/<name>.js` module
+(single default-exported `generatorFn`, overwrite allowed but gated on an
+explicit confirmation via the existing `/exists` endpoint, never silent) —
+plus a small new "Core extension: expose region-scoped composition
+primitives" section (`carveBsp`/`carveCellularAutomata`/`collapseWfc`/
+`partitionBiomes`/`connectCorridor` need re-exporting from `index.js`,
+currently internal-only). See
+`docs/session-logs/session-35-2026-07-24.md`. No code touched, test count
+unchanged at 438. Item 6 is now design-complete and ready for
+implementation. The next `/dev-session` is either item 6's implementation
+(core export prerequisite + the composition tool itself) or item 7
+(content browser, plain next-in-sequence, no dependency on item 6) — worth
+confirming with the user at kickoff rather than assuming either.
 
 ## Deferred / future items
 
@@ -607,34 +623,32 @@ live against real code, same caveat every roadmap in this file carries.
    `currentZoneId` accessor against yet; needs a later session once there's
    a clearer real-game harness to design that against.
    `packages/editor` test count: 50 → 69.
-6. **Generator composition tool** — new item, added during session 34's
-   kickoff discussion, not yet in `editor.md`. Distinct from the map
+6. **Generator composition tool** — design-complete (session 35), see
+   `docs/design/editor.md`'s "Generator composition tool" section and
+   `docs/session-logs/session-35-2026-07-24.md`. Distinct from the map
    editor's pin/lock (hand-authoring a specific static map with generator
    help, already in item 5's scope): lets an author assemble multiple
-   generators against different regions of a zone, then **emits real JS
-   source** — a new `generatorFn` that calls the underlying region-scoped
-   primitives (`carveBsp`, `carveCellularAutomata`, `collapseWfc`,
-   `partitionBiomes`, `connectCorridor` — currently internal to
-   `packages/core`, not on `@glyphrogue/core`'s public `index.js`; exposing
-   them is a small prerequisite) in the recorded sequence, using its own
-   single `ctx.rng` at real generation time — a reusable procedural
-   composition, re-seeded fresh every generation, not a frozen captured
-   layout (which the map editor's template export already covers).
-   Session 19 originally parked "a worked example of composing multiple
-   algorithms into one zone" as a deferred item; this is that need,
-   scoped as an editor-driven codegen tool rather than a hand-written
-   example. Genuinely open questions with no design-doc grounding yet: how
-   multi-region/generator/param selection gets recorded as the author
-   works (new UI beyond pin/lock's single-region model), how inter-region
-   connection points get chosen (manual vs. auto via `connectCorridor`
-   between each primitive's returned room-centers/entry points), and the
-   emitted file's shape/location/naming convention. Mirrors the
-   Composition wizard's (item 8 below) philosophy of emitting reviewable
-   scaffold code the tool never owns silently, but is otherwise unrelated
-   to that item's actual scope (entity behavior attachment, not map
-   generation). Needs its own live-decisions design pass before
-   implementation, per `.claude/dev-session.md`'s convention for open
-   design questions — not a grounded judgment call to make while coding.
+   generators against different regions of a zone via an ordered step list
+   (`{ region, generatorId, params }`, reusing pin/lock + generator catalog
+   + narrow-form), auto-connecting regions in step order via each
+   primitive's `entryPoint` + `connectCorridor`, then **emits real JS
+   source** — a single default-exported `generatorFn` at
+   `src/generators/composed/<name>.js` — a reusable procedural composition,
+   re-seeded fresh every generation, not a frozen captured layout (which
+   the map editor's template export already covers), and an alternative to
+   hand-writing the same composition directly, not a replacement for it.
+   Overwriting an existing composed file is allowed but requires an
+   explicit confirmation (via the shared file-write API's existing
+   `/exists` endpoint), never silent. Session 19 originally parked "a
+   worked example of composing multiple algorithms into one zone" as a
+   deferred item; this is that need, scoped as an editor-driven codegen
+   tool rather than a hand-written example. **Remaining prerequisite**:
+   `carveBsp`, `carveCellularAutomata`, `collapseWfc`, `partitionBiomes`,
+   `connectCorridor` still need to be exported from
+   `packages/core/src/index.js` (currently internal-only) — see
+   `docs/design/editor.md`'s new "Core extension: expose region-scoped
+   composition primitives" section — before implementation of the tool
+   itself can start.
 7. **Content browser** — data model, filtering shape, and
    cross-navigation settled in `editor.md`; unlocks the composition
    wizard. Exact panel/detail-pane visual layout is the one piece still

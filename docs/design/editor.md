@@ -221,6 +221,19 @@ size-relative default) — no `paramsDefaults` entry for `seedCount`,
 panel simply shows no default for that one field, same as any
 undeclared-default param today.
 
+## Core extension: expose region-scoped composition primitives
+
+`carveBsp`, `carveCellularAutomata`, `collapseWfc`, and `partitionBiomes`
+(each generator's underlying region-scoped worker, per session 19) plus
+`connectCorridor` are all defined and already designed for standalone
+composition (each takes a `region` bound so an author can call several
+against different parts of the same zone) — but none of the five are
+re-exported from `@glyphrogue/core`'s public `index.js` today, only
+reachable internally within `packages/core`. The generator composition
+tool below needs to call all five directly, so this is a small, deliberate
+export-surface addition: add all five to `index.js`, no behavior change,
+no new code — the primitives already do exactly what's needed.
+
 ## Core gap, flagged but not fixed by this doc: bulk entity introspection
 
 `ctx`/`api` only expose per-component-type access (`getComponent`/
@@ -480,6 +493,70 @@ need to also emit valid module syntax) and easier to hand-inspect in
 version control. Worth revisiting toward `.js` if a future need arises for
 authored logic alongside this data (e.g. a template wanting a
 computed/conditional shape).
+
+## Generator composition tool
+
+Distinct from both neighbors it's easy to confuse it with: the map
+editor's pin/lock (above) hand-authors one *specific, frozen* map, using
+generators only as a starting point for a snapshot that gets exported as
+static data; the Composition wizard (below) scaffolds entity behavior
+attachment, not map generation, despite the name collision. This tool
+instead lets an author assemble several generators against different
+regions of a zone and get back a **reusable, re-seeded-every-generation**
+`generatorFn` — real source, not a captured layout. It's an added
+convenience over hand-writing that composition directly (both are always
+valid; this tool exists because most compositions follow the same
+shape, not because hand-writing one stops being supported).
+
+**Decision: an ordered step list, not a new selection mechanism.** Each
+step is `{ region, generatorId, params }` — literally pin/lock's existing
+snapshot shape, accumulated into a list instead of held as one active
+selection. The author picks a region (pin/lock's existing marquee-drag),
+picks a generator and tunes its params (the existing generator catalog +
+narrow-form primitives), and adds it as a step; the live-preview canvas
+re-renders the composite after each addition. Steps support reorder/
+remove — order matters, since later steps can overwrite earlier ones
+where regions overlap, same mutation semantics the primitives already
+have when called in sequence against one shared zone.
+
+**Decision: regions auto-connect in step order, no manual point-picking.**
+Three of the four primitives already return a directly consumable point —
+`carveBsp` and `collapseWfc` and `partitionBiomes` all return an
+`entryPoint` (BSP also returns per-room `center`s); `carveCellularAutomata`
+returns nothing itself, but its existing generator wrapper already derives
+one via `nearestOpenCell` after calling it, so the tool does the same
+inline. After each step (from the second onward), `connectCorridor(zone,
+previousStep.entryPoint, currentStep.entryPoint)` runs automatically.
+Considered and rejected: manual point selection (a new click-to-pick
+picker UI for a case the data already resolves) and a manual pair/graph
+selector for non-linear topology (speculative — no real use case for
+connecting step 3 to step 1 instead of step 2 has come up yet; sequential
+order matches how the step list already works).
+
+**Decision: emits a plain `.js` module, not data.** Unlike the map
+editor's template/preset export (plain JSON, no logic), this tool's output
+*is* logic — a single default-exported `generatorFn(zone, rng, options)`,
+matching every other generator's existing signature, whose body is a
+literal, readable sequence of the recorded steps' calls followed by their
+`connectCorridor` calls in order. Written to
+`src/generators/composed/<name>.js` — a `composed/` subfolder specifically
+so hand-authored and tool-emitted generators aren't visually conflated.
+Name validated with `mapEditorExport.js`'s existing
+`isValidExportName`-style hygiene, written via the same shared file-write
+API/`writeFileAtomic` every other export already uses. The author decides
+separately whether/how to register the emitted function as a Content
+plugin — no new registration mechanism, same Plugin conventions as any
+other generator.
+
+**Decision: overwriting an existing composed generator is allowed, but
+loud, never silent.** Before writing, the tool checks the shared
+file-write API's existing `/exists` endpoint (session 29's write/exists
+middleware — no new API needed) and, if the target path already exists,
+surfaces an explicit confirmation before overwriting. This differs from
+the Composition wizard's "never rewrites a tool-owned file" rule below —
+here the emitted file is meant to be editable, reusable project content,
+not a one-time stub, so overwrite is a supported (if infrequent) action
+rather than forbidden, gated only on the author explicitly confirming it.
 
 ## Content browser
 
@@ -779,8 +856,11 @@ harness, then plugin management (its only real dependencies are the
 rename and the harness's file-write API, not the shared UI primitives —
 sequenced independently of them rather than grouped in), then shared UI
 infrastructure (live-preview + narrow form primitives), then the
-individual tools in dependency order (map editor, content browser,
-composition wizard, tileset/calibration editor, config UI).
+individual tools in dependency order (map editor, generator composition
+tool, content browser, composition wizard, tileset/calibration editor,
+config UI). The generator composition tool additionally needs the
+region-scoped composition primitives exported from `index.js` (its own
+small "Core extension" above) before implementation.
 
 Plugin management additionally now depends on `BACKLOG.md`'s "packages/core
 plugin reconciliation roadmap" being done first — the generators/behaviors/
