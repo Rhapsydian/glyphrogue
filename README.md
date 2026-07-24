@@ -15,11 +15,12 @@ input → input-action pipeline) is underway (session 23). `packages/editor`
 (dev-time companion tooling, never ships in production) is fully designed
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
 foundation (session 29), plugin management (session 32), shared UI
-infrastructure (session 33), and the map editor's standalone-authoring
-scope (session 34) implemented; in-context editing/override export and the
-remaining individual tools (content browser, etc.) haven't started.
-`packages/cli` (`create-glyphrogue-game` scaffolding) hasn't started. 438
-`node --test` cases pass across the three implemented packages.
+infrastructure (session 33), the map editor's standalone-authoring scope
+(session 34), and the generator composition tool (session 36) implemented;
+in-context editing/override export and the remaining individual tools
+(content browser, etc.) haven't started. `packages/cli`
+(`create-glyphrogue-game` scaffolding) hasn't started. 458 `node --test`
+cases pass across the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
@@ -59,9 +60,17 @@ an explicit confirmation, never silent) — see `docs/design/editor.md`'s
 region-scoped composition primitives (`carveBsp`, `carveCellularAutomata`,
 `collapseWfc`, `partitionBiomes`, `connectCorridor`) from
 `@glyphrogue/core`'s public `index.js`, previously internal-only — the
-tool's one code prerequisite. Item 6 is now design-complete and ready for
-implementation. The next `/dev-session` is either item 6's implementation
-or item 7 (content browser) — to be confirmed at kickoff.
+tool's one code prerequisite. Session 36 implemented item 6 in full:
+`compositionGenerators.js` (the four composable generators, including a
+clearly-marked placeholder `tiles`/`biomes` fixture for
+`collapseWfc`/`partitionBiomes`, which need author-declared data no UI can
+produce yet), `compositionSteps.js` (step-list ops, live-preview
+composition, and codegen emitting a real `generatorFn(ctx)` matching every
+actual generator's signature, correcting the design doc's stale
+`(zone, rng, options)` prose), and `CompositionTool.svelte`. Two more small
+core exports (`createZone`, `nearestOpenCell`) were needed beyond session
+35's five. See `docs/session-logs/session-36-2026-07-24.md`. The next
+`/dev-session` is item 7 (content browser), plain next-in-sequence.
 
 ## See also
 
@@ -93,13 +102,15 @@ packages/
             outside core and dependency-free — under src/, tests under test/
   editor/   dev-time companion tools — designed in full (docs/design/editor.md);
             harness foundation (session 29), plugin management (session 32),
-            shared UI infrastructure (session 33), and the map editor's
-            standalone-authoring scope (session 34) implemented: mount.js,
+            shared UI infrastructure (session 33), the map editor's
+            standalone-authoring scope (session 34), and the generator
+            composition tool (session 36) implemented: mount.js,
             hotReload.js, devServerPlugin.js, pluginCatalog.js, narrowForm.js,
             generatorCatalog.js, zoneRender.js, pinRegion.js,
-            mapEditorExport.js, App.svelte, PluginList.svelte,
-            PluginServices.svelte, LivePreview.svelte, NarrowForm.svelte,
-            MapEditor.svelte under src/, tests under test/, dev/ fixture
+            mapEditorExport.js, compositionGenerators.js, compositionSteps.js,
+            App.svelte, PluginList.svelte, PluginServices.svelte,
+            LivePreview.svelte, NarrowForm.svelte, MapEditor.svelte,
+            CompositionTool.svelte under src/, tests under test/, dev/ fixture
             (including dev/sandbox/bootstrap.js, a stand-in game bootstrap)
             for manual testing. Map editor in-context editing/override
             export and remaining individual tools (content browser, etc.)

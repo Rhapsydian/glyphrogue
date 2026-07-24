@@ -163,10 +163,28 @@ primitives" section (`carveBsp`/`carveCellularAutomata`/`collapseWfc`/
 currently internal-only). See
 `docs/session-logs/session-35-2026-07-24.md`. No code touched, test count
 unchanged at 438. Item 6 is now design-complete and ready for
-implementation. The next `/dev-session` is either item 6's implementation
-(core export prerequisite + the composition tool itself) or item 7
-(content browser, plain next-in-sequence, no dependency on item 6) — worth
-confirming with the user at kickoff rather than assuming either.
+implementation. Session 36 implemented it in full, chosen over item 7 at
+kickoff via explicit ask. Kickoff research surfaced three gaps the design
+doc's prose didn't cover: `collapseWfc`/`partitionBiomes` need
+author-declared `tiles`/`biomes` data no UI can produce yet (resolved per
+the user's call — ship all 4 generators with a clearly-marked placeholder
+fixture, not a deferral); two more core exports were needed beyond
+session 35's five (`nearestOpenCell`, `createZone`); and the doc's stated
+emitted signature (`generatorFn(zone, rng, options)`) doesn't match any
+real generator in this codebase — every one actually takes `generatorFn(ctx)`
+with `ctx.params`/`ctx.rng`, which is what `generateZone` actually calls, so
+implementation went against the real convention instead of the doc's stale
+prose. Three checkpoints, each verified + committed with an explicit pause
+between: core exports; `compositionGenerators.js`/`compositionSteps.js`
+(catalog, step-list ops, `composeZone` live-preview execution,
+`generateComposedSource` codegen); `CompositionTool.svelte` + `App.svelte`
+wiring, verified live in the browser (all four generator types compose
+without error, auto-connect visibly bridges regions, and the full
+write/exists-check/overwrite-confirm flow round-trips to a real working
+generated file). See `docs/session-logs/session-36-2026-07-24.md`. Test
+count 438 → 458 (`packages/editor` 69 → 89). The next `/dev-session` is
+item 7 (content browser), plain next-in-sequence, no dependency choice to
+make this time.
 
 ## Deferred / future items
 
@@ -623,9 +641,9 @@ live against real code, same caveat every roadmap in this file carries.
    `currentZoneId` accessor against yet; needs a later session once there's
    a clearer real-game harness to design that against.
    `packages/editor` test count: 50 → 69.
-6. **Generator composition tool** — design-complete (session 35), see
+6. ~~**Generator composition tool**~~ — done (session 36), see
    `docs/design/editor.md`'s "Generator composition tool" section and
-   `docs/session-logs/session-35-2026-07-24.md`. Distinct from the map
+   `docs/session-logs/session-36-2026-07-24.md`. Distinct from the map
    editor's pin/lock (hand-authoring a specific static map with generator
    help, already in item 5's scope): lets an author assemble multiple
    generators against different regions of a zone via an ordered step list
@@ -642,13 +660,19 @@ live against real code, same caveat every roadmap in this file carries.
    `/exists` endpoint), never silent. Session 19 originally parked "a
    worked example of composing multiple algorithms into one zone" as a
    deferred item; this is that need, scoped as an editor-driven codegen
-   tool rather than a hand-written example. **Remaining prerequisite**:
-   `carveBsp`, `carveCellularAutomata`, `collapseWfc`, `partitionBiomes`,
-   `connectCorridor` still need to be exported from
-   `packages/core/src/index.js` (currently internal-only) — see
-   `docs/design/editor.md`'s new "Core extension: expose region-scoped
-   composition primitives" section — before implementation of the tool
-   itself can start.
+   tool rather than a hand-written example.
+   `carveBsp`/`carveCellularAutomata`/`collapseWfc`/`partitionBiomes`/
+   `connectCorridor` (session 35) plus `createZone`/`nearestOpenCell`
+   (session 36 — two more the design doc didn't anticipate) are exported
+   from `packages/core/src/index.js`.
+   `compositionGenerators.js`/`compositionSteps.js`/`CompositionTool.svelte`
+   implement it: the emitted `generatorFn(ctx)` matches every real
+   generator's actual signature (the design doc's stated
+   `(zone, rng, options)` didn't match any real generator, a correction
+   made against working code); `collapseWfc`/`partitionBiomes` ship with a
+   clearly-marked placeholder `tiles`/`biomes` fixture since no UI can
+   author that data yet.
+   `packages/editor` test count: 69 → 89.
 7. **Content browser** — data model, filtering shape, and
    cross-navigation settled in `editor.md`; unlocks the composition
    wizard. Exact panel/detail-pane visual layout is the one piece still
