@@ -199,8 +199,35 @@ declared component instead of all of them — fixed by adding a dedicated
 AND-all `requiredComponents` filter, distinct from the live view's manual
 single-component dropdown. See
 `docs/session-logs/session-37-2026-07-24.md`. Test count 458 → 466
-(`packages/editor` 89 → 97). The next `/dev-session` is item 8
-(composition wizard), now unblocked.
+(`packages/editor` 89 → 97). Session 38 implemented item 8 (the behavior
+wizard — connecting entity types to rules, distinct from the generator
+composition tool despite the name-collision risk `editor.md` itself
+flags). A long plan-mode design conversation, not just kickoff research,
+found the doc's original design didn't hold up: "the wizard never writes
+a file" turned out to be wrong once `registry.js`'s real
+`options.override` mechanism was worked through — a generated composition
+plugin can read an already-registered entity type/rule back
+(`api.getEntityDefinition`/a new `api.getRule`) and re-register it with
+one field changed, entirely by id, never needing to locate the original
+definition's source file, which makes it safe to write as a real file
+after all. Landed as: `packages/core/src/ruleOverrides.js` (the runtime
+dispatcher, `applyRuleOverride`, plus `EntityType`-filter helpers — lives
+in `core`, not `editor`, since generated plugin files ship with the
+downstream game and import this at real runtime, a correction made
+mid-implementation against the plan's own file list), `packages/editor/
+src/behaviorWizard.js` (attach/widen matching over `pluginCatalog.js`'s
+now-fuller candidate list, composition-array codegen, delete-eligibility),
+and `BehaviorWizard.svelte` (a Compositions tab — full create/edit/delete,
+entries are plain data safe to regenerate — and a Custom scaffold tab —
+one-shot, author-owned the moment it's written, never revisited). Also:
+the project's first delete-capable dev-server endpoint
+(`devServerPlugin.js`), and three bugs found only during live browser
+verification (a `registeredId` gap in `pluginCatalog.js`, a stale browser
+module-cache bug in the new discovery function, and a save/delete
+catch-22 in the UI's own gating logic) — see
+`docs/session-logs/session-38-2026-07-24.md` for details. Test count
+466 → 502 (`packages/core` 341 → 353, `packages/editor` 97 → 121). The
+next `/dev-session` is item 9 (tileset/font-calibration editor).
 
 ## Deferred / future items
 
@@ -702,8 +729,19 @@ live against real code, same caveat every roadmap in this file carries.
    stub (silently dropping the `components` filter every rule registers
    with) was fixed as this session's one required core-level prerequisite.
    `packages/editor` test count: 89 → 97.
-8. **Composition wizard** — depends on the content browser existing, now
-   unblocked.
+8. ~~**Behavior wizard**~~ — done (session 38), see
+   `docs/session-logs/session-38-2026-07-24.md`. Connects entity types to
+   rules (not the generator composition tool, despite the doc's flagged
+   name collision) — `packages/core/src/ruleOverrides.js` (runtime
+   dispatcher + `EntityType`-filter helpers), `packages/editor/src/
+   behaviorWizard.js` (attach/widen matching, composition-array codegen,
+   delete-eligibility), `BehaviorWizard.svelte` (Compositions tab — full
+   CRUD, entries are plain data — and a one-shot Custom scaffold tab).
+   `docs/design/editor.md`'s "Composition wizard" section still describes
+   the original (superseded) design and needs a correction pass — not
+   done this session, same follow-up debt session 36 had for the
+   generator tool's doc.
+   `packages/editor` test count: 97 → 121. 502 total.
 9. **Tileset/font-calibration editor** — two-tab layout, reference-change
    confirmation, and the glyph-picker shape are all settled in
    `editor.md`; depends on the live-preview primitive.

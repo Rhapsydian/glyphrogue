@@ -16,11 +16,11 @@ input → input-action pipeline) is underway (session 23). `packages/editor`
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
 foundation (session 29), plugin management (session 32), shared UI
 infrastructure (session 33), the map editor's standalone-authoring scope
-(session 34), the generator composition tool (session 36), and the content
-browser (session 37) implemented; in-context editing/override export and
-the remaining individual tools (composition wizard, tileset/font-
-calibration editor, config UI) haven't started. `packages/cli`
-(`create-glyphrogue-game` scaffolding) hasn't started. 466 `node --test`
+(session 34), the generator composition tool (session 36), the content
+browser (session 37), and the behavior wizard (session 38) implemented;
+in-context editing/override export and the remaining individual tools
+(tileset/font-calibration editor, config UI) haven't started. `packages/cli`
+(`create-glyphrogue-game` scaffolding) hasn't started. 502 `node --test`
 cases pass across the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
@@ -79,8 +79,23 @@ every rule registers with — plus the two static cross-reference indexes
 `ContentBrowser.svelte` (a registry view over that manifest and a live
 view over the running world's actual entities, with a "show live
 instances" cross-navigation jump between them). See
-`docs/session-logs/session-37-2026-07-24.md`. The next `/dev-session` is
-item 8 (composition wizard), now unblocked.
+`docs/session-logs/session-37-2026-07-24.md`. Session 38 implemented item
+8 (the behavior wizard — connecting entity types to rules, not to be
+confused with the generator composition tool): a plan-mode design
+conversation found the doc's original "never writes a file" premise
+didn't hold up against `registry.js`'s real `options.override` mechanism,
+so the implementation instead has a generated composition plugin read an
+already-registered entity type/rule back (`api.getEntityDefinition`/the
+new `api.getRule`) and re-register it with one field changed — safe to
+write as a real file since it never needs to locate the original
+definition's source. `packages/core/src/ruleOverrides.js` holds the
+runtime dispatcher generated plugins import; `packages/editor/src/
+behaviorWizard.js` holds the dev-time attach/widen matching and codegen;
+`BehaviorWizard.svelte` adds Compositions (full create/edit/delete, entries
+are plain data) and Custom scaffold (one-shot, author-owned from the
+moment it's written) tabs. Also added: the project's first delete-capable
+dev-server endpoint. See `docs/session-logs/session-38-2026-07-24.md`. The
+next `/dev-session` is item 9 (tileset/font-calibration editor).
 
 ## See also
 
@@ -105,7 +120,8 @@ packages/
             pixelyphImport.js, screen.js, sound.js, audio.js, audioLoader.js,
             audioSettings.js, definitions.js, scriptedEvents.js, plugins.js,
             recordingApi.js, generatorPlugins.js, behaviorPlugins.js,
-            servicePlugins.js, corePlugins.js — under src/, tests under test/
+            servicePlugins.js, corePlugins.js, ruleOverrides.js — under
+            src/, tests under test/
   input/    physical input → input-action pipeline — underway (session 23).
             keymap.js, captureStack.js, inputPipeline.js, stateNotifier.js,
             keyboardSource.js, gamepadSource.js, keybindingStorage.js — kept
@@ -114,20 +130,20 @@ packages/
             harness foundation (session 29), plugin management (session 32),
             shared UI infrastructure (session 33), the map editor's
             standalone-authoring scope (session 34), the generator
-            composition tool (session 36), and the content browser
-            (session 37) implemented: mount.js, hotReload.js,
-            devServerPlugin.js, pluginCatalog.js, narrowForm.js,
+            composition tool (session 36), the content browser (session 37),
+            and the behavior wizard (session 38) implemented: mount.js,
+            hotReload.js, devServerPlugin.js, pluginCatalog.js, narrowForm.js,
             generatorCatalog.js, zoneRender.js, pinRegion.js,
             mapEditorExport.js, compositionGenerators.js, compositionSteps.js,
-            contentCatalog.js, App.svelte, PluginList.svelte,
+            contentCatalog.js, behaviorWizard.js, App.svelte, PluginList.svelte,
             PluginServices.svelte, LivePreview.svelte, NarrowForm.svelte,
-            MapEditor.svelte, CompositionTool.svelte, ContentBrowser.svelte
-            under src/, tests under test/, dev/ fixture (including
-            dev/sandbox/bootstrap.js, a stand-in game bootstrap) for manual
-            testing. Map editor in-context editing/override export and
-            remaining individual tools (composition wizard, tileset/font-
-            calibration editor, config UI) not yet started. Never ships in
-            production; Svelte 5 compiled ahead of time, only dist/ published
+            MapEditor.svelte, CompositionTool.svelte, ContentBrowser.svelte,
+            BehaviorWizard.svelte under src/, tests under test/, dev/ fixture
+            (including dev/sandbox/bootstrap.js, a stand-in game bootstrap)
+            for manual testing. Map editor in-context editing/override export
+            and remaining individual tools (tileset/font-calibration editor,
+            config UI) not yet started. Never ships in production; Svelte 5
+            compiled ahead of time, only dist/ published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference
