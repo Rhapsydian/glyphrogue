@@ -2,6 +2,7 @@
   import PluginList from './PluginList.svelte';
   import PluginServices from './PluginServices.svelte';
   import LivePreview from './LivePreview.svelte';
+  import NarrowForm from './NarrowForm.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
@@ -16,6 +17,7 @@
     createTileset,
     registerSymbol,
     resolveSymbol,
+    get as getRegistryEntry,
   } from '@glyphrogue/core';
 
   // Checkpoint-4 demo scaffolding (docs/design/editor.md: "Shared UI
@@ -49,6 +51,17 @@
       return { col, row, text: ' ', color: 'transparent', background: { token: 'floor' } };
     }),
   );
+
+  // Checkpoint-4 demo scaffolding, continued - NarrowForm's two real
+  // consumers: generator paramsDefaults (derived live from the registry,
+  // not hand-copied, per the "derive-don't-hand-maintain" posture) and
+  // audio mixing's flat { master, music, sfx } shape (audioSettings.js;
+  // no persisted settings source exists yet, so these are plain literal
+  // defaults, same as any game author would write directly).
+  const bspDefaults = getRegistryEntry(api.registry, 'bsp')?.paramsDefaults ?? {};
+  const audioDefaults = { master: 1, music: 0.7, sfx: 0.7 };
+  let bspValues = $state({ ...bspDefaults });
+  let audioValues = $state({ ...audioDefaults });
 
   // `api` isn't needed by the touched-files log itself (purely
   // server-derived git+provenance state) but stays accepted here since
@@ -187,6 +200,28 @@
       <LivePreview commands={miniZoneCommands} cols={6} rows={4} metrics={demoMetrics} fontFamily="monospace" palette={demoPalette} />
     </div>
   </div>
+
+  <div class="header">
+    <h2>Narrow form primitive demo</h2>
+  </div>
+  <div class="form-row">
+    <div class="form-item">
+      <h3>BSP generator params</h3>
+      <NarrowForm
+        defaults={bspDefaults}
+        values={bspValues}
+        onChange={(key, value) => (bspValues = { ...bspValues, [key]: value })}
+      />
+    </div>
+    <div class="form-item">
+      <h3>Audio mix</h3>
+      <NarrowForm
+        defaults={audioDefaults}
+        values={audioValues}
+        onChange={(key, value) => (audioValues = { ...audioValues, [key]: value })}
+      />
+    </div>
+  </div>
 </div>
 
 <style>
@@ -286,5 +321,16 @@
   .preview-label {
     color: #888;
     font-size: 0.85rem;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.5rem;
+  }
+
+  .form-item h3 {
+    margin: 0 0 0.35rem;
+    font-size: 0.9rem;
   }
 </style>
