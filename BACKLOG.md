@@ -226,8 +226,22 @@ verification (a `registeredId` gap in `pluginCatalog.js`, a stale browser
 module-cache bug in the new discovery function, and a save/delete
 catch-22 in the UI's own gating logic) — see
 `docs/session-logs/session-38-2026-07-24.md` for details. Test count
-466 → 502 (`packages/core` 341 → 353, `packages/editor` 97 → 121). The
-next `/dev-session` is item 9 (tileset/font-calibration editor).
+466 → 502 (`packages/core` 341 → 353, `packages/editor` 97 → 121). Session
+39 implemented item 9 (tileset/font-calibration editor): kickoff research
+found `packages/core/src/fontSources.js` had no way to reassign the
+calibration reference after the first source registers, despite
+`editor.md`'s spec assuming that's possible — confirmed with the user
+before planning, then added `setReferenceFontSource` plus a `referenceId`
+field. Three checkpoints — core prerequisite + `tilesetCatalog.js` +
+fixture wiring, the calibration-tuning tab, and the symbol/tileset
+authoring tab — each verified in the dev harness and committed with an
+explicit pause between. Browser verification caught a real reactivity bug
+(the reference badge wasn't gated on the same `refreshToken` pattern every
+other derived value here uses) — fixed before committing. See the
+"packages/editor design roadmap" item 9 entry above and
+`docs/session-logs/session-39-2026-07-24.md`. Test count 502 → 519
+(`packages/core` 353 → 357, `packages/editor` 121 → 134). The next
+`/dev-session` is item 10 (config UI), the last item in this roadmap.
 
 ## Deferred / future items
 
@@ -742,9 +756,28 @@ live against real code, same caveat every roadmap in this file carries.
    done this session, same follow-up debt session 36 had for the
    generator tool's doc.
    `packages/editor` test count: 97 → 121. 502 total.
-9. **Tileset/font-calibration editor** — two-tab layout, reference-change
-   confirmation, and the glyph-picker shape are all settled in
-   `editor.md`; depends on the live-preview primitive.
+9. ~~**Tileset/font-calibration editor**~~ — done (session 39), see
+   `docs/session-logs/session-39-2026-07-24.md`. Kickoff found
+   `packages/core/src/fontSources.js` had no way to reassign the
+   calibration reference after the first source registers, despite
+   `editor.md` assuming that's possible — added `setReferenceFontSource`
+   plus a `referenceId` field for the UI to badge correctly, and confirmed
+   with the user before planning. `registerFontSource` always internally
+   re-derives calibration (no parameter for a caller-supplied one), so
+   slider edits mutate the raw registry directly via `options.override`
+   instead of routing through it.
+   `packages/editor/src/tilesetCatalog.js` (enumeration/filtering:
+   `listFontSourceIds`, `getFontSourceEntry`, `isReferenceFontSource`,
+   `listSymbolIds`, `getSymbolEntry`, `filterSymbols`, `hasGlyphManifest`,
+   `UNICODE_BLOCK_PRESETS`/`presetCodepoints`, `buildCalibrationCommands`)
+   and `TilesetEditor.svelte` (calibration tuning tab + symbol/tileset
+   authoring tab) implement it — `NarrowForm.svelte` deliberately not
+   reused for the calibration sliders, per `editor.md`'s own "Narrow shared
+   form primitive" section (`horizontalCenteringMode`'s fixed enum can't
+   come from `typeof`-based inference). Browser verification caught a real
+   reactivity bug (the reference badge read the live registry directly in
+   the template with no `refreshToken` gate) — fixed before committing.
+   `packages/editor` test count: 121 → 134.
 10. **Config UI** — depends on both shared primitives, the file-write API,
     and the capture stack.
 

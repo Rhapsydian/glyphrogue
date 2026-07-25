@@ -43,9 +43,9 @@ Harness foundation (item 2, session 29), plugin management (item 3,
 session 32), shared UI infrastructure (item 4, session 33), the map
 editor's standalone-authoring scope (item 5, session 34), the generator
 composition tool (item 6, session 36), the content browser (item 7,
-session 37), and the behavior wizard (item 8, session 38) are all
-complete. Map editor in-context editing/override export (deferred out of
-item 5 — `packages/core` has no "current zone" concept to build it
-against yet) and the two remaining tools, tileset/font-calibration editor
-(item 9) and config UI (item 10), haven't started — see
+session 37), the behavior wizard (item 8, session 38), and the tileset/
+font-calibration editor (item 9, session 39) are all complete. Map editor
+in-context editing/override export (deferred out of item 5 —
+`packages/core` has no "current zone" concept to build it against yet) and
+the remaining tool, config UI (item 10), haven't started — see
 `../../BACKLOG.md`'s "packages/editor design roadmap".

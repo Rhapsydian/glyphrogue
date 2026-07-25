@@ -17,10 +17,10 @@ input → input-action pipeline) is underway (session 23). `packages/editor`
 foundation (session 29), plugin management (session 32), shared UI
 infrastructure (session 33), the map editor's standalone-authoring scope
 (session 34), the generator composition tool (session 36), the content
-browser (session 37), and the behavior wizard (session 38) implemented;
-in-context editing/override export and the remaining individual tools
-(tileset/font-calibration editor, config UI) haven't started. `packages/cli`
-(`create-glyphrogue-game` scaffolding) hasn't started. 502 `node --test`
+browser (session 37), the behavior wizard (session 38), and the tileset/
+font-calibration editor (session 39) implemented; in-context editing/
+override export and config UI (item 10) haven't started. `packages/cli`
+(`create-glyphrogue-game` scaffolding) hasn't started. 519 `node --test`
 cases pass across the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
@@ -94,8 +94,26 @@ behaviorWizard.js` holds the dev-time attach/widen matching and codegen;
 `BehaviorWizard.svelte` adds Compositions (full create/edit/delete, entries
 are plain data) and Custom scaffold (one-shot, author-owned from the
 moment it's written) tabs. Also added: the project's first delete-capable
-dev-server endpoint. See `docs/session-logs/session-38-2026-07-24.md`. The
-next `/dev-session` is item 9 (tileset/font-calibration editor).
+dev-server endpoint. See `docs/session-logs/session-38-2026-07-24.md`.
+Session 39 implemented item 9 (the tileset/font-calibration editor): two
+tabs, calibration tuning (per font-source `scale`/`baselineOffset`/
+`horizontalCenteringMode` sliders + a live calibration-grid preview, plus a
+confirmation-gated "set as reference" action) and symbol/tileset authoring
+(a searchable symbol table, a glyph picker branching on whether a font
+source has a real Pixelyph manifest to browse or falls back to raw hex
+input + Unicode block-range presets, and palette-token color pickers).
+Kickoff research found `fontSources.js` had no way to change the
+calibration reference after the first source registers, despite the design
+doc assuming that's possible — added `setReferenceFontSource` plus a
+`referenceId` field for the UI to badge correctly.
+`packages/editor/src/tilesetCatalog.js` holds the pure enumeration/
+filtering logic; `TilesetEditor.svelte` is the UI. Browser verification
+caught a real reactivity bug (the reference badge wasn't updating after a
+reference change, since it read the live registry directly in the template
+instead of through the same `refreshToken`-gated pattern every other
+derived value here uses) — fixed before committing. See
+`docs/session-logs/session-39-2026-07-24.md`. The next `/dev-session` is
+item 10 (config UI).
 
 ## See also
 
@@ -131,19 +149,21 @@ packages/
             shared UI infrastructure (session 33), the map editor's
             standalone-authoring scope (session 34), the generator
             composition tool (session 36), the content browser (session 37),
-            and the behavior wizard (session 38) implemented: mount.js,
-            hotReload.js, devServerPlugin.js, pluginCatalog.js, narrowForm.js,
+            the behavior wizard (session 38), and the tileset/font-calibration
+            editor (session 39) implemented: mount.js, hotReload.js,
+            devServerPlugin.js, pluginCatalog.js, narrowForm.js,
             generatorCatalog.js, zoneRender.js, pinRegion.js,
             mapEditorExport.js, compositionGenerators.js, compositionSteps.js,
-            contentCatalog.js, behaviorWizard.js, App.svelte, PluginList.svelte,
-            PluginServices.svelte, LivePreview.svelte, NarrowForm.svelte,
-            MapEditor.svelte, CompositionTool.svelte, ContentBrowser.svelte,
-            BehaviorWizard.svelte under src/, tests under test/, dev/ fixture
-            (including dev/sandbox/bootstrap.js, a stand-in game bootstrap)
-            for manual testing. Map editor in-context editing/override export
-            and remaining individual tools (tileset/font-calibration editor,
-            config UI) not yet started. Never ships in production; Svelte 5
-            compiled ahead of time, only dist/ published
+            contentCatalog.js, behaviorWizard.js, tilesetCatalog.js, App.svelte,
+            PluginList.svelte, PluginServices.svelte, LivePreview.svelte,
+            NarrowForm.svelte, MapEditor.svelte, CompositionTool.svelte,
+            ContentBrowser.svelte, BehaviorWizard.svelte, TilesetEditor.svelte
+            under src/, tests under test/, dev/ fixture (including
+            dev/sandbox/bootstrap.js, a stand-in game bootstrap) for manual
+            testing. Map editor in-context editing/override export and the
+            remaining individual tool (config UI) not yet started. Never
+            ships in production; Svelte 5 compiled ahead of time, only dist/
+            published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference
