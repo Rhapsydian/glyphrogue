@@ -5,6 +5,7 @@ import {
   createFontSourceRegistry,
   registerFontSource,
   getFontSource,
+  setReferenceFontSource,
   deriveCalibration,
   calibratedGlyphAdvance,
   calibratedBaselineOffset,
@@ -29,6 +30,49 @@ test('a second font source calibrates its scale relative to the first (reference
   // Half the vertical span ratio of the reference -> needs 2x scale to match visually.
   registerFontSource(fontSources, 'pixelyph', { unitsPerEm: 1000, ascender: 400, descender: -100 });
   assert.equal(getFontSource(fontSources, 'pixelyph').calibration.scale, 2);
+});
+
+test('the first registerFontSource call records itself as referenceId', () => {
+  const fontSources = createFontSourceRegistry();
+  registerFontSource(fontSources, 'mono', { unitsPerEm: 1000, ascender: 800, descender: -200 });
+  registerFontSource(fontSources, 'pixelyph', { unitsPerEm: 1000, ascender: 400, descender: -100 });
+  assert.equal(fontSources.referenceId, 'mono');
+});
+
+test('setReferenceFontSource recalculates an existing non-reference source against the new standard', () => {
+  const fontSources = createFontSourceRegistry();
+  registerFontSource(fontSources, 'mono', { unitsPerEm: 1000, ascender: 800, descender: -200 });
+  registerFontSource(fontSources, 'pixelyph', { unitsPerEm: 1000, ascender: 400, descender: -100 });
+  assert.equal(getFontSource(fontSources, 'mono').calibration.scale, 1);
+
+  setReferenceFontSource(fontSources, 'pixelyph');
+
+  // mono's vertical span ratio (1.0) is now double pixelyph's (0.5) -> needs 0.5x scale.
+  assert.equal(getFontSource(fontSources, 'mono').calibration.scale, 0.5);
+});
+
+test('setReferenceFontSource resets the new reference to identity calibration and updates referenceId', () => {
+  const fontSources = createFontSourceRegistry();
+  registerFontSource(fontSources, 'mono', { unitsPerEm: 1000, ascender: 800, descender: -200 });
+  registerFontSource(fontSources, 'pixelyph', { unitsPerEm: 1000, ascender: 400, descender: -100 });
+
+  setReferenceFontSource(fontSources, 'pixelyph');
+
+  assert.equal(getFontSource(fontSources, 'pixelyph').calibration.scale, 1);
+  assert.equal(getFontSource(fontSources, 'pixelyph').calibration.baselineOffset, 0);
+  assert.equal(fontSources.referenceId, 'pixelyph');
+});
+
+test('after setReferenceFontSource, a newly-registered source calibrates against the new reference', () => {
+  const fontSources = createFontSourceRegistry();
+  registerFontSource(fontSources, 'mono', { unitsPerEm: 1000, ascender: 800, descender: -200 });
+  registerFontSource(fontSources, 'pixelyph', { unitsPerEm: 1000, ascender: 400, descender: -100 });
+  setReferenceFontSource(fontSources, 'pixelyph');
+
+  registerFontSource(fontSources, 'other', { unitsPerEm: 1000, ascender: 400, descender: -100 });
+
+  // Same metrics as the new reference (pixelyph) -> identity scale, not recalculated against mono.
+  assert.equal(getFontSource(fontSources, 'other').calibration.scale, 1);
 });
 
 test('an explicit { reference } pins the standard independent of registration order', () => {

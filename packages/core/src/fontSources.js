@@ -9,7 +9,7 @@
 // default calibration can be computed as pure arithmetic over metadata,
 // fully unit-testable with no live ctx/font dependency, same discipline
 // glyphMetrics.js holds.
-import { createRegistry, register, get } from './registry.js';
+import { createRegistry, register, get, getOrderedIds } from './registry.js';
 import { baselineOffset } from './glyphMetrics.js';
 
 function verticalSpanRatio({ unitsPerEm, ascender, descender }) {
@@ -43,6 +43,7 @@ export function createFontSourceRegistry({ reference } = {}) {
     referenceRatio: reference ? verticalSpanRatio(reference) : null,
     referenceAscenderRatio: reference ? ascenderRatio(reference) : null,
     referenceLocked: !!reference,
+    referenceId: null,
   };
 }
 
@@ -50,6 +51,7 @@ export function registerFontSource(fontSourceRegistry, id, sourceMetrics, option
   if (!fontSourceRegistry.referenceLocked && fontSourceRegistry.referenceRatio === null) {
     fontSourceRegistry.referenceRatio = verticalSpanRatio(sourceMetrics);
     fontSourceRegistry.referenceAscenderRatio = ascenderRatio(sourceMetrics);
+    fontSourceRegistry.referenceId = id;
   }
 
   const calibration = deriveCalibration(
@@ -62,6 +64,26 @@ export function registerFontSource(fontSourceRegistry, id, sourceMetrics, option
 
 export function getFontSource(fontSourceRegistry, id) {
   return get(fontSourceRegistry.registry, id);
+}
+
+// Reassigns the calibration reference after registration has already
+// started (editor.md's tileset/calibration editor: "changing the reference
+// is a real, semi-destructive action"). Recalculates every other registered
+// source's stored calibration against the new standard via the same
+// deriveCalibration used at registration time, and re-registers each one
+// with options.override so the recalculated values persist.
+export function setReferenceFontSource(fontSourceRegistry, id) {
+  const { sourceMetrics } = getFontSource(fontSourceRegistry, id);
+  fontSourceRegistry.referenceRatio = verticalSpanRatio(sourceMetrics);
+  fontSourceRegistry.referenceAscenderRatio = ascenderRatio(sourceMetrics);
+  fontSourceRegistry.referenceLocked = true;
+  fontSourceRegistry.referenceId = id;
+
+  for (const otherId of getOrderedIds(fontSourceRegistry.registry)) {
+    const { sourceMetrics: otherMetrics } = get(fontSourceRegistry.registry, otherId);
+    const calibration = deriveCalibration(otherMetrics, fontSourceRegistry.referenceRatio, fontSourceRegistry.referenceAscenderRatio);
+    register(fontSourceRegistry.registry, otherId, { sourceMetrics: otherMetrics, calibration }, { override: otherId });
+  }
 }
 
 // {advanceWidth, offsetX} in px, the calibrated analog of glyphMetrics.js's

@@ -93,6 +93,7 @@ export {
   createFontSourceRegistry,
   registerFontSource,
   getFontSource,
+  setReferenceFontSource,
   deriveCalibration,
   calibratedGlyphAdvance,
   calibratedBaselineOffset,

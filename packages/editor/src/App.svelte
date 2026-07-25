@@ -12,7 +12,14 @@
     checkPluginLoadErrors,
   } from './pluginCatalog.js';
   import { discoverCompositions } from './behaviorWizard.js';
-  import { createGlyphMetrics, createPalette, createFontSourceRegistry, registerFontSource } from '@glyphrogue/core';
+  import {
+    createGlyphMetrics,
+    createPalette,
+    createFontSourceRegistry,
+    registerFontSource,
+    createTileset,
+    registerSymbol,
+  } from '@glyphrogue/core';
 
   // Shared preview config (docs/design/editor.md: "Shared live-preview
   // rendering primitive") - real config for the map editor now, not
@@ -27,6 +34,35 @@
   });
   const previewFontSources = createFontSourceRegistry();
   registerFontSource(previewFontSources, 'base', { unitsPerEm: 1000, ascender: 800, descender: -200, glyphs: {} });
+  // A real Pixelyph-shaped manifest source, so the tileset editor's
+  // manifest-browse glyph picker (editor.md: "a Pixelyph-imported source has
+  // a real manifest to browse directly") has something genuine to exercise -
+  // 'base' above deliberately has no glyphs, exercising the other
+  // (raw-hex + Unicode-preset) picker path instead.
+  registerFontSource(previewFontSources, 'pixelyph-icons', {
+    unitsPerEm: 1000,
+    ascender: 800,
+    descender: -200,
+    glyphs: {
+      e000: { advanceWidth: 1000, offsetX: 0 },
+      e001: { advanceWidth: 1000, offsetX: 0 },
+      e002: { advanceWidth: 900, offsetX: 20 },
+    },
+  });
+
+  // A distinct registry from MapEditor.svelte/CompositionTool.svelte's own
+  // self-contained buildDefaultTileset() (zoneRender.js) - this one is the
+  // tileset editor's own single-consumer authoring surface, not a shared
+  // rendering fixture for map generation.
+  const previewTileset = createTileset();
+  registerSymbol(previewTileset, 'player', { fontFace: 'base', codepoint: '40', foreground: { token: 'player' } });
+  registerSymbol(previewTileset, 'wall', {
+    fontFace: 'base',
+    codepoint: '23',
+    foreground: { token: 'wall' },
+    background: { token: 'wall' },
+  });
+  registerSymbol(previewTileset, 'icon-demo', { fontFace: 'pixelyph-icons', codepoint: 'e000', foreground: { token: 'accent' } });
 
   // `api` isn't needed by the touched-files log itself (purely
   // server-derived git+provenance state) but stays accepted here since
