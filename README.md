@@ -21,9 +21,10 @@ browser (session 37), the behavior wizard (session 38), the tileset/
 font-calibration editor (session 39), and config UI (session 40)
 implemented — every item in the `packages/editor` design roadmap is now
 built; only map editor in-context editing/override export remains
-deferred. `packages/cli` (`create-glyphrogue-game` scaffolding) hasn't
-started. 562 `node --test` cases pass across the three implemented
-packages.
+deferred. `packages/cli` (`create-glyphrogue-game` scaffolding) is
+designed in full for its web-scaffold scope (`docs/design/cli.md`, session
+41); implementation hasn't started. 562 `node --test` cases pass across
+the three implemented packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
@@ -137,8 +138,21 @@ never overrode `playMusic`'s own `loop: true` default, so clicking
 by passing `loop: false` explicitly, matching `previewSfx`'s already-
 correct non-looping behavior. See
 `docs/session-logs/session-40-2026-07-24.md`. `packages/editor`'s design
-roadmap is now fully implemented; the next `/dev-session` moves to map
-editor in-context editing/override export or `packages/cli` scaffolding.
+roadmap is now fully implemented. Session 41 was a doc-only design pass
+for `packages/cli` (`create-glyphrogue-game` scaffolding, web-scaffold
+scope): see `docs/design/cli.md` — the scaffold's `package.json` targets
+real semver ranges against the eventual published
+`@glyphrogue/core`/`@glyphrogue/editor` (never a workspace reference),
+published early under `0.x` once a first release is cut, rather than
+waiting for "polished"; the CLI prompts for the game name only; each
+starter content-folder example hits a deliberately minimal "runs with
+zero required edits" bar; template substitution is plain fixed-token
+string replacement. Electron/Steam scaffold generation
+(`docs/design/packaging.md`'s material) was left out of scope, deferred to
+its own future session. See `docs/session-logs/session-41-2026-07-25.md`.
+The next `/dev-session` is `packages/cli` implementation of that doc
+(gated on a manual first `npm publish` at `0.1.0`), or map editor
+in-context editing/override export.
 
 ## See also
 
@@ -192,7 +206,9 @@ packages/
             testing. Map editor in-context editing/override export remains
             deferred. Never ships in production; Svelte 5 compiled ahead of
             time, only dist/ published
-  cli/      create-glyphrogue-game scaffolding tool — not started
+  cli/      create-glyphrogue-game scaffolding tool — designed in full
+            (docs/design/cli.md, web-scaffold scope, session 41);
+            implementation not yet started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference
 docs/session-logs/ one log per session
