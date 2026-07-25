@@ -3,11 +3,13 @@
   // Keybindings / Audio), each tuning a different underlying mechanism but
   // all writing the tuned result to project source via the shared
   // file-write API rather than depending on dev-time local storage.
-  // Palette lands this checkpoint; Keybindings/Audio are stubbed until
-  // their own checkpoints. A flat single-file screen with an internal tab
-  // switcher, same precedent TilesetEditor.svelte set for a multi-tab tool.
+  // Palette + Keybindings land across checkpoints 1-2; Audio is stubbed
+  // until its own checkpoint. A flat single-file screen with an internal
+  // tab switcher, same precedent TilesetEditor.svelte set for a multi-tab
+  // tool.
   import LivePreview from './LivePreview.svelte';
   import { createPalette } from '@glyphrogue/core';
+  import { createCaptureStack, createBindingCapture } from '@glyphrogue/input';
   import {
     buildPaletteRows,
     swatchCommand,
@@ -23,8 +25,9 @@
     removeGradientStop,
     isStopTokenRef,
   } from './configPalette.js';
+  import { buildKeybindingRows, addBinding, removeBinding, serializeKeybindings, keybindingsPath } from './configKeybindings.js';
 
-  let { palette, metrics, fontFamily, onExport, onCheckExists } = $props();
+  let { palette, metrics, fontFamily, inputActions = [], bindings: initialBindings = {}, onExport, onCheckExists } = $props();
 
   let activeTab = $state('palette');
 
@@ -86,30 +89,104 @@
   }
 
   // Write/exists/overwrite-confirm - same "loud, never silent" pattern
-  // MapEditor.svelte/CompositionTool.svelte established.
-  let destinationPath = $state(palettePath());
-  let saveStatus = $state(null); // null | 'checking' | 'confirm-overwrite' | 'pending' | { ok, error? }
+  // MapEditor.svelte/CompositionTool.svelte established. Each tab owns its
+  // own destination-path/status state - a shared one would let switching
+  // tabs mid-save mix up which write a pending status belongs to.
+  let paletteDestinationPath = $state(palettePath());
+  let paletteSaveStatus = $state(null); // null | 'checking' | 'confirm-overwrite' | 'pending' | { ok, error? }
 
   async function writePalette() {
-    saveStatus = 'pending';
-    saveStatus = await onExport(destinationPath, serializePaletteTokens(tokens), {
+    paletteSaveStatus = 'pending';
+    paletteSaveStatus = await onExport(paletteDestinationPath, serializePaletteTokens(tokens), {
       tool: 'config-ui',
       label: 'palette',
     });
   }
 
-  async function handleSave() {
-    saveStatus = 'checking';
-    const { exists } = await onCheckExists(destinationPath);
+  async function handlePaletteSave() {
+    paletteSaveStatus = 'checking';
+    const { exists } = await onCheckExists(paletteDestinationPath);
     if (exists) {
-      saveStatus = 'confirm-overwrite';
+      paletteSaveStatus = 'confirm-overwrite';
       return;
     }
     await writePalette();
   }
 
-  function cancelOverwrite() {
-    saveStatus = null;
+  function cancelPaletteOverwrite() {
+    paletteSaveStatus = null;
+  }
+
+  // Keybindings tab (editor.md: "an input-action list, each showing its
+  // current binding(s) ... plus the 'capture next key' affordance, the
+  // exclusive capture stack"). Own capture-stack instance - nothing else
+  // in this dev fixture pushes onto one yet; a real game embedding this
+  // tool would share its own bootstrap-created stack instead, but no prop
+  // exists yet for injecting one since there's no second consumer to
+  // motivate it.
+  let bindings = $state({ ...initialBindings });
+  let keybindingRows = $derived(buildKeybindingRows(bindings, inputActions));
+
+  const captureStack = createCaptureStack();
+  const bindingCapture = createBindingCapture({
+    target: typeof window !== 'undefined' ? window : undefined,
+    getGamepads: () => navigator.getGamepads?.() ?? [],
+  });
+  let capturingAction = $state(null);
+  let pollHandle = null;
+
+  function pollCapture() {
+    if (!capturingAction) return;
+    bindingCapture.poll();
+    pollHandle = requestAnimationFrame(pollCapture);
+  }
+
+  function startCapture(action) {
+    if (capturingAction) return;
+    capturingAction = action;
+    captureStack.push(`config-ui-keybind-capture:${action}`);
+    bindingCapture.start((entry) => {
+      bindings = addBinding(bindings, action, entry);
+      stopCapture();
+    });
+    pollCapture();
+  }
+
+  function stopCapture() {
+    if (pollHandle !== null) cancelAnimationFrame(pollHandle);
+    pollHandle = null;
+    bindingCapture.stop();
+    if (capturingAction) captureStack.pop();
+    capturingAction = null;
+  }
+
+  function handleRemoveBinding(action, index) {
+    bindings = removeBinding(bindings, action, index);
+  }
+
+  let keybindingsDestinationPath = $state(keybindingsPath());
+  let keybindingsSaveStatus = $state(null);
+
+  async function writeKeybindings() {
+    keybindingsSaveStatus = 'pending';
+    keybindingsSaveStatus = await onExport(keybindingsDestinationPath, serializeKeybindings(bindings), {
+      tool: 'config-ui',
+      label: 'keybindings',
+    });
+  }
+
+  async function handleKeybindingsSave() {
+    keybindingsSaveStatus = 'checking';
+    const { exists } = await onCheckExists(keybindingsDestinationPath);
+    if (exists) {
+      keybindingsSaveStatus = 'confirm-overwrite';
+      return;
+    }
+    await writeKeybindings();
+  }
+
+  function cancelKeybindingsOverwrite() {
+    keybindingsSaveStatus = null;
   }
 </script>
 
@@ -196,30 +273,81 @@
       <div class="save-panel">
         <label class="field">
           <span class="key">path</span>
-          <input type="text" bind:value={destinationPath} />
+          <input type="text" bind:value={paletteDestinationPath} />
         </label>
-        <button onclick={handleSave} disabled={saveStatus === 'checking' || saveStatus === 'pending'}>Save</button>
-        {#if saveStatus === 'checking'}
+        <button onclick={handlePaletteSave} disabled={paletteSaveStatus === 'checking' || paletteSaveStatus === 'pending'}>Save</button>
+        {#if paletteSaveStatus === 'checking'}
           <span class="save-status">Checking…</span>
-        {:else if saveStatus === 'pending'}
+        {:else if paletteSaveStatus === 'pending'}
           <span class="save-status">Writing…</span>
-        {:else if saveStatus?.ok}
+        {:else if paletteSaveStatus?.ok}
           <span class="save-status ok">Written.</span>
-        {:else if saveStatus && saveStatus !== 'confirm-overwrite' && !saveStatus.ok}
-          <span class="save-status error">{saveStatus.error}</span>
+        {:else if paletteSaveStatus && paletteSaveStatus !== 'confirm-overwrite' && !paletteSaveStatus.ok}
+          <span class="save-status error">{paletteSaveStatus.error}</span>
         {/if}
       </div>
 
-      {#if saveStatus === 'confirm-overwrite'}
+      {#if paletteSaveStatus === 'confirm-overwrite'}
         <div class="overwrite-banner">
-          <span>⚠ {destinationPath} already exists.</span>
+          <span>⚠ {paletteDestinationPath} already exists.</span>
           <button onclick={writePalette}>Overwrite</button>
-          <button onclick={cancelOverwrite}>Cancel</button>
+          <button onclick={cancelPaletteOverwrite}>Cancel</button>
         </div>
       {/if}
     </div>
   {:else if activeTab === 'keybindings'}
-    <p class="empty">Keybindings tab: coming in a later checkpoint.</p>
+    <div class="tab-panel">
+      {#each keybindingRows as row (row.action)}
+        <div class="binding-row">
+          <span class="action-name">{row.action}</span>
+          <div class="binding-chips">
+            {#each row.entries as { label }, index (index)}
+              <span class="binding-chip">
+                {label}
+                <button onclick={() => handleRemoveBinding(row.action, index)} title="Remove binding">✕</button>
+              </span>
+            {/each}
+          </div>
+          {#if capturingAction === row.action}
+            <span class="capturing">Listening… (press a key or gamepad input)</span>
+            <button onclick={stopCapture}>Cancel</button>
+          {:else}
+            <button onclick={() => startCapture(row.action)} disabled={capturingAction !== null}>+ Add binding</button>
+          {/if}
+        </div>
+      {/each}
+
+      {#if inputActions.length === 0}
+        <p class="empty">No input actions supplied - nothing to bind.</p>
+      {/if}
+
+      <div class="save-panel">
+        <label class="field">
+          <span class="key">path</span>
+          <input type="text" bind:value={keybindingsDestinationPath} />
+        </label>
+        <button onclick={handleKeybindingsSave} disabled={keybindingsSaveStatus === 'checking' || keybindingsSaveStatus === 'pending'}>
+          Save
+        </button>
+        {#if keybindingsSaveStatus === 'checking'}
+          <span class="save-status">Checking…</span>
+        {:else if keybindingsSaveStatus === 'pending'}
+          <span class="save-status">Writing…</span>
+        {:else if keybindingsSaveStatus?.ok}
+          <span class="save-status ok">Written.</span>
+        {:else if keybindingsSaveStatus && keybindingsSaveStatus !== 'confirm-overwrite' && !keybindingsSaveStatus.ok}
+          <span class="save-status error">{keybindingsSaveStatus.error}</span>
+        {/if}
+      </div>
+
+      {#if keybindingsSaveStatus === 'confirm-overwrite'}
+        <div class="overwrite-banner">
+          <span>⚠ {keybindingsDestinationPath} already exists.</span>
+          <button onclick={writeKeybindings}>Overwrite</button>
+          <button onclick={cancelKeybindingsOverwrite}>Cancel</button>
+        </div>
+      {/if}
+    </div>
   {:else}
     <p class="empty">Audio tab: coming in a later checkpoint.</p>
   {/if}
@@ -355,6 +483,48 @@
 
   .save-status.error {
     color: #e06666;
+  }
+
+  .binding-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .action-name {
+    min-width: 12ch;
+    color: #ddd;
+  }
+
+  .binding-chips {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+
+  .binding-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #262626;
+    border: 1px solid #444;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.8rem;
+    color: #6ab0ff;
+  }
+
+  .binding-chip button {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .capturing {
+    color: #e0a030;
+    font-size: 0.85rem;
   }
 
   .overwrite-banner {

@@ -65,6 +65,18 @@
     },
   });
 
+  // A sample input-action vocabulary for the Config UI's Keybindings tab
+  // (editor.md: game-defined, not derived from any registry - keymap.js
+  // itself ships no default bindings or vocabulary). Some actions start
+  // bound, some don't, so both the remove and capture-a-first-binding
+  // paths have something real to exercise.
+  const previewInputActions = ['move-north', 'move-south', 'move-east', 'move-west', 'interact', 'menu-cancel'];
+  const previewKeybindings = {
+    'move-north': [{ device: 'key', code: 'ArrowUp' }],
+    'move-south': [{ device: 'key', code: 'ArrowDown' }],
+    interact: [{ device: 'key', code: 'KeyE' }],
+  };
+
   // A distinct registry from MapEditor.svelte/CompositionTool.svelte's own
   // self-contained buildDefaultTileset() (zoneRender.js) - this one is the
   // tileset editor's own single-consumer authoring surface, not a shared
@@ -306,7 +318,15 @@
   <div class="header">
     <h2>Config UI</h2>
   </div>
-  <ConfigUI palette={previewPalette} metrics={previewMetrics} fontFamily="monospace" onExport={writeFile} onCheckExists={checkExists} />
+  <ConfigUI
+    palette={previewPalette}
+    metrics={previewMetrics}
+    fontFamily="monospace"
+    inputActions={previewInputActions}
+    bindings={previewKeybindings}
+    onExport={writeFile}
+    onCheckExists={checkExists}
+  />
 </div>
 
 <style>
