@@ -3,12 +3,27 @@
   // font-calibration editor") - two tabs mirroring ContentBrowser.svelte's
   // own layout pattern: calibration tuning (this checkpoint) and symbol/
   // tileset authoring (next checkpoint).
-  import { register, getFontSource, setReferenceFontSource } from '@glyphrogue/core';
+  import {
+    register,
+    getFontSource,
+    setReferenceFontSource,
+    registerSymbol,
+    resolveColor,
+    calibratedGlyphAdvance,
+    calibratedBaselineOffset,
+  } from '@glyphrogue/core';
   import LivePreview from './LivePreview.svelte';
   import {
     listFontSourceIds,
     isReferenceFontSource,
     buildCalibrationCommands,
+    listSymbolIds,
+    getSymbolEntry,
+    filterSymbols,
+    getFontSourceEntry,
+    hasGlyphManifest,
+    UNICODE_BLOCK_PRESETS,
+    presetCodepoints,
   } from './tilesetCatalog.js';
 
   let { metrics, fontFamily, palette, fontSources, tileset } = $props();
@@ -88,6 +103,67 @@
     setReferenceFontSource(fontSources, selectedSourceId);
     refreshToken += 1;
     pendingReferenceChange = false;
+  }
+
+  // Symbol/tileset authoring.
+  let symbolSearch = $state('');
+  let selectedSymbolId = $state(null);
+  // { id, fontFace, codepoint, foreground, background } - a plain local
+  // draft, not yet written to `tileset` until Save. Works identically for a
+  // brand-new symbol or an existing one being edited, so the preview/glyph-
+  // picker logic below never needs a "new vs. existing" branch.
+  let draft = $state(null);
+
+  let paletteTokens = $derived(Object.keys(palette.tokens));
+
+  let symbolRows = $derived.by(() => {
+    refreshToken;
+    return filterSymbols(tileset, { search: symbolSearch });
+  });
+
+  let draftFontSourceEntry = $derived.by(() => {
+    refreshToken;
+    return draft?.fontFace ? getFontSourceEntry(fontSources, draft.fontFace) : null;
+  });
+
+  let draftHasManifest = $derived(draftFontSourceEntry ? hasGlyphManifest(draftFontSourceEntry) : false);
+
+  // Mirrors resolveSymbol's (tileset.js) own 3-line body, but works for an
+  // unsaved draft too, since a draft has no registry entry to resolve
+  // against yet.
+  let draftPreviewCommands = $derived.by(() => {
+    if (!draft?.fontFace || !draft?.codepoint || !draftFontSourceEntry) return [];
+    const { sourceMetrics, calibration } = draftFontSourceEntry;
+    const { offsetX } = calibratedGlyphAdvance(metrics, sourceMetrics, calibration, draft.codepoint);
+    const baselineOffsetPx = calibratedBaselineOffset(metrics, calibration);
+    const text = String.fromCodePoint(parseInt(draft.codepoint, 16));
+    return [{ col: 0, row: 0, text, offsetX, baselineOffsetPx, color: draft.foreground, background: draft.background }];
+  });
+
+  let canSaveSymbol = $derived(!!(draft?.id && draft?.fontFace && draft?.codepoint));
+
+  function swatchColor(foreground) {
+    const resolved = resolveColor(palette, foreground);
+    return typeof resolved === 'string' ? resolved : '#ddd';
+  }
+
+  function selectSymbol(id) {
+    selectedSymbolId = id;
+    draft = { id, ...getSymbolEntry(tileset, id) };
+  }
+
+  function startNewSymbol() {
+    selectedSymbolId = null;
+    draft = { id: '', fontFace: fontSourceIds[0] ?? '', codepoint: '20', foreground: null, background: undefined };
+  }
+
+  function saveSymbol() {
+    if (!canSaveSymbol) return;
+    const entry = { fontFace: draft.fontFace, codepoint: draft.codepoint, foreground: draft.foreground, background: draft.background };
+    const options = listSymbolIds(tileset).includes(draft.id) ? { override: draft.id } : {};
+    registerSymbol(tileset, draft.id, entry, options);
+    refreshToken += 1;
+    selectedSymbolId = draft.id;
   }
 </script>
 
@@ -178,7 +254,116 @@
       </div>
     </div>
   {:else}
-    <p class="empty">Symbol authoring — coming in the next checkpoint.</p>
+    <div class="controls">
+      <input type="text" placeholder="Search symbols…" bind:value={symbolSearch} />
+      <button onclick={startNewSymbol}>+ Add symbol</button>
+    </div>
+
+    <div class="panels">
+      <div class="list-panel">
+        {#if symbolRows.length === 0}
+          <p class="empty">No matching symbols.</p>
+        {:else}
+          <ul>
+            {#each symbolRows as row (row.id)}
+              <li>
+                <button class="row" class:selected={selectedSymbolId === row.id} onclick={() => selectSymbol(row.id)}>
+                  <span class="id">{row.id}</span>
+                  <span class="font-face">{row.fontFace}</span>
+                  <span class="codepoint">{row.codepoint}</span>
+                  <span class="glyph-swatch" style:color={swatchColor(row.foreground)}>
+                    {String.fromCodePoint(parseInt(row.codepoint, 16))}
+                  </span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+
+      <div class="detail-panel">
+        {#if !draft}
+          <p class="empty">Select a symbol to edit it, or add a new one.</p>
+        {:else}
+          <h4>{draft.id || '(new symbol)'}</h4>
+
+          <label>
+            id
+            <input type="text" bind:value={draft.id} placeholder="symbol id" disabled={selectedSymbolId != null} />
+          </label>
+
+          <label>
+            font source
+            <select bind:value={draft.fontFace}>
+              {#each fontSourceIds as id (id)}
+                <option value={id}>{id}</option>
+              {/each}
+            </select>
+          </label>
+
+          <div class="glyph-picker">
+            {#if !draftFontSourceEntry}
+              <p class="empty">Pick a font source first.</p>
+            {:else if draftHasManifest}
+              <div class="glyph-list">
+                {#each Object.keys(draftFontSourceEntry.sourceMetrics.glyphs) as cp (cp)}
+                  <button class:selected={draft.codepoint === cp} onclick={() => (draft.codepoint = cp)}>{cp}</button>
+                {/each}
+              </div>
+            {:else}
+              <label>
+                codepoint (hex)
+                <input type="text" bind:value={draft.codepoint} placeholder="e.g. 40" />
+              </label>
+              <div class="presets">
+                {#each UNICODE_BLOCK_PRESETS as preset (preset.id)}
+                  <details>
+                    <summary>{preset.label}</summary>
+                    <div class="preset-codes">
+                      {#each presetCodepoints(preset, 32) as cp (cp)}
+                        <button onclick={() => (draft.codepoint = cp)}>{cp}</button>
+                      {/each}
+                    </div>
+                  </details>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <label>
+            foreground
+            <select
+              value={draft.foreground?.token ?? ''}
+              onchange={(e) => (draft.foreground = e.target.value ? { token: e.target.value } : null)}
+            >
+              <option value="">(none)</option>
+              {#each paletteTokens as token (token)}
+                <option value={token}>{token}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label>
+            background
+            <select
+              value={draft.background?.token ?? ''}
+              onchange={(e) => (draft.background = e.target.value ? { token: e.target.value } : undefined)}
+            >
+              <option value="">(none)</option>
+              {#each paletteTokens as token (token)}
+                <option value={token}>{token}</option>
+              {/each}
+            </select>
+          </label>
+
+          <button onclick={saveSymbol} disabled={!canSaveSymbol}>Save</button>
+
+          <div class="preview">
+            <LivePreview commands={draftPreviewCommands} cols={1} rows={1} {metrics} {fontFamily} {palette} />
+          </div>
+        {/if}
+      </div>
+    </div>
   {/if}
 </section>
 
@@ -205,6 +390,22 @@
     background: #6ab0ff;
     color: #1e1e1e;
     border-color: #6ab0ff;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .controls input[type='text'] {
+    font-family: inherit;
+    font-size: 0.85rem;
+    background: #262626;
+    color: #ddd;
+    border: 1px solid #444;
+    width: 20ch;
   }
 
   .panels {
@@ -298,5 +499,67 @@
     background: #2b1a1a;
     border: 1px solid #e06666;
     color: #e06666;
+  }
+
+  .font-face,
+  .codepoint {
+    color: #888;
+  }
+
+  .glyph-swatch {
+    margin-left: auto;
+    font-size: 1rem;
+  }
+
+  .detail-panel input[type='text'],
+  .detail-panel select {
+    font-family: inherit;
+    font-size: 0.85rem;
+    background: #262626;
+    color: #ddd;
+    border: 1px solid #444;
+  }
+
+  .detail-panel input:disabled {
+    color: #888;
+  }
+
+  .glyph-picker {
+    margin-bottom: 0.4rem;
+  }
+
+  .glyph-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    max-height: 6rem;
+    overflow-y: auto;
+  }
+
+  .glyph-list button,
+  .preset-codes button {
+    font-family: inherit;
+    font-size: 0.75rem;
+    background: #262626;
+    color: #ddd;
+    border: 1px solid #444;
+  }
+
+  .glyph-list button.selected {
+    background: #2b3a4a;
+    border-color: #6ab0ff;
+  }
+
+  .presets summary {
+    font-size: 0.8rem;
+    color: #ddd;
+    cursor: pointer;
+  }
+
+  .preset-codes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0.25rem 0 0.5rem;
   }
 </style>
