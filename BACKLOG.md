@@ -258,11 +258,42 @@ test tone played indefinitely with no stop control — fixed by passing
 design roadmap" item 10 entry above and
 `docs/session-logs/session-40-2026-07-24.md`. Test count 519 → 562
 (`packages/editor` 134 → 164, `packages/input` 28 → 41). **`packages/
-editor`'s design roadmap is now fully implemented** — the next
-`/dev-session` moves to map editor in-context editing/override export
-(deferred from session 34) or `packages/cli` scaffolding.
+editor`'s design roadmap is now fully implemented.**
+
+**Next `/dev-session` is `packages/cli` design** — no dedicated design
+pass has ever consolidated it. Coverage today is scattered across
+`docs/design/build-pipeline.md`'s "`create-glyphrogue-game` scaffolding"
+section and a `packages/cli`'s-scaffold-ships-a-GitHub-Pages-workflow
+decision in `docs/design/packaging.md`, plus the package's own placeholder
+`README.md` — not a single deep-dive doc the way every other package got.
+Would need its own scoped kickoff to review/consolidate what's already
+decided, surface what isn't, and produce (or update) a real design doc
+before any implementation session. Map editor in-context editing/override
+export (deferred from session 34) remains parked behind it, no dependency
+between the two.
 
 ## Deferred / future items
+
+- **First-class basic screens (main menu, pause menu, inventory/equipment,
+  character sheet, settings menu)** — `docs/design/ui-and-input.md`
+  explicitly scopes only the generic *system* these are built from
+  (`registerScreen`/`PendingUI`, the screen/dialog/menu stack, the pause
+  contract), not any actual screen's concrete layout/content: "menus,
+  dialogs, inventory/equipment screens... the generic system these are
+  built from, not literal screen layouts. Concrete screen designs (an
+  actual inventory grid, a specific pause menu) are game content authored
+  against this system" — same boundary the tileset pipeline and mapgen
+  primitives draw elsewhere against an actual tileset/generator.
+  `docs/design/custom-ui-and-interactions.md`'s `'core:dialogue'` (backing
+  the `ShowDialogue` scripted-event step) is the **only** screen with any
+  first-party implementation anywhere in the codebase — no main menu,
+  pause menu, inventory grid, character sheet, or settings menu has ever
+  been designed or built. (The Config UI editor tool, `packages/editor`
+  design roadmap item 10, is a dev-time authoring surface for tuning
+  defaults — it doesn't count toward this either.) Surfaced 2026-07-24
+  while reviewing what's left to design/implement; would need its own
+  scoped design session(s) before implementation, same as everything else
+  in this list.
 
 - **Player-facing Mod management** — `docs/design/editor.md` deliberately
   scopes only dev-time **Plugin** management (author-managed, baked into
