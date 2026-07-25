@@ -71,7 +71,7 @@ test('effectiveVolume multiplies master by the named channel', () => {
   assert.equal(effectiveVolume({ master: 0.5, music: 0.8, sfx: 1 }, 'sfx'), 0.5);
 });
 
-test('previewMusic plays looping, at master × music volume', () => {
+test('previewMusic plays non-looping (overriding playMusic\'s own loop:true default), at master × music volume', () => {
   const audioCtx = createFakeAudioContext();
   const gainNodes = [];
   const originalCreateGain = audioCtx.createGain.bind(audioCtx);
@@ -84,7 +84,7 @@ test('previewMusic plays looping, at master × music volume', () => {
 
   const source = previewMusic(audioCtx, buffer, { master: 0.5, music: 0.6, sfx: 1 });
 
-  assert.equal(source.loop, true);
+  assert.equal(source.loop, false);
   assert.equal(gainNodes[0].gain.value, 0.3);
 });
 

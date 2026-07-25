@@ -30,8 +30,13 @@ export function effectiveVolume(mix, channel) {
   return mix.master * mix[channel];
 }
 
+// loop: false, deliberately overriding playMusic's own default (true) -
+// a mix-level volume check needs one audible pass of the test tone, not
+// looping playback with no stop control to end it (this is a synthetic
+// tone, not a real track; there's nothing to actually loop-audition).
+// Same non-looping, auto-stopping posture previewSfx already has below.
 export function previewMusic(audioCtx, buffer, mix) {
-  return playMusic(audioCtx, buffer, { volume: effectiveVolume(mix, 'music') });
+  return playMusic(audioCtx, buffer, { volume: effectiveVolume(mix, 'music'), loop: false });
 }
 
 export function previewSfx(audioCtx, buffer, mix) {
