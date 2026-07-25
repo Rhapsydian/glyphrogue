@@ -5,3 +5,4 @@ export { createNotifier } from './stateNotifier.js';
 export { createKeyboardSource } from './keyboardSource.js';
 export { createGamepadSource } from './gamepadSource.js';
 export { saveKeybindings, loadKeybindings } from './keybindingStorage.js';
+export { createBindingCapture } from './captureBinding.js';

@@ -6,6 +6,7 @@
   import ContentBrowser from './ContentBrowser.svelte';
   import BehaviorWizard from './BehaviorWizard.svelte';
   import TilesetEditor from './TilesetEditor.svelte';
+  import ConfigUI from './ConfigUI.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
@@ -32,6 +33,19 @@
     floor: '#222222',
     player: '#6ab0ff',
     accent: '#e0a030',
+    // A real gradient token, so the Config UI's Palette tab gradient editor
+    // (raw stop color + token-ref stop color alike) has something genuine
+    // to exercise, same "give the dev fixture a real case, not just
+    // throwaway demo data" posture registerFontSource's second source
+    // above already follows.
+    sky: {
+      type: 'gradient',
+      direction: 'vertical',
+      stops: [
+        { offset: 0, color: '#0a1a2a' },
+        { offset: 1, color: { token: 'accent' } },
+      ],
+    },
   });
   const previewFontSources = createFontSourceRegistry();
   registerFontSource(previewFontSources, 'base', { unitsPerEm: 1000, ascender: 800, descender: -200, glyphs: {} });
@@ -288,6 +302,11 @@
     fontSources={previewFontSources}
     tileset={previewTileset}
   />
+
+  <div class="header">
+    <h2>Config UI</h2>
+  </div>
+  <ConfigUI palette={previewPalette} metrics={previewMetrics} fontFamily="monospace" onExport={writeFile} onCheckExists={checkExists} />
 </div>
 
 <style>
