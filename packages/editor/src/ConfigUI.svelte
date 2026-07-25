@@ -3,11 +3,10 @@
   // Keybindings / Audio), each tuning a different underlying mechanism but
   // all writing the tuned result to project source via the shared
   // file-write API rather than depending on dev-time local storage.
-  // Palette + Keybindings land across checkpoints 1-2; Audio is stubbed
-  // until its own checkpoint. A flat single-file screen with an internal
-  // tab switcher, same precedent TilesetEditor.svelte set for a multi-tab
-  // tool.
+  // A flat single-file screen with an internal tab switcher, same
+  // precedent TilesetEditor.svelte set for a multi-tab tool.
   import LivePreview from './LivePreview.svelte';
+  import NarrowForm from './NarrowForm.svelte';
   import { createPalette } from '@glyphrogue/core';
   import { createCaptureStack, createBindingCapture } from '@glyphrogue/input';
   import {
@@ -26,8 +25,18 @@
     isStopTokenRef,
   } from './configPalette.js';
   import { buildKeybindingRows, addBinding, removeBinding, serializeKeybindings, keybindingsPath } from './configKeybindings.js';
+  import { createTestTone, previewMusic, previewSfx, serializeMixSettings, audioSettingsPath } from './configAudio.js';
 
-  let { palette, metrics, fontFamily, inputActions = [], bindings: initialBindings = {}, onExport, onCheckExists } = $props();
+  let {
+    palette,
+    metrics,
+    fontFamily,
+    inputActions = [],
+    bindings: initialBindings = {},
+    mixSettings: initialMixSettings = { master: 1, music: 0.7, sfx: 0.7 },
+    onExport,
+    onCheckExists,
+  } = $props();
 
   let activeTab = $state('palette');
 
@@ -187,6 +196,61 @@
 
   function cancelKeybindingsOverwrite() {
     keybindingsSaveStatus = null;
+  }
+
+  // Audio tab (editor.md: three 0-1 sliders via the narrow shared form
+  // primitive, "preview live" meaning actually hearing the mix through the
+  // real playback mechanism a player would get). AudioContext is created
+  // lazily on first preview click, not at mount - browsers refuse to run
+  // one until a user gesture, and this dev fixture mounts long before any
+  // click happens.
+  let mixSettings = $state({ ...initialMixSettings });
+  let audioCtx = null;
+  let testToneBuffer = null;
+
+  function ensureAudioCtx() {
+    audioCtx ??= new (window.AudioContext ?? window.webkitAudioContext)();
+    testToneBuffer ??= createTestTone(audioCtx);
+    return audioCtx;
+  }
+
+  function handleMixChange(key, value) {
+    mixSettings = { ...mixSettings, [key]: value };
+  }
+
+  function handlePreviewMusic() {
+    const ctx = ensureAudioCtx();
+    previewMusic(ctx, testToneBuffer, mixSettings);
+  }
+
+  function handlePreviewSfx() {
+    const ctx = ensureAudioCtx();
+    previewSfx(ctx, testToneBuffer, mixSettings);
+  }
+
+  let audioDestinationPath = $state(audioSettingsPath());
+  let audioSaveStatus = $state(null);
+
+  async function writeAudioSettings() {
+    audioSaveStatus = 'pending';
+    audioSaveStatus = await onExport(audioDestinationPath, serializeMixSettings(mixSettings), {
+      tool: 'config-ui',
+      label: 'audio mix settings',
+    });
+  }
+
+  async function handleAudioSave() {
+    audioSaveStatus = 'checking';
+    const { exists } = await onCheckExists(audioDestinationPath);
+    if (exists) {
+      audioSaveStatus = 'confirm-overwrite';
+      return;
+    }
+    await writeAudioSettings();
+  }
+
+  function cancelAudioOverwrite() {
+    audioSaveStatus = null;
   }
 </script>
 
@@ -349,7 +413,39 @@
       {/if}
     </div>
   {:else}
-    <p class="empty">Audio tab: coming in a later checkpoint.</p>
+    <div class="tab-panel">
+      <NarrowForm defaults={initialMixSettings} values={mixSettings} onChange={handleMixChange} />
+
+      <div class="preview-buttons">
+        <button onclick={handlePreviewMusic}>Preview music</button>
+        <button onclick={handlePreviewSfx}>Preview sfx</button>
+      </div>
+
+      <div class="save-panel">
+        <label class="field">
+          <span class="key">path</span>
+          <input type="text" bind:value={audioDestinationPath} />
+        </label>
+        <button onclick={handleAudioSave} disabled={audioSaveStatus === 'checking' || audioSaveStatus === 'pending'}>Save</button>
+        {#if audioSaveStatus === 'checking'}
+          <span class="save-status">Checking…</span>
+        {:else if audioSaveStatus === 'pending'}
+          <span class="save-status">Writing…</span>
+        {:else if audioSaveStatus?.ok}
+          <span class="save-status ok">Written.</span>
+        {:else if audioSaveStatus && audioSaveStatus !== 'confirm-overwrite' && !audioSaveStatus.ok}
+          <span class="save-status error">{audioSaveStatus.error}</span>
+        {/if}
+      </div>
+
+      {#if audioSaveStatus === 'confirm-overwrite'}
+        <div class="overwrite-banner">
+          <span>⚠ {audioDestinationPath} already exists.</span>
+          <button onclick={writeAudioSettings}>Overwrite</button>
+          <button onclick={cancelAudioOverwrite}>Cancel</button>
+        </div>
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -525,6 +621,12 @@
   .capturing {
     color: #e0a030;
     font-size: 0.85rem;
+  }
+
+  .preview-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
   }
 
   .overwrite-banner {

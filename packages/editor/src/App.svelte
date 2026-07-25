@@ -77,6 +77,12 @@
     interact: [{ device: 'key', code: 'KeyE' }],
   };
 
+  // Initial mix settings for the Config UI's Audio tab (audioSettings.js's
+  // { master, music, sfx } shape) - deliberately distinct from ConfigUI's
+  // own component-level default so the prop wiring is visibly exercised,
+  // not just coincidentally matching.
+  const previewMixSettings = { master: 0.8, music: 0.6, sfx: 0.9 };
+
   // A distinct registry from MapEditor.svelte/CompositionTool.svelte's own
   // self-contained buildDefaultTileset() (zoneRender.js) - this one is the
   // tileset editor's own single-consumer authoring surface, not a shared
@@ -324,6 +330,7 @@
     fontFamily="monospace"
     inputActions={previewInputActions}
     bindings={previewKeybindings}
+    mixSettings={previewMixSettings}
     onExport={writeFile}
     onCheckExists={checkExists}
   />
