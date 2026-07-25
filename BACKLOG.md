@@ -260,19 +260,51 @@ design roadmap" item 10 entry above and
 (`packages/editor` 134 → 164, `packages/input` 28 → 41). **`packages/
 editor`'s design roadmap is now fully implemented.**
 
-**Next `/dev-session` is `packages/cli` design** — no dedicated design
-pass has ever consolidated it. Coverage today is scattered across
-`docs/design/build-pipeline.md`'s "`create-glyphrogue-game` scaffolding"
-section and a `packages/cli`'s-scaffold-ships-a-GitHub-Pages-workflow
-decision in `docs/design/packaging.md`, plus the package's own placeholder
-`README.md` — not a single deep-dive doc the way every other package got.
-Would need its own scoped kickoff to review/consolidate what's already
-decided, surface what isn't, and produce (or update) a real design doc
-before any implementation session. Map editor in-context editing/override
-export (deferred from session 34) remains parked behind it, no dependency
-between the two.
+Session 41 completed `packages/cli` design (web scaffold scope), see
+[`docs/design/cli.md`](docs/design/cli.md) and
+`docs/session-logs/session-41-2026-07-25.md`. Consolidated the
+previously-scattered `build-pipeline.md`/`packaging.md` decisions into one
+doc, and resolved four open questions live with the user: the scaffold's
+`package.json` writes real semver ranges (e.g. `^0.1.0`) against the
+eventual published `@glyphrogue/core`/`@glyphrogue/editor`, never a
+workspace-protocol reference, published early under `0.x` rather than
+waiting for "polished" (see `cli.md`'s "The pre-publish problem" — the
+actual first `npm publish` is a manual prerequisite step for the
+*implementation* session, not this one); the CLI prompts for the game name
+only, no non-interactive mode yet; each starter content-folder example
+hits a deliberately minimal "runs with zero required edits" bar (static
+room, one trivial plugin, one pre-calibrated font), not a showcase of
+advanced features; template substitution is plain fixed-token string
+replacement, no templating engine. Scope was narrowed at kickoff to the
+web scaffold only — `packaging.md`'s Electron/Steam material was left out
+rather than folded in (see the two new deferred items below). No source
+code touched, doc-only session.
+
+**Next `/dev-session` is `packages/cli` implementation** of
+`docs/design/cli.md`. Needs, as a manual prerequisite before the scaffold
+can work end-to-end, a first `npm publish` of `@glyphrogue/core`/
+`@glyphrogue/editor` at `0.1.0` (see `cli.md`'s "The pre-publish problem")
+— confirm at kickoff whether that publish happens as part of the session
+or just before it. Map editor in-context editing/override export
+(deferred from session 34) remains parked behind it, no dependency between
+the two.
 
 ## Deferred / future items
+
+- **Electron/Steam scaffold generation for `packages/cli`** —
+  `docs/design/packaging.md`'s IPC surface, code-signing, update-strategy,
+  and Steam build/upload material is already well-designed but was
+  deliberately left out of session 41's `docs/design/cli.md` (web scaffold
+  only). Needs its own scoped session to fold in once a real downstream
+  game needs desktop/Steam distribution — not a consolidation gap the way
+  the web scaffold was, just not yet turned into actual
+  scaffold-generation logic. Surfaced 2026-07-25.
+- **Richer example projects for `create-glyphrogue-game`** —
+  `docs/design/cli.md`'s starter-example bar is deliberately minimal (one
+  static room, one trivial plugin, one pre-calibrated font — "runs with
+  zero required edits," nothing more). More advanced onboarding examples
+  showing off real workflows are worth long-term backlog attention once
+  there's appetite to invest in them. Surfaced 2026-07-25.
 
 - **First-class basic screens (main menu, pause menu, inventory/equipment,
   character sheet, settings menu)** — `docs/design/ui-and-input.md`
