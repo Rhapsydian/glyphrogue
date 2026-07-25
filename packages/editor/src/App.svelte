@@ -5,6 +5,7 @@
   import CompositionTool from './CompositionTool.svelte';
   import ContentBrowser from './ContentBrowser.svelte';
   import BehaviorWizard from './BehaviorWizard.svelte';
+  import TilesetEditor from './TilesetEditor.svelte';
   import {
     deriveCatalog,
     buildToggleInstruction,
@@ -275,6 +276,17 @@
     onCheckExists={checkExists}
     onDeletePlugin={deletePlugin}
     onRefresh={refreshPlugins}
+  />
+
+  <div class="header">
+    <h2>Tileset/font-calibration editor</h2>
+  </div>
+  <TilesetEditor
+    metrics={previewMetrics}
+    fontFamily="monospace"
+    palette={previewPalette}
+    fontSources={previewFontSources}
+    tileset={previewTileset}
   />
 </div>
 
