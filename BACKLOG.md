@@ -240,8 +240,27 @@ explicit pause between. Browser verification caught a real reactivity bug
 other derived value here uses) — fixed before committing. See the
 "packages/editor design roadmap" item 9 entry above and
 `docs/session-logs/session-39-2026-07-24.md`. Test count 502 → 519
-(`packages/core` 353 → 357, `packages/editor` 121 → 134). The next
-`/dev-session` is item 10 (config UI), the last item in this roadmap.
+(`packages/core` 353 → 357, `packages/editor` 121 → 134). Session 40
+implemented item 10 (config UI), the roadmap's last item: kickoff research
+found neither `keyboardSource.js` nor `gamepadSource.js` could report a
+raw, not-yet-bound input, so `packages/input/src/captureBinding.js` was
+added as a new game-agnostic primitive; the dev fixture also had no audio
+asset to preview with, resolved (confirmed with the user) by synthesizing
+an in-browser test tone rather than skipping real playback. Three
+checkpoints — `captureBinding.js` + the Palette tab, the Keybindings tab
+(reusing `captureStack.js` for the "listening" UI), and the Audio tab —
+each verified in the dev harness (including against the real Web Audio
+API) and committed with an explicit pause between. A real bug surfaced
+after checkpoint 3 landed and was reported by the user: `previewMusic`
+never overrode `playMusic`'s own `loop: true` default, so the synthesized
+test tone played indefinitely with no stop control — fixed by passing
+`loop: false` explicitly, committed separately. See the "packages/editor
+design roadmap" item 10 entry above and
+`docs/session-logs/session-40-2026-07-24.md`. Test count 519 → 562
+(`packages/editor` 134 → 164, `packages/input` 28 → 41). **`packages/
+editor`'s design roadmap is now fully implemented** — the next
+`/dev-session` moves to map editor in-context editing/override export
+(deferred from session 34) or `packages/cli` scaffolding.
 
 ## Deferred / future items
 
@@ -778,8 +797,26 @@ live against real code, same caveat every roadmap in this file carries.
    reactivity bug (the reference badge read the live registry directly in
    the template with no `refreshToken` gate) — fixed before committing.
    `packages/editor` test count: 121 → 134.
-10. **Config UI** — depends on both shared primitives, the file-write API,
-    and the capture stack.
+10. ~~**Config UI**~~ — done (session 40), see
+    `docs/session-logs/session-40-2026-07-24.md`. Three tabs: Palette
+    (`configPalette.js` — recursive token/gradient row derivation and
+    `export default {...}` serialization; the gradient stop editor covers
+    both raw colors and one-level `{ token }` references, per
+    `palette.js`'s own resolution rule), Keybindings (`configKeybindings.js`
+    plus a new `packages/input/src/captureBinding.js` primitive — raw
+    next-key/button/axis capture, independent of `resolveBinding`, reusing
+    `captureStack.js` for the "listening" UI per `editor.md`'s existing
+    capture-stack decision), and Audio (`configAudio.js` — an in-browser
+    synthesized test tone plus `master × channel` volume mixing, since the
+    dev fixture has no real sound asset; previews through the real
+    `playMusic`/`playSound`). Every tab shares the Map Editor/Composition
+    Tool's author-specified destination-path + overwrite-confirm write
+    pattern, since no "default-settings source" file convention existed
+    yet to hardcode against. `packages/editor` test count: 134 → 164
+    (`packages/input` 28 → 41).
+
+`packages/editor`'s design roadmap is now **fully implemented** — item 10
+was the last item.
 
 `packages/cli` remains later, separately-scoped work — this roadmap covers
 `packages/editor` only, same relationship the `packages/core`

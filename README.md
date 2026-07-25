@@ -17,11 +17,13 @@ input → input-action pipeline) is underway (session 23). `packages/editor`
 foundation (session 29), plugin management (session 32), shared UI
 infrastructure (session 33), the map editor's standalone-authoring scope
 (session 34), the generator composition tool (session 36), the content
-browser (session 37), the behavior wizard (session 38), and the tileset/
-font-calibration editor (session 39) implemented; in-context editing/
-override export and config UI (item 10) haven't started. `packages/cli`
-(`create-glyphrogue-game` scaffolding) hasn't started. 519 `node --test`
-cases pass across the three implemented packages.
+browser (session 37), the behavior wizard (session 38), the tileset/
+font-calibration editor (session 39), and config UI (session 40)
+implemented — every item in the `packages/editor` design roadmap is now
+built; only map editor in-context editing/override export remains
+deferred. `packages/cli` (`create-glyphrogue-game` scaffolding) hasn't
+started. 562 `node --test` cases pass across the three implemented
+packages.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
@@ -112,8 +114,31 @@ caught a real reactivity bug (the reference badge wasn't updating after a
 reference change, since it read the live registry directly in the template
 instead of through the same `refreshToken`-gated pattern every other
 derived value here uses) — fixed before committing. See
-`docs/session-logs/session-39-2026-07-24.md`. The next `/dev-session` is
-item 10 (config UI).
+`docs/session-logs/session-39-2026-07-24.md`. Session 40 implemented item
+10 (config UI), the design roadmap's last item: three tabs (Palette /
+Keybindings / Audio), each tuning a different underlying mechanism but all
+writing the tuned result to project source via the shared file-write API.
+Kickoff research found two real gaps behind the spec: neither
+`keyboardSource.js` nor `gamepadSource.js` could report a raw,
+not-yet-bound input (both only ever resolve already-mapped actions), so
+`packages/input/src/captureBinding.js` was added as a new, game-agnostic
+"listen for the next raw key/button/axis" primitive the Keybindings tab's
+rebind affordance builds on; and the dev fixture had no audio asset to
+preview with, resolved (confirmed with the user) by synthesizing an
+in-browser sine-wave test tone (`configAudio.js`) rather than skipping
+real playback. `configPalette.js` handles the recursive token/gradient
+structure (a token is a raw color or a gradient whose own stop colors may
+be one-level token references); `configKeybindings.js` handles the
+per-action binding list and reuses `captureStack.js` for the "listening"
+UI, per `editor.md`'s existing capture-stack decision. Browser
+verification caught a real bug after checkpoint 3 landed: `previewMusic`
+never overrode `playMusic`'s own `loop: true` default, so clicking
+"Preview music" started audio with no way to stop it from the UI — fixed
+by passing `loop: false` explicitly, matching `previewSfx`'s already-
+correct non-looping behavior. See
+`docs/session-logs/session-40-2026-07-24.md`. `packages/editor`'s design
+roadmap is now fully implemented; the next `/dev-session` moves to map
+editor in-context editing/override export or `packages/cli` scaffolding.
 
 ## See also
 
@@ -142,28 +167,31 @@ packages/
             src/, tests under test/
   input/    physical input → input-action pipeline — underway (session 23).
             keymap.js, captureStack.js, inputPipeline.js, stateNotifier.js,
-            keyboardSource.js, gamepadSource.js, keybindingStorage.js — kept
+            keyboardSource.js, gamepadSource.js, keybindingStorage.js,
+            captureBinding.js (raw next-input capture, session 40) — kept
             outside core and dependency-free — under src/, tests under test/
   editor/   dev-time companion tools — designed in full (docs/design/editor.md);
-            harness foundation (session 29), plugin management (session 32),
-            shared UI infrastructure (session 33), the map editor's
+            every item in the design roadmap now implemented: harness
+            foundation (session 29), plugin management (session 32), shared
+            UI infrastructure (session 33), the map editor's
             standalone-authoring scope (session 34), the generator
             composition tool (session 36), the content browser (session 37),
-            the behavior wizard (session 38), and the tileset/font-calibration
-            editor (session 39) implemented: mount.js, hotReload.js,
-            devServerPlugin.js, pluginCatalog.js, narrowForm.js,
+            the behavior wizard (session 38), the tileset/font-calibration
+            editor (session 39), and config UI (session 40): mount.js,
+            hotReload.js, devServerPlugin.js, pluginCatalog.js, narrowForm.js,
             generatorCatalog.js, zoneRender.js, pinRegion.js,
             mapEditorExport.js, compositionGenerators.js, compositionSteps.js,
-            contentCatalog.js, behaviorWizard.js, tilesetCatalog.js, App.svelte,
-            PluginList.svelte, PluginServices.svelte, LivePreview.svelte,
-            NarrowForm.svelte, MapEditor.svelte, CompositionTool.svelte,
-            ContentBrowser.svelte, BehaviorWizard.svelte, TilesetEditor.svelte
+            contentCatalog.js, behaviorWizard.js, tilesetCatalog.js,
+            configPalette.js, configKeybindings.js, configAudio.js,
+            App.svelte, PluginList.svelte, PluginServices.svelte,
+            LivePreview.svelte, NarrowForm.svelte, MapEditor.svelte,
+            CompositionTool.svelte, ContentBrowser.svelte,
+            BehaviorWizard.svelte, TilesetEditor.svelte, ConfigUI.svelte
             under src/, tests under test/, dev/ fixture (including
             dev/sandbox/bootstrap.js, a stand-in game bootstrap) for manual
-            testing. Map editor in-context editing/override export and the
-            remaining individual tool (config UI) not yet started. Never
-            ships in production; Svelte 5 compiled ahead of time, only dist/
-            published
+            testing. Map editor in-context editing/override export remains
+            deferred. Never ships in production; Svelte 5 compiled ahead of
+            time, only dist/ published
   cli/      create-glyphrogue-game scaffolding tool — not started
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference
