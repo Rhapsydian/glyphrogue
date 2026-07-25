@@ -1,7 +1,7 @@
 # packages/editor: dev-time companion tooling
 
 Deep-dive design doc for `packages/editor` — the map editor, tileset/
-calibration editor, content browser, composition wizard, config UI, and the
+calibration editor, content browser, behavior wizard, config UI, and the
 hot-reload dev harness they all run inside. Produced in the session-26
 planning pass (see `BACKLOG.md` for the roadmap this fits into). Treat this
 as the source of truth for the topics below, same pattern as the other
@@ -499,8 +499,9 @@ computed/conditional shape).
 Distinct from both neighbors it's easy to confuse it with: the map
 editor's pin/lock (above) hand-authors one *specific, frozen* map, using
 generators only as a starting point for a snapshot that gets exported as
-static data; the Composition wizard (below) scaffolds entity behavior
-attachment, not map generation, despite the name collision. This tool
+static data; the Behavior wizard (below, named to avoid this exact
+collision — it was originally called the "Composition wizard" in this
+doc) connects entity types to rules, not map generation. This tool
 instead lets an author assemble several generators against different
 regions of a zone and get back a **reusable, re-seeded-every-generation**
 `generatorFn` — real source, not a captured layout. It's an added
@@ -552,11 +553,13 @@ other generator.
 loud, never silent.** Before writing, the tool checks the shared
 file-write API's existing `/exists` endpoint (session 29's write/exists
 middleware — no new API needed) and, if the target path already exists,
-surfaces an explicit confirmation before overwriting. This differs from
-the Composition wizard's "never rewrites a tool-owned file" rule below —
-here the emitted file is meant to be editable, reusable project content,
-not a one-time stub, so overwrite is a supported (if infrequent) action
-rather than forbidden, gated only on the author explicitly confirming it.
+surfaces an explicit confirmation before overwriting. Here the emitted
+file is meant to be editable, reusable project content, not a one-time
+stub, so overwrite is a supported (if infrequent) action rather than
+forbidden, gated only on the author explicitly confirming it. The
+Behavior wizard's composition plugins (below) share this same "regenerate
+freely" posture — its one *actually* one-shot output (a custom rule
+scaffold, never revisited once written) is the exception, not the rule.
 
 ## Content browser
 
@@ -606,52 +609,122 @@ Exact panel/detail-pane visual layout is still left to implementation
 time — the data model, filtering shape, and cross-navigation affordance
 above are now settled.
 
-## Composition wizard
+## Behavior wizard
 
-**Decision: not a standalone mechanism — a second UI surface over the
-same catalog the content browser needs.** "Smart" composition means
-cross-referencing what the author wants against already-registered
-reusable behaviors (first-party and project-local), which requires the
-exact same introspection data the content browser is built on. The wizard
-doesn't need its own separate knowledge source.
+Originally called the "Composition wizard" in this doc (renamed in
+implementation — session 38 — specifically to stop colliding with the
+*generator* composition tool above, which the original name never
+actually described: this tool connects entity types to rules, not map
+generation). Implemented in full in session 38, after a plan-mode design
+conversation found this section's original mechanics didn't survive
+contact with the real registry/plugin code — the account below reflects
+what actually shipped, not the original draft; see
+`docs/session-logs/session-38-2026-07-24.md` for the full reasoning trail.
 
-**Concrete payoff from the `components` filter**: since a behavior's rule
-now declares its applicability (e.g. `Wanders`'s rule is effectively
-`{ all: ['Wanders'] }`), the wizard can mechanically answer "if I add
-component X to this entity, which existing rules start applying?" by
-reading the declared filter — no need to understand what the rule's
-function body actually does.
+**What's being composed is not a separate concept — it's the same
+`components` filter mechanism `registerRule` already has, just two
+different shapes of it.** A behavior's rule declares its applicability via
+that filter (e.g. `Wanders`'s rule is effectively `{ all: ['Wanders'] }`),
+and connecting a rule to an entity type is always expressible the same
+way:
 
-Two genuinely different scaffold cases:
+- **Global/reusable**: a plain marker-component filter. Any entity type
+  can opt in by declaring that component — the shape `Wanders`/
+  `ChasesPlayer`/`Flees`/`Guards` all already use.
+- **Entity-type-pinned**: a filter naming the synthetic `EntityType`
+  component every instantiated entity carries (`registerEntityType`'s
+  inline `rules` sugar auto-generates `{ component: 'EntityType', equals:
+  { type: id } }`, but nothing requires that sugar — a standalone
+  `registerRule` call can use the same shape directly, and the `in`
+  operator lets one rule cover several types at once).
 
-- **Attaching an existing behavior** (e.g. "make this entity wander") — no
-  new rule needed. The wizard adds the marker component (e.g. `Wanders:
-  {}`) to the entity's component list; the already-registered global rule
-  picks it up automatically via its own filter. If that rule isn't
-  registered anywhere in the project's bootstrap yet, the wizard surfaces
-  the needed import/register line as an instruction for the author to add
-  themselves (consistent with the file-write API's whole-file-only rule —
-  a game's bootstrap file is hand-authored, not a tool-owned file the
-  wizard should silently rewrite) — never writes new logic either way.
-- **Genuinely custom behavior** — the wizard generates a properly-shaped
-  stub (`registerRule`/`registerEntityType` call, a `components` filter
-  pre-populated from the entity's other declared components, TODO
-  function body) for the author to fill in themselves, in their own
-  editor. The wizard never writes actual game logic — consistent with the
-  companion framing.
+Both are mechanically distinguishable from declared data alone (does any
+filter entry name the `EntityType` component?), which is what lets the
+wizard search rather than requiring the author to already know which kind
+a given rule is.
 
-**Real design choice surfaced to the author for the custom case**: should
-the new rule be entity-type-scoped (`registerEntityType`'s inline `rules`,
-auto-limited to this one type) or standalone/globally reusable (a plain
-`registerRule` call with an explicit filter, so other entity types could
-opt in later, same shape `Wanders` already uses across multiple types)?
-This mirrors a real existing architectural distinction rather than
-inventing a new one.
+**Decision: reuses the content browser's introspection data as its search
+space, extended rather than duplicated.** `pluginCatalog.js`'s discovered-
+candidate list (already covering enabled *and* disabled plugins, unlike
+the content browser's enabled-only manifest) is threaded with each
+candidate's `components`/`actionType` — previously discarded past a
+kind classification — so the wizard can answer "if I add component X to
+this entity type, which existing rules start applying?" (the attach case)
+and "which type-pinned rules don't yet cover this entity type?" (the
+widen case) directly from the catalog, no separate knowledge source.
 
-Scaffold generation is a natural extension of `packages/cli`'s existing
-"generate files from a template" job (`build-pipeline.md`) — likely shares
-generation logic with `cli`, with editor's GUI as a front-end over it, not
-a separate implementation.
+**Decision: the wizard writes real files after all — the original "never
+writes a file" premise didn't hold up.** `registry.js`'s `register()`
+already supports `options.override: id` (whole-value replace of an
+already-registered entry), and `api.js` has read-back accessors
+(`getEntityDefinition`, and a new `getRule`) for every registrable kind.
+That means both of the wizard's real operations are expressible as plugin
+code that runs *after* its target is already registered (via ordinary
+plugin `dependencies` ordering): read the live value back, re-register it
+with one field changed. Neither ever needs to locate or parse wherever
+the *original* entity type/rule definition lives — which is what makes it
+safe to write as a real file, unlike the bootstrap-file-editing case
+`buildToggleInstruction` (Plugin management) still has to stay
+instruction-only for.
+
+- **Attach an existing (global) behavior**: `api.getEntityDefinition(id)`
+  read back, then `api.registerEntity(id, { components: { ...def.components,
+  [marker]: data } }, { override: id })`.
+- **Widen a type-pinned rule to cover another entity type**:
+  `api.getRule(id)` read back (preserving its real `ruleFn`, which the
+  wizard never sees or needs to reconstruct), then `api.registerRule(id,
+  actionType, ruleFn, { ...rest, components: <widened filter>, override:
+  id })`.
+
+Both operations are entries in a plain array (`{ kind: 'attach-component',
+entityId, component, data }` / `{ kind: 'widen-rule-types', ruleId, types
+}`) exported as `ruleOverrides` from a generated file, alongside a
+`register(api)` that just applies each entry in order via
+`applyRuleOverride` (`packages/core/src/ruleOverrides.js` — lives in
+`core`, not `editor`, since this generated file ships with the downstream
+game and imports it at real runtime). Since every entry is pure data,
+`register()` can be regenerated blindly any time the author adds, removes,
+or edits one — no hand-written logic ever lives in this file, so nothing
+is ever at risk of being silently clobbered.
+
+**Decision: composition plugins get full CRUD, and more than one can
+exist.** Written to the same folder-per-plugin convention
+(`src/plugins/<id>/index.js`) every other plugin uses. Create/update are
+both just "regenerate and write" — no `/exists`-confirm gate, since
+saving an already-open composition is an intentional overwrite, not a
+collision with content the author never opened. Multiple composition
+plugins may coexist deliberately (an author experimenting with different
+override groupings), discovered by scanning candidates for a `ruleOverrides`
+array export (structural detection — no dry-run/execution needed to read
+one back, unlike ordinary plugin kind-classification, since a composition
+plugin's `register()` makes real reads that a fake `recordingApi` can't
+meaningfully answer). Delete — this project's first delete-capable
+dev-server endpoint — is only offered when a composition is empty,
+disabled, and nothing else declares it as a dependency; re-validated
+server-side against the real file/bootstrap state, not trusted from the
+client.
+
+**Decision: a genuinely custom behavior stays a one-shot scaffold, never
+revisited.** When no existing rule fits, the wizard generates a
+properly-shaped stub (`registerRule` call, a `components` filter — either
+an `EntityType`-pinned shape for the entity-type-scoped choice, or a fresh
+marker component for the standalone/reusable choice, the same real
+architectural distinction `registerEntityType`'s inline `rules` vs. a
+plain `registerRule` call already represents — TODO handler body) and
+writes it once, via the shared file-write API's `/exists`+confirm-overwrite
+flow (same posture the generator composition tool's own exports use).
+Unlike composition plugins, this file is never read back or regenerated —
+its handler is hand-written the moment the author touches it, so
+treating it as freely regeneratable data would risk destroying real code.
+From the moment it's written, it's just an ordinary plugin the author
+edits directly in their own editor — the wizard's involvement ends there.
+
+`dependencies` on a generated composition plugin stays `core`-only, not
+auto-derived from what its entries target — a target isn't guaranteed to
+come from a plugin at all (a game's bootstrap file can register an entity
+type directly, outside `loadPlugins` entirely), so there's no reliable id
+to point at. The author adds one by hand if their composition genuinely
+needs to load after a specific plugin.
 
 ## Tileset/font-calibration editor
 
@@ -857,7 +930,7 @@ rename and the harness's file-write API, not the shared UI primitives —
 sequenced independently of them rather than grouped in), then shared UI
 infrastructure (live-preview + narrow form primitives), then the
 individual tools in dependency order (map editor, generator composition
-tool, content browser, composition wizard, tileset/calibration editor,
+tool, content browser, behavior wizard, tileset/calibration editor,
 config UI). The generator composition tool additionally needs the
 region-scoped composition primitives exported from `index.js` (its own
 small "Core extension" above) before implementation.

@@ -1,7 +1,7 @@
 # @glyphrogue/editor
 
 Dev-time companion tooling: map editor, tileset/calibration editor, content
-browser, composition wizard, config UI, and the hot-reload dev harness they
+browser, behavior wizard, config UI, and the hot-reload dev harness they
 all mount inside. `@glyphrogue/core` is a `peerDependency` — the editor
 operates on whatever live `api`/world the consuming game already built,
 never constructing its own instance. Never imported by a game's production

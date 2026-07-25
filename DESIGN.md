@@ -59,8 +59,9 @@ glyphrogue/
   a replacement IDE: the dev-time **map editor** (hand-author maps, tune/
   preview procedural-generator parameters and seeds, stamp/override
   generated content), tileset/font-calibration editor, content browser,
-  composition wizard (schema-aware scaffolding for entities/rules/
-  generators), config UI, and plugin management, all mounted inside a
+  behavior wizard (connects entity types to rules — attach an existing
+  behavior, widen a type-pinned one, or scaffold a genuinely new one),
+  config UI, and plugin management, all mounted inside a
   hot-reload dev harness. Depends on `core` for live preview — the editor
   is a design-time surface over the same procgen API a shipped game calls
   at runtime, not a separate map format. Structurally excluded from
@@ -283,7 +284,7 @@ generator's tunable params are finally introspectable (neither existed
 before this doc). The map editor supports both in-context editing (the
 live world's current zone) and standalone template/preset authoring
 against a scratch zone, sharing one `api` instance rather than needing a
-sandboxed second `core` instance. A content browser and composition wizard
+sandboxed second `core` instance. A content browser and behavior wizard
 share one underlying registered-content catalog (derived from
 `scripting-api.md`'s recording-API manifest) rather than being separate
 mechanisms. Full depth in
