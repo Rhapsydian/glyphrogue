@@ -321,18 +321,102 @@ All four packages (`@glyphrogue/core`, `@glyphrogue/editor`,
 `packages/core` implementation roadmap, and the `packages/editor` design
 roadmap is complete.
 
-**Next `/dev-session` is a decision-session to scope out a downstream
-test game project** — the first real consumer of `create-glyphrogue-game`,
-decided live with the user at session 42's close-out rather than more
-`glyphrogue` engine work. Other unblocked candidates, not chosen but still
-open if priorities shift: **map editor in-context editing/override
-export** (deferred from session 34, no dependency on anything above); the
-"Deferred / future items" list below, several of which wanted a real
-downstream game to exist before scoping further (one now does, once the
-test game is scoped).
+That decision-session happened next (a separate repo, `glyphkeep` —
+`C:\Users\husbando\Claude\glyphkeep`, a haunted-dungeon-crawl roguelite),
+and its Phase 1 implementation (glyphkeep sessions 1-2, 2026-07-26) is
+now the project's first real dogfooding of `create-glyphrogue-game` and
+the public API surface end to end. Per `glyphkeep/.claude/dev-session.md`'s
+cross-project convention, small unambiguous gaps found along the way were
+already fixed directly in this repo, live: `save.js`'s `deserialize` now
+forwards `isWalkable`/`isOpaque` to `createApi` (previously silently
+dropped), and `computeFov`/`fovContains` are now exported from
+`packages/core`'s public surface (previously implemented/tested but
+`api.computeFov`-only). See `glyphkeep/BACKLOG.md`'s "Cross-project issues
+found in `glyphrogue`" section for the full writeup of both, including
+regression tests already landed here.
+
+**Next `/dev-session` for `glyphrogue` itself: thread `rng` through the
+action/rule pipeline, plus one more small export fix.** Found while
+glyphkeep wrote its `Attack` rule (checkpoint 4) — a rule's `ctx`
+(`actions.js`'s `createContext`) has no RNG access at all; only a
+*generator*'s ctx does (`mapgen.js`). Unlike the two fixes above, this is
+a real architectural change (`createContext`/`dispatch`/`dispatchExclusive`
+need `rng` threaded through the same way `mapQuery`/`renderEvents`/
+`scheduler` already are, sourced from `api.rng` at `createEngine()` time),
+not a two-line addition — that's why it's its own session rather than a
+live in-session fix. Recommended shape to start from (confirm/adjust
+live, same as every other real design call here): expose it as `ctx.rng`
+directly, matching the generator ctx's `{rng, params, ...}` shape, so a
+rule can call `ctx.rng.next()` the same way a generator calls its own.
+Needs real regression tests (a rule reading `ctx.rng` and getting a real,
+seeded, advancing PRNG). Bundle in the same session: export
+`isWalkableCell` from `zoneComposition.js` via `index.js` — glyphkeep
+independently reinvented it (`isWalkableInZone` in its own `game.js`)
+without realizing this already exists internally, only unreachable from
+outside the package; same class of gap as the `computeFov`/`fovContains`
+fix above.
+
+**After that lands, a glyphkeep follow-up session should fold it back
+in** before glyphkeep starts its own Phase 2: swap glyphkeep's
+`combatRng` workaround (a second, separate seeded stream) for the real
+`ctx.rng`, and swap its `isWalkableInZone`/`isOpaqueInZone`/`cellAt` trio
+for the exported `isWalkableCell` (or an equivalent). Keeps glyphkeep
+current as the reference downstream consumer instead of carrying
+workaround debt. See `glyphkeep/BACKLOG.md`'s NEXT SESSION section for
+this same sequencing from glyphkeep's side.
+
+Other unblocked candidates, not chosen but still open if priorities
+shift: **map editor in-context editing/override export** (deferred from
+session 34, no dependency on anything above); three new deferred items
+below surfaced by glyphkeep's Phase 1 (move-action resolution as
+first-party content, and two scaffold-template boilerplate candidates),
+each explicitly flagged to wait for more evidence from glyphkeep's own
+Phase 2 rather than being decided on one data point; the rest of the
+"Deferred / future items" list below.
 
 ## Deferred / future items
 
+- **Move-action resolution as a first-party Content plugin** — surfaced
+  by glyphkeep's Phase 1 checkpoint 2 (2026-07-26). All four shipped
+  `TakeTurn` behaviors (`wandersRule`/`chasesPlayerRule`/`fleesRule`/
+  `guardsRule`) emit `{type: 'Move', entity, to, cost}` follow-ons, but
+  nothing in `packages/core` ever resolves one into an actual `Position`
+  update — every downstream game has to reinvent this exact rule before
+  any of the four behaviors can visibly do anything. Not really a
+  glyphkeep-specific gap; arguably a hole in the "first-party AI
+  behaviors" story itself. glyphkeep's own version
+  (`src/rules.js`'s `moveRule`) is a working reference. The walkability-
+  check-plus-`Position`-update core is the strong part of the candidate;
+  its bump-to-attack collision policy is more genuinely game-specific
+  (a different game might want bump-to-push, or no-op) and probably
+  shouldn't come along for the ride as-is. Deliberately not scoped into
+  the rng-threading session above — wait for glyphkeep's Phase 2 (combo
+  enemies, a boss) to provide more evidence of what the "right" shape
+  actually is before designing this for real, same posture as every
+  other design call in this backlog.
+- **Camera/FOV/render-loop assembly as scaffold-template boilerplate** —
+  surfaced by glyphkeep's Phase 1 checkpoint 1 (2026-07-26). Camera
+  (`camera.js`), FOV (`fov.js`), and render-command generation
+  (`renderLayers.js`, `visibility.js`) are all real, exported, and
+  individually tested, but no consumer anywhere (the CLI scaffold, the
+  editor's own preview surfaces) had ever assembled them into a working
+  camera-follows-player live-ECS-driven render loop before glyphkeep did.
+  Every downstream game needs approximately this same assembly
+  (`updateCamera` on the player's `Position`, `computeFov`+
+  `classifyVisibility`-gated terrain, live `api.query()`-driven entity
+  commands) — plausible material for `create-glyphrogue-game`'s template
+  to ship as a real starting point instead of the current static-template
+  `renderZone`. glyphkeep's `src/game.js` is a working reference. Wait
+  for glyphkeep's Phase 2 before locking in a shape, same reasoning as
+  the item above.
+- **Keyboard-input wiring as scaffold-template boilerplate** — surfaced
+  by glyphkeep's Phase 1 checkpoint 2 (2026-07-26). `@glyphrogue/input`
+  is real, published, and fully tested, but had zero real gameplay
+  consumers anywhere (not even the CLI scaffold) before glyphkeep wired
+  a keymap + `createKeyboardSource` + `createInputPipeline` through to
+  `resolvePlayerAction`. Same reusable-boilerplate shape as the render-
+  loop item above (a default movement keymap the scaffold could ship),
+  same "wait for more evidence" posture.
 - **Electron/Steam scaffold generation for `packages/cli`** —
   `docs/design/packaging.md`'s IPC surface, code-signing, update-strategy,
   and Steam build/upload material is already well-designed but was
