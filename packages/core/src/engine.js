@@ -25,6 +25,20 @@ function sumCost(actions) {
 export function act(engine) {
   const entity = next(engine.scheduler);
 
+  // next() returns undefined when the scheduler has no registered actors at
+  // all (scheduler.js) - previously fell straight through to
+  // dispatchExclusive/spend with entity=undefined, which corrupts
+  // scheduler.actors with an undefined -> NaN entry (spend() has no
+  // existing-actor guard either) that then makes every future next() call
+  // return undefined too, forever, without ever locking - run()'s while
+  // loop had no other exit condition, so this hung the calling thread
+  // (the browser's main thread, in practice) rather than erroring. Found
+  // dogfooding this in glyphkeep (a scaffolded game that hadn't yet added
+  // its player as an actor when it first called run()).
+  if (entity === undefined) {
+    return { entity: undefined, waiting: false, idle: true };
+  }
+
   if (hasComponent(engine.world, entity, 'PlayerControlled')) {
     lock(engine);
     return { entity, waiting: true };
@@ -57,7 +71,12 @@ export function resolvePlayerAction(engine, entity, action) {
 export function run(engine) {
   const turns = [];
   while (!engine.locked) {
-    turns.push(act(engine));
+    const turn = act(engine);
+    turns.push(turn);
+    // No actors registered at all - act() will never lock (only a
+    // PlayerControlled actor's turn does that), so without this the loop
+    // above would otherwise spin forever on the same idle turn.
+    if (turn.idle) break;
   }
   return turns;
 }

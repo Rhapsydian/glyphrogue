@@ -177,6 +177,33 @@ test('a Timer entity dispatches its own action instead of a TakeTurn/behaviors p
   assert.deepEqual(turn.result.resolved.map((a) => a.type), ['EventTimerElapsed']);
 });
 
+test('act() on an empty scheduler reports idle instead of corrupting scheduler.actors', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+
+  const engine = createEngine(world, registry, scheduler);
+  const turn = act(engine);
+
+  assert.equal(turn.entity, undefined);
+  assert.equal(turn.waiting, false);
+  assert.equal(turn.idle, true);
+  assert.equal(scheduler.actors.size, 0);
+  assert.equal(isLocked(engine), false);
+});
+
+test('run() on an empty scheduler returns immediately instead of spinning forever', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+
+  const engine = createEngine(world, registry, scheduler);
+  const turns = run(engine);
+
+  assert.deepEqual(turns, [{ entity: undefined, waiting: false, idle: true }]);
+  assert.equal(isLocked(engine), false);
+});
+
 test('resolvePlayerAction threads renderEvents through to the dispatched action', () => {
   const world = createWorld();
   const registry = createRegistry();

@@ -335,6 +335,23 @@ dropped), and `computeFov`/`fovContains` are now exported from
 found in `glyphrogue`" section for the full writeup of both, including
 regression tests already landed here.
 
+Two more fixes landed at that same glyphkeep session's close-out, caught
+via glyphkeep's Tokenote companion notes (`glyphkeep/.claude/
+tokenote-notes.md`) rather than caught live in the moment they were first
+worked around: **`act()`/`run()` (`engine.js`) would hang forever instead
+of erroring when called against an empty scheduler** (`next()` returning
+`undefined` for "no actors registered" fell straight through to
+`dispatchExclusive`/`spend` with `entity=undefined`, which corrupts
+`scheduler.actors` with a `NaN`-budget entry that then makes every future
+`next()` call return `undefined` too, forever, with no lock ever set to
+stop `run()`'s loop — hit when glyphkeep called `run()` before adding its
+player as an actor). Fixed with an early-return/loop-break guard, tests
+in `engine.test.js`. **`create-glyphrogue-game`'s template shipped with
+no `.gitignore`** — every generated game's `node_modules`/`dist` were one
+`git add .` away from getting committed. Fixed by adding one to
+`templates/default/`, regression test in `packages/cli/test/
+scaffold.test.js` asserting the real template copies it through.
+
 **Next `/dev-session` for `glyphrogue` itself: thread `rng` through the
 action/rule pipeline, plus one more small export fix.** Found while
 glyphkeep wrote its `Attack` rule (checkpoint 4) — a rule's `ctx`
@@ -376,6 +393,19 @@ Phase 2 rather than being decided on one data point; the rest of the
 
 ## Deferred / future items
 
+- **Should `create-glyphrogue-game` be able to scaffold into a non-empty
+  directory?** — surfaced via glyphkeep's Tokenote companion notes
+  (`glyphkeep/.claude/tokenote-notes.md`) during Phase 1 checkpoint 1,
+  2026-07-26: `targetDirIsUsable` refuses any non-empty target, which
+  meant scaffolding into glyphkeep's own already-existing repo (design
+  docs, `.claude/`, git history already in place) needed a workaround —
+  scaffold to a scratch dir, then copy the generated files in by hand.
+  Genuinely ambiguous, not fixed live: allowing it raises real merge-
+  semantics questions (overwrite silently? skip existing files? require
+  an explicit `--force`? what about a target with its own unrelated
+  `package.json`?) that need a real decision, not a guess. Would need its
+  own scoped conversation before implementation, same as everything else
+  in this list.
 - **Move-action resolution as a first-party Content plugin** — surfaced
   by glyphkeep's Phase 1 checkpoint 2 (2026-07-26). All four shipped
   `TakeTurn` behaviors (`wandersRule`/`chasesPlayerRule`/`fleesRule`/
