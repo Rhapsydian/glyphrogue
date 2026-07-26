@@ -58,6 +58,12 @@ export {
   isInViewport,
 } from './camera.js';
 
+// rendering.md: "one shared shadowcasting primitive, three consumers"
+// (player FOV, per-monster perception, light-source propagation) - meant
+// for direct downstream use beyond api.computeFov's player-FOV-bound
+// wrapper (e.g. a light-propagation pass against a different isOpaque).
+export { computeFov, fovContains } from './fov.js';
+
 export {
   createRenderEventQueue,
   enqueueRenderEvent,
