@@ -280,14 +280,46 @@ web scaffold only — `packaging.md`'s Electron/Steam material was left out
 rather than folded in (see the two new deferred items below). No source
 code touched, doc-only session.
 
-**Next `/dev-session` is `packages/cli` implementation** of
-`docs/design/cli.md`. Needs, as a manual prerequisite before the scaffold
-can work end-to-end, a first `npm publish` of `@glyphrogue/core`/
-`@glyphrogue/editor` at `0.1.0` (see `cli.md`'s "The pre-publish problem")
-— confirm at kickoff whether that publish happens as part of the session
-or just before it. Map editor in-context editing/override export
-(deferred from session 34) remains parked behind it, no dependency between
-the two.
+Session 42 implemented `packages/cli` (`docs/design/cli.md`), the last
+item on the deep-dive/implementation roadmaps. Kickoff resolved the
+"pre-publish problem" live: publish happened during the session itself
+(the user ran `npm login`/`npm publish` in their own terminal — this
+environment's npm wasn't authenticated, and publishing is an external,
+irreversible action outside what an agent should do unilaterally
+regardless), `@glyphrogue/input` was folded into the publish set alongside
+core/editor (`editor`'s `peerDependencies` reference it, so a real install
+needs it too, not just the two the backlog literally named), and
+`create-glyphrogue-game` itself got published once built and verified —
+otherwise `npm create glyphrogue-game` wouldn't resolve for a real user.
+Also added: a root MIT `LICENSE` and matching `license`/`description`/
+`repository`/`publishConfig` fields on all three prior packages (none of
+this existed before this session). Landed as `packages/cli/bin.js`+
+`scaffold.js` (prompt → kebab-cased target dir → recursive template copy +
+plain token substitution) and `templates/default/` (the two-entry Vite
+scaffold, a hand-authored `bootstrap.js`, a 9x7 starter room + one torch
+entity/plugin, a CSS-monospace starter font source needing no bundled
+binary, the GitHub Pages workflow baked from `pixelyph`'s, and a README
+covering Pages + itch.io deploy). Verified end-to-end against the real
+published `0.1.0` packages (not a workspace shortcut): a generated
+scaffold installs from the registry, both `dev.html`/`index.html` render
+correctly, the editor's plugin sidebar reads the real `bootstrap.js`, and
+a production build excludes `@glyphrogue/editor`/Svelte entirely. Test
+count 567 → 572 (`cli`: 0 → 5 new). Session log pending — written at
+close-out.
+
+All four packages (`@glyphrogue/core`, `@glyphrogue/editor`,
+`@glyphrogue/input`, `create-glyphrogue-game`) are now live on npm at
+`0.1.0`, and every item on the deep-dive planning roadmap, the
+`packages/core` implementation roadmap, and the `packages/editor` design
+roadmap is complete. **There's no single fixed next-session pointer
+anymore** — the next `/dev-session` kickoff should discuss scope fresh
+rather than assume one. Concrete unblocked candidates: **map editor
+in-context editing/override export** (deferred from session 34, no
+dependency on anything above); the "Deferred / future items" list below,
+several of which explicitly wanted a real downstream game to exist before
+scoping further (one now *can* exist, via `create-glyphrogue-game`, if the
+user wants to spin one up); or starting an actual downstream game project
+instead of more `glyphrogue` engine work.
 
 ## Deferred / future items
 
