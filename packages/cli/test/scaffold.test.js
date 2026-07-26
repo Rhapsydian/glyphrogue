@@ -85,3 +85,25 @@ test('the real scaffold template includes a .gitignore that copyTemplate copies 
     await rm(scratch, { recursive: true, force: true });
   }
 });
+
+// Regression (found dogfooding via glyphkeep, deploying to real GitHub
+// Pages): the real template's vite.config.js hardcoded base: '/' for the
+// non-itch build mode, correct only for a <user>.github.io root repo or a
+// custom domain - an ordinary project repo (the scaffold's own normal
+// case) is served from /<repo-name>/, so every built asset 404s at
+// root-absolute paths. Templating the game name into the base path is
+// what fixes it; this asserts the real template actually substitutes it
+// (not a synthetic fixture), and that the itch mode's relative base is
+// untouched by the token substitution.
+test('the real scaffold template Pages-mode base is templated with the game name, itch mode stays relative', async () => {
+  const scratch = await mkdtemp(join(tmpdir(), 'glyphrogue-cli-test-'));
+  try {
+    const target = join(scratch, 'target');
+    await copyTemplate(templateDir, target, buildTokenMap('My Cool Game'));
+
+    const config = await readFile(join(target, 'vite.config.js'), 'utf8');
+    assert.match(config, /base: mode === 'itch' \? '\.\/' : '\/my-cool-game\/'/);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});

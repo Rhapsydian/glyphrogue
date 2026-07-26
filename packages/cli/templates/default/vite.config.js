@@ -11,10 +11,15 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 // dev.html is never added to build.rollupOptions.input) - dev.html
 // (imports @glyphrogue/core *and* @glyphrogue/editor) only gets served by
 // the dev server, via `npm run dev`'s --open flag below. base follows the
-// same per-mode switch pixelyph established: root '/' for GitHub Pages,
-// relative './' for itch.io (`vite build --mode itch`).
+// same per-mode switch pixelyph established: relative './' for itch.io
+// (`vite build --mode itch`), '/__GAME_NAME__/' for GitHub Pages - a
+// project repo (the normal case; not a <user>.github.io root repo or a
+// custom domain) is served from that subpath, not root '/', or every
+// built asset 404s. __GAME_NAME__ matches the repo name this same
+// scaffold's README already assumes elsewhere (the itch `butler push`
+// line) - rename the repo, update this too.
 export default defineConfig(({ mode }) => ({
-  base: mode === 'itch' ? './' : '/',
+  base: mode === 'itch' ? './' : '/__GAME_NAME__/',
   plugins: [
     // Powers the map editor / composition tool / plugin management /
     // config UI's file-write API when running against this project's real
