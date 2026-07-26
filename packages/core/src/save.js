@@ -88,6 +88,8 @@ function checkPluginsPresent(dto, registeredPluginIds) {
 export function deserialize(dto, {
   seed = 1,
   platform,
+  isWalkable,
+  isOpaque,
   coreMigrations = {},
   plugins = [],
   deserializeGame,
@@ -96,7 +98,7 @@ export function deserialize(dto, {
 
   const core = runMigrations(dto.core, dto.coreSchemaVersion, CORE_SCHEMA_VERSION, coreMigrations);
 
-  const api = createApi({ seed, platform });
+  const api = createApi({ seed, platform, isWalkable, isOpaque });
 
   // Mutate the existing world/scheduler in place (not reassigned wholesale)
   // so engine.js's own captured references to the same objects stay valid.

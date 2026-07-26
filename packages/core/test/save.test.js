@@ -55,6 +55,26 @@ test('serialize -> deserialize round trip produces an equivalent, independently-
   assert.equal(turn.entity, goblin);
 });
 
+test('deserialize forwards isWalkable/isOpaque to the restored api, same as seed/platform', () => {
+  const { api: original } = buildSampleApi();
+  const dto = serialize(original);
+
+  let walkableCalls = 0;
+  let opaqueCalls = 0;
+  const isWalkable = () => { walkableCalls++; return true; };
+  const isOpaque = () => { opaqueCalls++; return false; };
+  const restored = deserialize(dto, { isWalkable, isOpaque });
+
+  // Without the fix, isWalkable/isOpaque are undefined on the restored api's
+  // closures, so calling either of these throws a TypeError instead of
+  // reaching the injected functions at all.
+  restored.findPath({ x: 0, y: 0 }, { x: 2, y: 2 });
+  restored.computeFov({ x: 0, y: 0 }, 3);
+
+  assert.ok(walkableCalls > 0);
+  assert.ok(opaqueCalls > 0);
+});
+
 test('a custom serializeGame hook is used to populate the game slice', () => {
   const { api } = buildSampleApi();
 
