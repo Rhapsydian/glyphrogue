@@ -1,8 +1,15 @@
-# create-glyphrogue-game (placeholder)
+# create-glyphrogue-game
 
-Scaffolding CLI for new Glyphrogue game projects — wires up a Vite config
-with dev mode (core + editor) and production mode (core only).
+Scaffolding CLI for new Glyphrogue game projects.
 
-No code yet — this package is scaffolded ahead of the deep-dive planning
-sessions in `../../BACKLOG.md`. See `../../DESIGN.md` for the architecture
-this package will implement.
+```bash
+npm create glyphrogue-game
+```
+
+Prompts for a game name, then writes a ready-to-run project into a
+kebab-cased directory of that name: a two-entry Vite config (dev mode
+loads `@glyphrogue/core` + `@glyphrogue/editor`, production loads core
+only), one minimal starter room/plugin/font source, and a GitHub Pages
+deploy workflow. See `templates/default/README.md` for what the generated
+project itself looks like, and `../../docs/design/cli.md` for the design
+this implements.

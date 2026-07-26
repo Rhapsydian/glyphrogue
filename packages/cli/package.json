@@ -1,0 +1,29 @@
+{
+  "name": "create-glyphrogue-game",
+  "version": "0.1.0",
+  "description": "Scaffolding CLI for new Glyphrogue game projects - npm create glyphrogue-game.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rhapsydian/glyphrogue.git",
+    "directory": "packages/cli"
+  },
+  "type": "module",
+  "bin": {
+    "create-glyphrogue-game": "./bin.js"
+  },
+  "files": [
+    "bin.js",
+    "scaffold.js",
+    "templates"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
