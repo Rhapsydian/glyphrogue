@@ -308,22 +308,28 @@ published `0.1.0` packages (not a workspace shortcut): a generated
 scaffold installs from the registry, both `dev.html`/`index.html` render
 correctly, the editor's plugin sidebar reads the real `bootstrap.js`, and
 a production build excludes `@glyphrogue/editor`/Svelte entirely. Test
-count 562 → 567 (`cli`: 0 → 5 new). Session log pending — written at
-close-out.
+count 562 → 567 (`cli`: 0 → 5 new). Session log:
+`docs/session-logs/session-42-2026-07-26.md`. The same session also ran a
+full documentation audit at the user's request (three parallel research
+passes over `docs/design/`, `BACKLOG.md`, and every README/`DESIGN.md`),
+fixing 14 stale/contradictory findings — see the session log for the
+full list; not repeated here since none of it changes project status.
 
 All four packages (`@glyphrogue/core`, `@glyphrogue/editor`,
 `@glyphrogue/input`, `create-glyphrogue-game`) are now live on npm at
 `0.1.0`, and every item on the deep-dive planning roadmap, the
 `packages/core` implementation roadmap, and the `packages/editor` design
-roadmap is complete. **There's no single fixed next-session pointer
-anymore** — the next `/dev-session` kickoff should discuss scope fresh
-rather than assume one. Concrete unblocked candidates: **map editor
-in-context editing/override export** (deferred from session 34, no
-dependency on anything above); the "Deferred / future items" list below,
-several of which explicitly wanted a real downstream game to exist before
-scoping further (one now *can* exist, via `create-glyphrogue-game`, if the
-user wants to spin one up); or starting an actual downstream game project
-instead of more `glyphrogue` engine work.
+roadmap is complete.
+
+**Next `/dev-session` is a decision-session to scope out a downstream
+test game project** — the first real consumer of `create-glyphrogue-game`,
+decided live with the user at session 42's close-out rather than more
+`glyphrogue` engine work. Other unblocked candidates, not chosen but still
+open if priorities shift: **map editor in-context editing/override
+export** (deferred from session 34, no dependency on anything above); the
+"Deferred / future items" list below, several of which wanted a real
+downstream game to exist before scoping further (one now does, once the
+test game is scoped).
 
 ## Deferred / future items
 

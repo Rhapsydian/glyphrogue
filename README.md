@@ -165,10 +165,13 @@ real published packages, not a workspace shortcut. See
 `BACKLOG.md`'s session 42 entry.
 
 Every deep-dive planning, `packages/core` implementation, and
-`packages/editor` design roadmap item is now complete, and there's no
-fixed next-session pointer — see `BACKLOG.md` for the current candidates
-(map editor in-context editing/override export, the deferred-items list,
-or starting an actual downstream game project).
+`packages/editor` design roadmap item is now complete. The same session
+also ran a full documentation audit, fixing 14 stale/contradictory
+findings across `docs/design/`, `BACKLOG.md`, and every README/
+`DESIGN.md` — see `BACKLOG.md`'s session 42 entry and
+`docs/session-logs/session-42-2026-07-26.md`. **Next session is a
+decision-session to scope out a downstream test game project** — the
+first real consumer of `create-glyphrogue-game`.
 
 ## See also
 
