@@ -325,9 +325,13 @@ That decision-session happened next (a separate repo, `glyphkeep` —
 `C:\Users\husbando\Claude\glyphkeep`, a haunted-dungeon-crawl roguelite),
 and its Phase 1 implementation (glyphkeep sessions 1-2, 2026-07-26) is
 now the project's first real dogfooding of `create-glyphrogue-game` and
-the public API surface end to end. Per `glyphkeep/.claude/dev-session.md`'s
-cross-project convention, small unambiguous gaps found along the way were
-already fixed directly in this repo, live: `save.js`'s `deserialize` now
+the public API surface end to end. This repo's own side of that work has
+its own session log — `docs/session-logs/session-43-2026-07-26.md` — per
+a new convention (any glyphkeep session making real changes here gets a
+session log in both repos, not just glyphkeep's). Per
+`glyphkeep/.claude/dev-session.md`'s cross-project convention, small
+unambiguous gaps found along the way were already fixed directly in this
+repo, live: `save.js`'s `deserialize` now
 forwards `isWalkable`/`isOpaque` to `createApi` (previously silently
 dropped), and `computeFov`/`fovContains` are now exported from
 `packages/core`'s public surface (previously implemented/tested but
