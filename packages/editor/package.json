@@ -1,8 +1,18 @@
 {
   "name": "@glyphrogue/editor",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Glyphrogue's dev-time authoring tools: map editor, tileset/font-calibration editor, content browser, composition wizard, config UI, and hot-reload harness.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rhapsydian/glyphrogue.git",
+    "directory": "packages/editor"
+  },
   "type": "module",
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "@glyphrogue/core": "*",
     "@glyphrogue/input": "*"

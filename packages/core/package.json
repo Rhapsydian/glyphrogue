@@ -1,6 +1,13 @@
 {
   "name": "@glyphrogue/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Glyphrogue's engine core: ECS, turn scheduler, map generation, rendering primitives, and the scripting/plugin API.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rhapsydian/glyphrogue.git",
+    "directory": "packages/core"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -9,6 +16,9 @@
   "files": [
     "src"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node --test"
   }

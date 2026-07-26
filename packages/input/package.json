@@ -1,6 +1,13 @@
 {
   "name": "@glyphrogue/input",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Glyphrogue's device-agnostic input adapter: keybinding table, capture stack, keyboard/gamepad source adapters.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rhapsydian/glyphrogue.git",
+    "directory": "packages/input"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -9,6 +16,9 @@
   "files": [
     "src"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node --test"
   }
