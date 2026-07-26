@@ -108,7 +108,11 @@ per-write provenance — see
 consumer of `@glyphrogue/core` (nothing had loaded it in a real browser
 before this session's dev fixture), and the same externalization issue in
 `devServerPlugin.js`'s own build step. `packages/editor` test count: 0 →
-15 (360 total). Session 30 kicked off intending roadmap item 3 (plugin
+15 (360 total — this doesn't cleanly reconcile against session 28's 343
+total + 15, which is 358; a session-42 documentation audit found the gap
+but couldn't determine its source this long after the fact, so it's left
+as an acknowledged discrepancy rather than a guessed correction). Session
+30 kicked off intending roadmap item 3 (plugin
 management) but was redirected live at kickoff: a real drift was found
 between `scripting-api.md`'s Plugin architecture (first-party content
 should use the same module format as end-user plugins) and `packages/core`'s
