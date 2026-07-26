@@ -273,9 +273,6 @@ than two parallel systems.
 
 - Exact algorithm implementations (WFC constraint-solving approach, CA
   rule sets, BSP split heuristics) — implementation time.
-- Full plugin/module packaging for generator registration (discovery,
-  versioning of the registration mechanism, how a mod's package declares
-  its generators) — scripting-api session (topic 4).
 - World↔local edge-matching/connectivity algorithm specifics beyond the
   logical-link model above (exact boundary-alignment algorithm) —
   implementation time.

@@ -86,13 +86,15 @@ causes zero camera motion, and sustained movement toward an edge makes
 the camera "keep pace" one cell at a time rather than jumping.
 
 This is still a **snap** motion — each recenter step is an integer-cell
-jump matching turn cadence, not a smooth pixel interpolation. That's a
-deliberate choice to decouple camera movement from the animation system
-(see "Animation" below): smooth pixel-lerp scrolling would compose
-directly with that system's still-open `lock`/`unlock` timing question,
-and deciding it now would mean building on an admittedly-unresolved
-dependency. Smooth scrolling is noted as a later option, gated on that
-question actually being resolved.
+jump matching turn cadence, not a smooth pixel interpolation. That was
+originally a deliberate choice to decouple camera movement from the
+animation system (see "Animation" below) while that system's `lock`/
+`unlock` timing question was still open — smooth pixel-lerp scrolling
+would have composed directly with an admittedly-unresolved dependency.
+That question is now resolved (`lock`/`unlock` never gates animation
+pacing to begin with — see "Animation" below), so smooth scrolling
+remains a later option, no longer blocked on an open question, just not
+decided in this pass.
 
 Camera clamps to map bounds (won't scroll the viewport past the edge of
 the map into undefined space).

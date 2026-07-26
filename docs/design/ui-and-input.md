@@ -218,11 +218,6 @@ as a `BACKLOG.md` addon, not decided here.
   (`rendering.md`, `fonts-and-tilesets.md`); deferred rather than decided
   as a side effect of this session, since it could have real implications
   for how the canvas viewport sizes itself.
-- **`lock`/`unlock` vs. animation-duration timing** — still open per
-  `rendering.md`/`core-architecture.md`; this doc's coarse state
-  notification (above) is independent of how that resolves, so nothing
-  here blocks on it, but the question itself isn't answered by this doc
-  either.
 - **Accessible alternative/description layer for the canvas viewport** —
   flagged as a `BACKLOG.md` accessibility addon, not designed here.
 - **Shipped default colorblind-safe palette** — flagged as a `BACKLOG.md`

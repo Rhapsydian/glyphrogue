@@ -171,9 +171,6 @@ rather than one editor mode, two:
 
 ## Open items carried forward
 
-- ECS library bake-off (bitECS vs. alternatives) at implementation time.
-- `act()` contract and lock/unlock-to-DOM-input interaction, at
-  implementation time.
 - Storage backend selection/config — packaging session (topic 8).
 - End-user mod distribution story for `editor` — packaging session
   (topic 8).

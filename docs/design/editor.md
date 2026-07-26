@@ -46,9 +46,9 @@ additions, and **Mod** for player-facing, runtime-toggleable content —
 both previously called "mod" elsewhere in this project, which becomes
 ambiguous once player-facing runtime toggling is a distinct idea.
 
-Both can share the same underlying mechanism (`core`'s existing
-`mods.js`/`loadMods`, id/version/dependency validation) — they differ only
-in *where the array of what-to-load comes from*:
+Both can share the same underlying mechanism (`core`'s `plugins.js`/
+`loadPlugins`, id/version/dependency validation) — they differ only in
+*where the array of what-to-load comes from*:
 
 - **Plugin** — the array is author-decided, baked into source, edited via
   the editor's **plugin management** feature (below). This is the only one
@@ -59,16 +59,14 @@ in *where the array of what-to-load comes from*:
   anything modding-related. Genuinely new `core`-level work, out of scope
   for this doc.
 
-**Renaming consequence**: everything that exists today in `core` uses
-"mod" for what this doc calls "Plugin" — `packages/core/src/mods.js`,
-`scripting-api.md`, the save DTO's `mods: { [modId]: ... }` slice. Scoped
-into the very next implementation session (`BACKLOG.md`'s "packages/editor
-design roadmap" item 1, alongside the `core` mechanisms bundle below) —
-`loadMods` → a `loadPlugins`-equivalent, `mods.js` → `plugins.js`, the
-save-slice key, `scripting-api.md`'s terminology, and the CLI scaffold's
-`src/mods/` → `src/plugins/` folder. No source renamed in this doc itself
-— that's implementation, not design — but no longer an open-ended
-someday.
+**Renaming consequence, done**: everything that existed in `core` at the
+time this doc was written used "mod" for what this doc calls "Plugin" —
+`packages/core/src/mods.js`, `scripting-api.md`, the save DTO's
+`mods: { [modId]: ... }` slice. Landed in session 28 (`BACKLOG.md`'s
+"packages/editor design roadmap" item 1, alongside the `core` mechanisms
+bundle below): `loadMods` → `loadPlugins`, `mods.js` → `plugins.js`, the
+save DTO's slice key, `scripting-api.md`'s terminology, and (once
+`packages/cli` existed) its scaffold's `src/plugins/` folder convention.
 
 ## Core extension: `registerRule`'s `components` filter
 

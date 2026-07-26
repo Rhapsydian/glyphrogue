@@ -304,7 +304,7 @@ published `0.1.0` packages (not a workspace shortcut): a generated
 scaffold installs from the registry, both `dev.html`/`index.html` render
 correctly, the editor's plugin sidebar reads the real `bootstrap.js`, and
 a production build excludes `@glyphrogue/editor`/Svelte entirely. Test
-count 567 → 572 (`cli`: 0 → 5 new). Session log pending — written at
+count 562 → 567 (`cli`: 0 → 5 new). Session log pending — written at
 close-out.
 
 All four packages (`@glyphrogue/core`, `@glyphrogue/editor`,
@@ -410,14 +410,6 @@ instead of more `glyphrogue` engine work.
   specifically addresses zone diffs/overrides carrying mod-defined entity
   types. Genuinely still open, surfaced during the session-13 deep review
   rather than resolved as originally expected.
-- **Dev-time tileset/font-calibration editor** —
-  `docs/design/fonts-and-tilesets.md` expected this to be UI/UX-session (6)
-  territory ("the future tileset editor"); `docs/design/ui-and-input.md`'s
-  actual scope (menus, dialogs, keybinding, accessibility, controller
-  support) never covered it, and no other session has either. A per-font-
-  source calibration override (scale/baseline/centering) currently has no
-  authoring UI designed anywhere. Surfaced during the session-13 deep
-  review.
 - **Background/glyph redraw-cadence decoupling** —
   `packages/core/src/glyphRenderer.js`'s `drawCellBackground`/
   `drawGlyphCell` are kept as separate primitives specifically so a future

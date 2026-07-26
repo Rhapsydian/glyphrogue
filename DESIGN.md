@@ -35,7 +35,7 @@ glyphrogue/
     core/     — the runtime engine (ships in every production game)
     input/    — physical input → input-action adapter, outside core on purpose
     editor/   — dev-time tools, depends on core, never imported by games
-    cli/      — create-glyphrogue-game scaffolding tool (later)
+    cli/      — create-glyphrogue-game scaffolding tool
   docs/design/  — in-depth design docs, one per deep-dive planning session
   README.md
   DESIGN.md

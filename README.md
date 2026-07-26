@@ -11,8 +11,9 @@ Electron desktop build.
 
 Planning is complete (`docs/design/`, 11 deep-dive topics). `packages/core`
 implementation is complete (sessions 14–25). `packages/input` (physical
-input → input-action pipeline) is underway (session 23). `packages/editor`
-(dev-time companion tooling, never ships in production) is fully designed
+input → input-action pipeline) is complete (session 23, plus
+`captureBinding.js` added in session 40). `packages/editor` (dev-time
+companion tooling, never ships in production) is fully designed
 (`docs/design/editor.md`, sessions 26–27) with its hot-reload harness
 foundation (session 29), plugin management (session 32), shared UI
 infrastructure (session 33), the map editor's standalone-authoring scope
@@ -23,8 +24,10 @@ implemented — every item in the `packages/editor` design roadmap is now
 built; only map editor in-context editing/override export remains
 deferred. `packages/cli` (`create-glyphrogue-game` scaffolding) is
 designed in full for its web-scaffold scope (`docs/design/cli.md`, session
-41); implementation hasn't started. 562 `node --test` cases pass across
-the three implemented packages.
+41) and implemented (session 42). **All four packages —
+`@glyphrogue/core`, `@glyphrogue/editor`, `@glyphrogue/input`,
+`create-glyphrogue-game` — are published to npm at `0.1.0`.** 567
+`node --test` cases pass across all four.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
@@ -150,9 +153,22 @@ zero required edits" bar; template substitution is plain fixed-token
 string replacement. Electron/Steam scaffold generation
 (`docs/design/packaging.md`'s material) was left out of scope, deferred to
 its own future session. See `docs/session-logs/session-41-2026-07-25.md`.
-The next `/dev-session` is `packages/cli` implementation of that doc
-(gated on a manual first `npm publish` at `0.1.0`), or map editor
-in-context editing/override export.
+Session 42 implemented `packages/cli`, the last item on the deep-dive/
+implementation roadmaps: kickoff resolved the "pre-publish problem" live
+by publishing `@glyphrogue/core`/`@glyphrogue/editor`/`@glyphrogue/input`
+(the latter folded in since `editor`'s `peerDependencies` reference it)
+at `0.1.0` during the session itself, then built and published
+`create-glyphrogue-game` (`bin.js`/`scaffold.js`, the two-entry
+`templates/default/` scaffold, a starter room/plugin/font, the GitHub
+Pages workflow baked from `pixelyph`'s) — verified end-to-end against the
+real published packages, not a workspace shortcut. See
+`BACKLOG.md`'s session 42 entry.
+
+Every deep-dive planning, `packages/core` implementation, and
+`packages/editor` design roadmap item is now complete, and there's no
+fixed next-session pointer — see `BACKLOG.md` for the current candidates
+(map editor in-context editing/override export, the deferred-items list,
+or starting an actual downstream game project).
 
 ## See also
 
@@ -167,7 +183,8 @@ in-context editing/override export.
 
 ```
 packages/
-  core/     the runtime engine — implementation complete (sessions 14-25).
+  core/     the runtime engine — implementation complete (sessions 14-25),
+            published at 0.1.0.
             world.js, registry.js, actions.js, scheduler.js, engine.js, api.js,
             save.js, storage.js, rng.js, mapgen.js, zoneComposition.js, zoneDiff.js,
             bsp.js, cellularAutomataGenerator.js, waveFunctionCollapse.js,
@@ -179,13 +196,14 @@ packages/
             recordingApi.js, generatorPlugins.js, behaviorPlugins.js,
             servicePlugins.js, corePlugins.js, ruleOverrides.js — under
             src/, tests under test/
-  input/    physical input → input-action pipeline — underway (session 23).
-            keymap.js, captureStack.js, inputPipeline.js, stateNotifier.js,
-            keyboardSource.js, gamepadSource.js, keybindingStorage.js,
-            captureBinding.js (raw next-input capture, session 40) — kept
-            outside core and dependency-free — under src/, tests under test/
-  editor/   dev-time companion tools — designed in full (docs/design/editor.md);
-            every item in the design roadmap now implemented: harness
+  input/    physical input → input-action pipeline — complete (session 23),
+            published at 0.1.0. keymap.js, captureStack.js,
+            inputPipeline.js, stateNotifier.js, keyboardSource.js,
+            gamepadSource.js, keybindingStorage.js, captureBinding.js (raw
+            next-input capture, session 40) — kept outside core and
+            dependency-free — under src/, tests under test/
+  editor/   dev-time companion tools — designed in full (docs/design/editor.md),
+            published at 0.1.0; every item in the design roadmap now implemented: harness
             foundation (session 29), plugin management (session 32), shared
             UI infrastructure (session 33), the map editor's
             standalone-authoring scope (session 34), the generator
@@ -206,9 +224,14 @@ packages/
             testing. Map editor in-context editing/override export remains
             deferred. Never ships in production; Svelte 5 compiled ahead of
             time, only dist/ published
-  cli/      create-glyphrogue-game scaffolding tool — designed in full
-            (docs/design/cli.md, web-scaffold scope, session 41);
-            implementation not yet started
+  cli/      create-glyphrogue-game scaffolding tool — designed
+            (docs/design/cli.md, web-scaffold scope, session 41) and
+            implemented (session 42), published. bin.js/scaffold.js
+            (prompt → kebab-cased target dir → template copy + token
+            substitution) under the package root; templates/default/ holds
+            the two-entry Vite scaffold (index.html/dev.html,
+            vite.config.js), a hand-authored bootstrap.js, a starter room/
+            plugin/font, and the GitHub Pages workflow; tests under test/
 docs/design/       in-depth design docs, one per deep-dive planning session
 docs/glossary.md   living terminology reference
 docs/session-logs/ one log per session

@@ -175,16 +175,19 @@ only once confirmed. The screen doesn't need special core support for
 since the screen itself is what's holding `lock()` open regardless.
 
 **Correction to an earlier draft of this doc**: this resolves the
-lock/unlock-vs-animation question **only for `registerScreen`-triggered
-animation** — a screen's own animation gating its own closing action. It
-does **not** resolve `rendering.md`'s original open item, which is about
-*ordinary* per-actor movement/attack tweening during a normal multi-actor
-turn: whether `lock()` stays held for each animation's full duration
-(serializing turns, risking the "AI turn spam" pacing problem) or overlap
-is allowed (needing an undesigned render-event buffer). That question
-remains fully open — see `ai-and-behavior.md`'s "Open items," since
-`DecideAction`-driven creatures moving/attacking every round is exactly the
-scenario this bears on.
+lock/unlock-vs-animation question for **`registerScreen`-triggered
+animation specifically** — a screen's own animation gating its own closing
+action. The separate, more general question this note originally flagged
+as open — whether `lock()` stays held for ordinary per-actor movement/
+attack tweening during a normal multi-actor turn — was resolved in
+`rendering.md`'s session-13 deep review: `lock()` never gates animation
+pacing for any actor but the player (and a `registerScreen` holding it
+open), so the model can race arbitrarily far ahead of the view on a busy
+round. The render-event buffer that resolution confirmed necessary is
+implemented (`packages/core/src/renderEvents.js`), not undesigned, and the
+"AI turn spam" pacing problem (relevant to `DecideAction`-driven creatures
+moving/attacking every round) is a pure rendering/UX speed-control
+question from here — see `rendering.md`'s "Animation" section.
 
 ## Combat/battle-system swappability
 
