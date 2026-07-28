@@ -147,6 +147,32 @@ export {
   guardsPlugin,
 } from './behaviorPlugins.js';
 
+// Raw rule function, not just the pre-wrapped fleesPlugin (which bakes in a
+// fixed `components: { all: ['Flees'] }` filter) - a downstream game
+// authoring its own tighter registerRule filter around the same tested
+// movement logic (e.g. a health-gated "flees only once hurt" combo) has no
+// way to reach it without reimplementing fleeing locally otherwise. Found
+// by glyphkeep's Phase 2 slime archetype.
+//
+// The priority constants travel with it - a custom rule composing with the
+// four first-party behaviors needs to place itself in the *real* priority
+// ordering (self-preservation beats duty beats aggression beats idling),
+// not a hardcoded magic number that silently drifts if this ordering is
+// ever retuned.
+// DEFAULT_MOVE_COST travels too - found live: glyphkeep independently
+// redeclared the same "100" twice (its own MOVE_COST for the player's Move
+// action, then again for a fallback-turn Pass cost), purely because there
+// was no way to reference the real engine constant both are meant to stay
+// in lockstep with for "uniform one action per turn" to actually hold.
+export {
+  fleesRule,
+  FLEES_PRIORITY,
+  GUARDS_PRIORITY,
+  CHASES_PLAYER_PRIORITY,
+  WANDERS_PRIORITY,
+  DEFAULT_MOVE_COST,
+} from './behaviors.js';
+
 export { memoryPlugin, audioLoaderPlugin } from './servicePlugins.js';
 
 export { CORE_PLUGINS } from './corePlugins.js';
