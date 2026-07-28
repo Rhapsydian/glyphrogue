@@ -371,31 +371,36 @@ Test count 361 → 367 (6 new: rng identity/threading/follow-on/omitted
 cases in `actions.test.js`/`engine.test.js`, an `isWalkableCell` surface
 test in `index.test.js`). See `docs/session-logs/session-44-2026-07-28.md`.
 
+The glyphkeep fold-back session happened next as planned (glyphkeep's own
+session 4, 2026-07-28): `combatRng` swapped for the real `ctx.rng`, and
+`isWalkableInZone`/`isOpaqueInZone`/`cellAt` now delegate to the exported
+`isWalkableCell` (`cellAt` stays, still needed for raw cell-type rendering
+lookup) — no `glyphrogue`-side gap surfaced from that swap.
+
+**glyphkeep's Phase 2** ("full bestiary + boss," session 5, 2026-07-28)
+then landed two more small, unambiguous export fixes here, live in the same
+posture as every prior fix in this section: `fleesRule` plus the four
+behavior priority constants (`FLEES_PRIORITY` etc.) and `DEFAULT_MOVE_COST`
+are now re-exported from `index.js` (glyphkeep needed the raw rule function
+with a tightened component filter for a health-gated combo enemy, and the
+real priority ordering to compose with it correctly; `DEFAULT_MOVE_COST`
+also let glyphkeep stop independently redeclaring the same "100" twice for
+its own move/turn costs). See `packages/core/test/index.test.js`'s new
+regression tests.
+
 **Next `/dev-session` for `glyphrogue` itself**: nothing specific is
-queued as a direct follow-on — the glyphkeep fold-back session (swapping
-`combatRng` for `ctx.rng`, and `isWalkableInZone`/`isOpaqueInZone`/
-`cellAt` for the exported `isWalkableCell`) happens in `glyphkeep`'s own
-repo next, per `glyphkeep/BACKLOG.md`'s NEXT SESSION section. Two things
-flagged for whoever picks that fold-back session up, so they aren't
-re-derived: (1) folding back the combat rng is a real behavior change,
-not just a refactor — combat rolls will differ once `Attack` consumes the
-same live stream as map generation instead of a frozen-at-startup copy;
-(2) `isWalkableCell` (`!== 'wall'`) and glyphkeep's `isWalkableInZone`
-(`=== 'floor'`) aren't semantically identical — a `'door'` cell is
-walkable under the former but not the latter, so the swap isn't
-guaranteed to be a drop-in no-op if glyphkeep's zones have grown a
-non-floor walkable cell type. If that surfaces a real `glyphrogue`-side
-gap, it comes back here as a new queued item rather than being decided
-from the glyphkeep side.
+queued as a direct follow-on. The three deferred items that were waiting
+on glyphkeep's Phase 2 as a second data point are updated below — two
+(move-action resolution, camera/FOV/render-loop) got no new evidence and
+continue waiting; the third slot is now a genuinely new candidate (no
+composition primitive for additive action types, surfaced by Duke
+Glyphmund's enrage phase) that's real engine work needing its own
+dedicated conversation, not queued for a specific session yet.
 
 Other unblocked candidates, not chosen but still open if priorities
 shift: **map editor in-context editing/override export** (deferred from
-session 34, no dependency on anything above); three new deferred items
-below surfaced by glyphkeep's Phase 1 (move-action resolution as
-first-party content, and two scaffold-template boilerplate candidates),
-each explicitly flagged to wait for more evidence from glyphkeep's own
-Phase 2 rather than being decided on one data point; the rest of the
-"Deferred / future items" list below.
+session 34, no dependency on anything above); the "Deferred / future
+items" list below.
 
 ## Deferred / future items
 
@@ -426,10 +431,14 @@ Phase 2 rather than being decided on one data point; the rest of the
   its bump-to-attack collision policy is more genuinely game-specific
   (a different game might want bump-to-push, or no-op) and probably
   shouldn't come along for the ride as-is. Deliberately not scoped into
-  the rng-threading session above — wait for glyphkeep's Phase 2 (combo
-  enemies, a boss) to provide more evidence of what the "right" shape
-  actually is before designing this for real, same posture as every
-  other design call in this backlog.
+  the rng-threading session above — was waiting for glyphkeep's Phase 2
+  (combo enemies, a boss) to provide more evidence of what the "right"
+  shape actually is before designing this for real. **Phase 2 landed
+  (glyphkeep session 5, 2026-07-28) with no new evidence** — `moveRule`
+  wasn't touched at all; every new behavior (combo enemies, the boss) still
+  emits the exact same `Move` follow-on shape Phase 1 already established.
+  Continue waiting, same posture as every other design call in this
+  backlog.
 - **Camera/FOV/render-loop assembly as scaffold-template boilerplate** —
   surfaced by glyphkeep's Phase 1 checkpoint 1 (2026-07-26). Camera
   (`camera.js`), FOV (`fov.js`), and render-command generation
@@ -442,9 +451,14 @@ Phase 2 rather than being decided on one data point; the rest of the
   `classifyVisibility`-gated terrain, live `api.query()`-driven entity
   commands) — plausible material for `create-glyphrogue-game`'s template
   to ship as a real starting point instead of the current static-template
-  `renderZone`. glyphkeep's `src/game.js` is a working reference. Wait
-  for glyphkeep's Phase 2 before locking in a shape, same reasoning as
-  the item above.
+  `renderZone`. glyphkeep's `src/game.js` is a working reference. Was
+  waiting for glyphkeep's Phase 2 before locking in a shape, same reasoning
+  as the item above. **Phase 2 landed with no new evidence here either** —
+  `game.js` only gained more data this phase (new archetypes' symbols/
+  colors), not new structural requirements on the camera/FOV/render-loop
+  assembly itself, which is unchanged since Phase 1. Continue waiting for
+  a phase that actually exercises this surface again, or a second real
+  downstream `glyphrogue` game.
 - **Keyboard-input wiring as scaffold-template boilerplate** — surfaced
   by glyphkeep's Phase 1 checkpoint 2 (2026-07-26). `@glyphrogue/input`
   is real, published, and fully tested, but had zero real gameplay
@@ -452,7 +466,29 @@ Phase 2 rather than being decided on one data point; the rest of the
   a keymap + `createKeyboardSource` + `createInputPipeline` through to
   `resolvePlayerAction`. Same reusable-boilerplate shape as the render-
   loop item above (a default movement keymap the scaffold could ship),
-  same "wait for more evidence" posture.
+  same "wait for more evidence" posture. glyphkeep's Phase 2 didn't touch
+  `input.js` at all - no new evidence, continue waiting.
+- **No composition primitive for additive (`dispatch`) action types,
+  unlike exclusive (`dispatchExclusive`) ones** — surfaced by glyphkeep's
+  Phase 2 checkpoint 3 (2026-07-28), Duke Glyphmund's enrage phase.
+  `dispatchExclusive`'s priority/component-filter resolution already gives
+  downstream games a clean way to compose conditionally-scoped rule
+  variants for exclusive action types (`TakeTurn`) — glyphkeep's own
+  checkpoints 1 and 2 both leaned on exactly this. Nothing equivalent
+  exists for additive action types (`Attack` and friends, via `dispatch`):
+  `dispatch()` applies *every* matching rule's effect, so two competing
+  rules for the same action would double-resolve it, and `registerRule`'s
+  `options.override` only supports whole-rule replacement under the same
+  id, not a scoped variant for a subset of entities. glyphkeep had to fold
+  its enrage bump directly into its own shared `attackRule`
+  (`glyphkeep/src/rules.js`) instead of composing it - the only clean
+  option available given the current primitives, not a workaround. Three
+  glyphkeep checkpoints in a row needed this general shape of thing (see
+  `glyphkeep/BACKLOG.md`'s cross-project section, session 5, for the full
+  writeup) - genuinely new evidence, but designing a real "rule-result
+  modifier/decorator scoped by component filter" for additive types is
+  real engine work, not a small fix. Needs its own dedicated conversation;
+  not decided here.
 - **Electron/Steam scaffold generation for `packages/cli`** —
   `docs/design/packaging.md`'s IPC surface, code-signing, update-strategy,
   and Steam build/upload material is already well-designed but was
