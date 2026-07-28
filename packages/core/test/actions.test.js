@@ -5,6 +5,7 @@ import { createRegistry, register } from '../src/registry.js';
 import { registerRule, dispatch, dispatchExclusive } from '../src/actions.js';
 import { createRenderEventQueue } from '../src/renderEvents.js';
 import { createScheduler } from '../src/scheduler.js';
+import { createRng } from '../src/rng.js';
 
 test('a rule only fires for its declared action type', () => {
   const world = createWorld();
@@ -330,6 +331,55 @@ test('ctx.addActor is a no-op when no scheduler is supplied', () => {
   });
 
   assert.doesNotThrow(() => dispatch(world, registry, { type: 'Move' }));
+});
+
+test('ctx.rng is the same seeded, advancing rng instance passed into dispatch()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const rng = createRng(42);
+  const reference = createRng(42);
+  let capturedRng;
+
+  registerRule(registry, 'rolls-dice', 'Move', (action, ctx) => {
+    capturedRng = ctx.rng;
+  });
+
+  dispatch(world, registry, { type: 'Move' }, undefined, undefined, undefined, false, rng);
+
+  assert.equal(capturedRng, rng);
+  assert.equal(capturedRng.next(), reference.next());
+  assert.equal(capturedRng.state, rng.state);
+});
+
+test('ctx.rng is undefined when no rng is supplied, and rules that never touch it are unaffected', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  let capturedRng = 'not yet set';
+
+  registerRule(registry, 'ignores-rng', 'Move', (action, ctx) => {
+    capturedRng = ctx.rng;
+  });
+
+  assert.doesNotThrow(() => dispatch(world, registry, { type: 'Move' }));
+  assert.equal(capturedRng, undefined);
+});
+
+test('rng threads through dispatchExclusive follow-ons into their own dispatch()', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const rng = createRng(7);
+  let capturedRng;
+
+  registerRule(registry, 'decide', 'TakeTurn', () => ({
+    followOn: [{ type: 'Check' }],
+  }));
+  registerRule(registry, 'check-captures-rng', 'Check', (action, ctx) => {
+    capturedRng = ctx.rng;
+  });
+
+  dispatchExclusive(world, registry, { type: 'TakeTurn' }, undefined, undefined, undefined, false, rng);
+
+  assert.equal(capturedRng, rng);
 });
 
 test('renderEvents threads through dispatchExclusive follow-ons into their own dispatch()', () => {

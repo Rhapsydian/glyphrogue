@@ -40,8 +40,8 @@ export function createApi({
   const scheduler = createScheduler(roundBudget);
   const mapQuery = { isWalkable, isOpaque };
   const renderEvents = createRenderEventQueue();
-  const engine = createEngine(world, registry, scheduler, mapQuery, renderEvents, devMode);
   const rng = createRng(seed);
+  const engine = createEngine(world, registry, scheduler, mapQuery, renderEvents, devMode, rng);
 
   const api = {
     world,
@@ -79,7 +79,7 @@ export function createApi({
     // trigger) couldn't reach ctx.enqueueRenderEvent/addActor. Surfaced by
     // registerScriptedEvent's timeUnits wait needing ctx.addActor to work
     // from an ordinary api.dispatch() call, not just from inside act().
-    dispatch: (action) => dispatch(world, registry, action, mapQuery, renderEvents, scheduler, devMode),
+    dispatch: (action) => dispatch(world, registry, action, mapQuery, renderEvents, scheduler, devMode, rng),
 
     findPath: (from, to, opts) => findPath(from, to, { ...opts, isWalkable: mapQuery.isWalkable }),
     computeFov: (origin, radius, opts) => computeFov(origin, radius, { ...opts, isOpaque: mapQuery.isOpaque }),

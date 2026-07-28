@@ -2,8 +2,8 @@ import { hasComponent, getComponent, destroyEntity } from './world.js';
 import { dispatch, dispatchExclusive } from './actions.js';
 import { next, spend, removeActor } from './scheduler.js';
 
-export function createEngine(world, registry, scheduler, mapQuery, renderEvents, devMode = false) {
-  return { world, registry, scheduler, mapQuery, renderEvents, devMode, locked: false };
+export function createEngine(world, registry, scheduler, mapQuery, renderEvents, devMode = false, rng) {
+  return { world, registry, scheduler, mapQuery, renderEvents, devMode, rng, locked: false };
 }
 
 export function lock(engine) {
@@ -50,19 +50,19 @@ export function act(engine) {
   // going through dispatchExclusive's TakeTurn/behaviors pipeline.
   if (hasComponent(engine.world, entity, 'Timer')) {
     const { action } = getComponent(engine.world, entity, 'Timer');
-    const result = dispatch(engine.world, engine.registry, action, engine.mapQuery, engine.renderEvents, engine.scheduler, engine.devMode);
+    const result = dispatch(engine.world, engine.registry, action, engine.mapQuery, engine.renderEvents, engine.scheduler, engine.devMode, engine.rng);
     removeActor(engine.scheduler, entity);
     destroyEntity(engine.world, entity);
     return { entity, waiting: false, result };
   }
 
-  const result = dispatchExclusive(engine.world, engine.registry, { type: 'TakeTurn', entity }, engine.mapQuery, engine.renderEvents, engine.scheduler, engine.devMode);
+  const result = dispatchExclusive(engine.world, engine.registry, { type: 'TakeTurn', entity }, engine.mapQuery, engine.renderEvents, engine.scheduler, engine.devMode, engine.rng);
   spend(engine.scheduler, entity, sumCost(result.resolved));
   return { entity, waiting: false, result };
 }
 
 export function resolvePlayerAction(engine, entity, action) {
-  const result = dispatch(engine.world, engine.registry, action, engine.mapQuery, engine.renderEvents, engine.scheduler, engine.devMode);
+  const result = dispatch(engine.world, engine.registry, action, engine.mapQuery, engine.renderEvents, engine.scheduler, engine.devMode, engine.rng);
   spend(engine.scheduler, entity, sumCost(result.resolved));
   unlock(engine);
   return result;

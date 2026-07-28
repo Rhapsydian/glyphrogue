@@ -131,7 +131,13 @@ function emitSounds(registry, action, ctx, renderEvents) {
 // optional trailing param, same precedent - omitted, ctx.addActor/
 // removeActor are no-ops. Needed so a rule (e.g. registerScriptedEvent's
 // compiled timeUnits wait) can schedule a Timer entity from inside dispatch.
-function createContext(world, mapQuery = {}, renderEvents, scheduler) {
+// `rng` is a further optional trailing param, mirroring mapgen.js's
+// generator ctx `{ rng, params, ... }` shape exactly - a rule reads
+// ctx.rng directly (no no-op fallback; a rule that doesn't need it never
+// touches it) and, threaded from createApi() through createEngine(), is
+// the same live object as api.rng, so a rule's rolls advance the one
+// canonical stream save.js already serializes via api.rng.state.
+function createContext(world, mapQuery = {}, renderEvents, scheduler, rng) {
   return {
     hasComponent: (entity, type) => hasComponent(world, entity, type),
     getComponent: (entity, type) => getComponent(world, entity, type),
@@ -152,14 +158,15 @@ function createContext(world, mapQuery = {}, renderEvents, scheduler) {
     removeActor: (entity) => {
       if (scheduler) removeActor(scheduler, entity);
     },
+    rng,
   };
 }
 
-export function dispatch(world, registry, action, mapQuery, renderEvents, scheduler, devMode = false) {
+export function dispatch(world, registry, action, mapQuery, renderEvents, scheduler, devMode = false, rng) {
   const resolved = [];
   const vetoed = [];
   const queue = [action];
-  const ctx = createContext(world, mapQuery, renderEvents, scheduler);
+  const ctx = createContext(world, mapQuery, renderEvents, scheduler, rng);
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -202,8 +209,8 @@ export function dispatch(world, registry, action, mapQuery, renderEvents, schedu
 // types representing a mutually-exclusive choice (TakeTurn: an actor
 // can't both Flee and Guard the same turn), not the additive-reaction
 // shape most action types use.
-export function dispatchExclusive(world, registry, action, mapQuery, renderEvents, scheduler, devMode = false) {
-  const ctx = createContext(world, mapQuery, renderEvents, scheduler);
+export function dispatchExclusive(world, registry, action, mapQuery, renderEvents, scheduler, devMode = false, rng) {
+  const ctx = createContext(world, mapQuery, renderEvents, scheduler, rng);
   const pipeline = pipelineFor(registry, action.type);
 
   let winnerResult;
@@ -227,7 +234,7 @@ export function dispatchExclusive(world, registry, action, mapQuery, renderEvent
   emitSounds(registry, action, ctx, renderEvents);
 
   for (const followOnAction of winnerResult?.followOn ?? []) {
-    const sub = dispatch(world, registry, followOnAction, mapQuery, renderEvents, scheduler, devMode);
+    const sub = dispatch(world, registry, followOnAction, mapQuery, renderEvents, scheduler, devMode, rng);
     resolved.push(...sub.resolved);
     vetoed.push(...sub.vetoed);
   }

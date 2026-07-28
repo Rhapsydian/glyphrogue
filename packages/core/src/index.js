@@ -166,7 +166,7 @@ export { saveMixSettings, loadMixSettings } from './audioSettings.js';
 // build a zone from scratch and derive an entry point for the one
 // primitive (carveCellularAutomata) that doesn't return one itself.
 export { carveBsp } from './bsp.js';
-export { carveCellularAutomata, connectCorridor, createZone, nearestOpenCell } from './zoneComposition.js';
+export { carveCellularAutomata, connectCorridor, createZone, nearestOpenCell, isWalkableCell } from './zoneComposition.js';
 export { collapseWfc } from './waveFunctionCollapse.js';
 export { partitionBiomes } from './layeredBiome.js';
 

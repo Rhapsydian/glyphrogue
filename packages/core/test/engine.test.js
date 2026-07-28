@@ -12,6 +12,7 @@ import {
   run,
 } from '../src/engine.js';
 import { createRenderEventQueue } from '../src/renderEvents.js';
+import { createRng } from '../src/rng.js';
 
 function setupWander(registry) {
   registerRule(registry, 'wanders', 'TakeTurn', (action) => ({
@@ -138,6 +139,26 @@ test('act() threads renderEvents through to a TakeTurn rule', () => {
   assert.deepEqual(renderEvents.events[0], { kind: 'animation', entity: goblin });
 });
 
+test('act() threads rng through to a TakeTurn rule as the same live instance', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+  const goblin = createEntity(world);
+  addActor(scheduler, goblin, 50);
+  const rng = createRng(3);
+  let capturedRng;
+
+  registerRule(registry, 'wanders-and-rolls', 'TakeTurn', (action, ctx) => {
+    capturedRng = ctx.rng;
+    return { followOn: [{ type: 'Move', entity: action.entity, cost: 100 }] };
+  });
+
+  const engine = createEngine(world, registry, scheduler, undefined, undefined, false, rng);
+  act(engine);
+
+  assert.equal(capturedRng, rng);
+});
+
 test('a Timer entity fires its carried action once its negative budget clears, then self-removes', () => {
   const world = createWorld();
   const registry = createRegistry();
@@ -223,4 +244,26 @@ test('resolvePlayerAction threads renderEvents through to the dispatched action'
   resolvePlayerAction(engine, player, { type: 'Move', entity: player, cost: 40 });
 
   assert.equal(renderEvents.events.length, 1);
+});
+
+test('resolvePlayerAction threads rng through to the dispatched action as the same live instance', () => {
+  const world = createWorld();
+  const registry = createRegistry();
+  const scheduler = createScheduler(100);
+  const player = createEntity(world);
+  addComponent(world, player, 'PlayerControlled', {});
+  addActor(scheduler, player, 50);
+  const rng = createRng(9);
+  let capturedRng;
+
+  registerRule(registry, 'move-rolls', 'Move', (action, ctx) => {
+    capturedRng = ctx.rng;
+  });
+
+  const engine = createEngine(world, registry, scheduler, undefined, undefined, false, rng);
+  act(engine); // locks, waiting on the player
+
+  resolvePlayerAction(engine, player, { type: 'Move', entity: player, cost: 40 });
+
+  assert.equal(capturedRng, rng);
 });
