@@ -356,35 +356,37 @@ no `.gitignore`** — every generated game's `node_modules`/`dist` were one
 `templates/default/`, regression test in `packages/cli/test/
 scaffold.test.js` asserting the real template copies it through.
 
-**Next `/dev-session` for `glyphrogue` itself: thread `rng` through the
-action/rule pipeline, plus one more small export fix.** Found while
-glyphkeep wrote its `Attack` rule (checkpoint 4) — a rule's `ctx`
-(`actions.js`'s `createContext`) has no RNG access at all; only a
-*generator*'s ctx does (`mapgen.js`). Unlike the two fixes above, this is
-a real architectural change (`createContext`/`dispatch`/`dispatchExclusive`
-need `rng` threaded through the same way `mapQuery`/`renderEvents`/
-`scheduler` already are, sourced from `api.rng` at `createEngine()` time),
-not a two-line addition — that's why it's its own session rather than a
-live in-session fix. Recommended shape to start from (confirm/adjust
-live, same as every other real design call here): expose it as `ctx.rng`
-directly, matching the generator ctx's `{rng, params, ...}` shape, so a
-rule can call `ctx.rng.next()` the same way a generator calls its own.
-Needs real regression tests (a rule reading `ctx.rng` and getting a real,
-seeded, advancing PRNG). Bundle in the same session: export
-`isWalkableCell` from `zoneComposition.js` via `index.js` — glyphkeep
-independently reinvented it (`isWalkableInZone` in its own `game.js`)
-without realizing this already exists internally, only unreachable from
-outside the package; same class of gap as the `computeFov`/`fovContains`
-fix above.
+Session 44 (2026-07-28) completed the rng-threading + `isWalkableCell`
+export work queued below. `createContext`/`dispatch`/`dispatchExclusive`/
+`createEngine` now thread `rng` through the same way `mapQuery`/
+`renderEvents`/`scheduler` already do, and `ctx.rng` is the same live
+object as `api.rng` (confirmed live with the user rather than a derived
+copy — see the session log for why) — so a rule's `.next()` calls advance
+the one canonical stream `save.js` already serializes via `api.rng.state`.
+`rng` is appended *after* `devMode` in every signature, not before —
+`actions.test.js` already calls `dispatch`/`dispatchExclusive` with
+`devMode` passed positionally, so inserting earlier would have silently
+broken those calls. `isWalkableCell` is now re-exported from `index.js`.
+Test count 361 → 367 (6 new: rng identity/threading/follow-on/omitted
+cases in `actions.test.js`/`engine.test.js`, an `isWalkableCell` surface
+test in `index.test.js`). See `docs/session-logs/session-44-2026-07-28.md`.
 
-**After that lands, a glyphkeep follow-up session should fold it back
-in** before glyphkeep starts its own Phase 2: swap glyphkeep's
-`combatRng` workaround (a second, separate seeded stream) for the real
-`ctx.rng`, and swap its `isWalkableInZone`/`isOpaqueInZone`/`cellAt` trio
-for the exported `isWalkableCell` (or an equivalent). Keeps glyphkeep
-current as the reference downstream consumer instead of carrying
-workaround debt. See `glyphkeep/BACKLOG.md`'s NEXT SESSION section for
-this same sequencing from glyphkeep's side.
+**Next `/dev-session` for `glyphrogue` itself**: nothing specific is
+queued as a direct follow-on — the glyphkeep fold-back session (swapping
+`combatRng` for `ctx.rng`, and `isWalkableInZone`/`isOpaqueInZone`/
+`cellAt` for the exported `isWalkableCell`) happens in `glyphkeep`'s own
+repo next, per `glyphkeep/BACKLOG.md`'s NEXT SESSION section. Two things
+flagged for whoever picks that fold-back session up, so they aren't
+re-derived: (1) folding back the combat rng is a real behavior change,
+not just a refactor — combat rolls will differ once `Attack` consumes the
+same live stream as map generation instead of a frozen-at-startup copy;
+(2) `isWalkableCell` (`!== 'wall'`) and glyphkeep's `isWalkableInZone`
+(`=== 'floor'`) aren't semantically identical — a `'door'` cell is
+walkable under the former but not the latter, so the swap isn't
+guaranteed to be a drop-in no-op if glyphkeep's zones have grown a
+non-floor walkable cell type. If that surfaces a real `glyphrogue`-side
+gap, it comes back here as a new queued item rather than being decided
+from the glyphkeep side.
 
 Other unblocked candidates, not chosen but still open if priorities
 shift: **map editor in-context editing/override export** (deferred from

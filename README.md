@@ -26,7 +26,7 @@ deferred. `packages/cli` (`create-glyphrogue-game` scaffolding) is
 designed in full for its web-scaffold scope (`docs/design/cli.md`, session
 41) and implemented (session 42). **All four packages —
 `@glyphrogue/core`, `@glyphrogue/editor`, `@glyphrogue/input`,
-`create-glyphrogue-game` — are published to npm at `0.1.0`.** 572
+`create-glyphrogue-game` — are published to npm at `0.1.0`.** 579
 `node --test` cases pass across all four.
 
 `glyphkeep` (a separate repo, `C:\Users\husbando\Claude\glyphkeep`) is
@@ -36,10 +36,15 @@ four real gaps here live: `deserialize` wasn't forwarding
 `isWalkable`/`isOpaque` to `createApi`; `computeFov`/`fovContains` were
 implemented+tested but never exported; `act()`/`run()` would hang
 forever on an empty scheduler instead of erroring; the CLI scaffold
-shipped with no `.gitignore`. See `BACKLOG.md`'s NEXT SESSION section for
-what's queued next (threading `rng` through the rule pipeline, an
-`isWalkableCell` export) and its "Deferred / future items" for candidates
-glyphkeep surfaced that need more evidence before being designed.
+shipped with no `.gitignore`. Session 44 (2026-07-28) then closed a fifth,
+larger gap glyphkeep's `Attack` rule surfaced: a rule's `ctx` had no RNG
+access at all, unlike a generator's — `ctx.rng` now threads through
+`dispatch`/`dispatchExclusive`/`createEngine`, sharing the exact same live
+object as `api.rng` — plus re-exported `isWalkableCell`. See
+`BACKLOG.md`'s NEXT SESSION section for the glyphkeep fold-back session
+that comes next (in glyphkeep's own repo, not here) and its "Deferred /
+future items" for candidates glyphkeep surfaced that need more evidence
+before being designed.
 
 Session 30 reconciled a drift between `docs/design/scripting-api.md`'s
 Plugin architecture and `packages/core`'s actual generator/behavior code;
