@@ -35,7 +35,14 @@ export function next(scheduler) {
   return winner;
 }
 
+// Throws rather than silently producing NaN for an entity that was never
+// addActor'd - glyphkeep hit this dogfooding the screen-close path
+// (api.closeScreen -> resolvePlayerAction -> spend), a different trigger
+// than act()'s already-guarded entity===undefined case (see its comment).
 export function spend(scheduler, entity, cost) {
+  if (!scheduler.actors.has(entity)) {
+    throw new Error(`spend: entity ${String(entity)} is not a registered scheduler actor`);
+  }
   scheduler.actors.set(entity, scheduler.actors.get(entity) - cost);
 }
 

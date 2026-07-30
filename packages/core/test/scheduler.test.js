@@ -61,3 +61,12 @@ test('equal-budget tie resolves to the earlier-added actor', () => {
 
   assert.equal(next(scheduler), 'first');
 });
+
+test('spend throws rather than corrupting the map when the entity is not a registered actor', () => {
+  const scheduler = createScheduler(100);
+  addActor(scheduler, 'a', 10);
+
+  assert.throws(() => spend(scheduler, 'ghost', 5), /not a registered scheduler actor/);
+  assert.equal(scheduler.actors.has('ghost'), false);
+  assert.equal(scheduler.actors.get('a'), 10); // unaffected
+});
