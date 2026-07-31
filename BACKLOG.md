@@ -388,14 +388,33 @@ also let glyphkeep stop independently redeclaring the same "100" twice for
 its own move/turn costs). See `packages/core/test/index.test.js`'s new
 regression tests.
 
+**glyphkeep's Phase 3** ("equipment & inventory," session 6, 2026-07-31)
+landed one more small, unambiguous fix here: `scheduler.js`'s `spend()`
+had no guard for an unregistered entity, silently producing `NaN` and
+corrupting the scheduler's actor map — the same failure class as the
+already-fixed empty-scheduler hang in `act()` (that fix's own comment had
+already half-noticed `spend()` shared the gap, but only guarded the
+`act()` call site). Found wiring glyphkeep's `closeScreen`→
+`resolvePlayerAction`→`spend` path. `spend()` now throws instead. See
+`packages/core/test/scheduler.test.js`'s new regression test.
+
+Phase 3's phase-end review (run from the glyphkeep side) also confirmed,
+against this repo's own docs (`ui-and-input.md`, `api.js`'s `openScreen`
+comment), that glyphkeep's `registerScreen`+`captureStack` manual
+bookkeeping is a consequence of glyphkeep's own deliberate choice to use
+the heavier mechanism where the docs actually recommend the lighter
+UI-initiated shortcut — not a gap here. No new export/primitive request
+came out of this phase.
+
 **Next `/dev-session` for `glyphrogue` itself**: nothing specific is
-queued as a direct follow-on. The three deferred items that were waiting
-on glyphkeep's Phase 2 as a second data point are updated below — two
-(move-action resolution, camera/FOV/render-loop) got no new evidence and
-continue waiting; the third slot is now a genuinely new candidate (no
-composition primitive for additive action types, surfaced by Duke
-Glyphmund's enrage phase) that's real engine work needing its own
-dedicated conversation, not queued for a specific session yet.
+queued as a direct follow-on. The two deferred items still waiting on a
+second glyphkeep data point (move-action resolution, camera/FOV/
+render-loop) got no new evidence from Phase 3 either — glyphkeep's own
+equipment/inventory work didn't touch `moveRule` or the render loop's
+structure, only its rendered data. The additive-action composition-
+primitive gap (surfaced by Duke Glyphmund's enrage phase, Phase 2) is
+still real engine work needing its own dedicated conversation, not queued
+for a specific session yet.
 
 Other unblocked candidates, not chosen but still open if priorities
 shift: **map editor in-context editing/override export** (deferred from
